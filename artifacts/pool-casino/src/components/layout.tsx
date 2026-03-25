@@ -202,7 +202,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             This is a simulator using fake money. No real money gambling occurs on this site.
           </p>
           <a
-            href="mailto:hudsoduk@gmail.com?subject=PoolCasino%20Support%20%2F%20Feedback"
+            href="https://mail.google.com/mail/?view=cm&to=hudsoduk@gmail.com&su=PoolCasino+Support+%2F+Feedback"
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full border border-white/10 text-muted-foreground hover:text-white hover:border-white/30 transition-all"
           >
             <MessageSquare className="w-3.5 h-3.5" /> Support &amp; Feedback
