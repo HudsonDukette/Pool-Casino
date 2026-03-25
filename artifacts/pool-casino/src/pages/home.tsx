@@ -1,31 +1,67 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Link } from "wouter";
 import { useGetPool, useGetMe, useGetRecentBigWins } from "@workspace/api-client-react";
 import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Gamepad2, ArrowRight, TrendingUp, DollarSign, Activity } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+
+/** Pops + glows whenever `value` changes by using the value as the React key */
+function AnimatedStat({
+  value,
+  className,
+  glowColor = "rgba(0,255,170,0.8)",
+}: {
+  value: string;
+  className?: string;
+  glowColor?: string;
+}) {
+  return (
+    <AnimatePresence mode="wait">
+      <motion.span
+        key={value}
+        initial={{ scale: 1.3, textShadow: `0 0 24px ${glowColor}` }}
+        animate={{ scale: 1, textShadow: `0 0 0px ${glowColor}` }}
+        transition={{ type: "spring", stiffness: 380, damping: 18, duration: 0.4 }}
+        className={className}
+        style={{ display: "inline-block" }}
+      >
+        {value}
+      </motion.span>
+    </AnimatePresence>
+  );
+}
 
 export default function Home() {
   const { data: pool, isLoading: isPoolLoading } = useGetPool({ query: { refetchInterval: 5000 } });
   const { data: user } = useGetMe({ query: { retry: false } });
   const { data: recentWins } = useGetRecentBigWins({ query: { refetchInterval: 10000 } });
 
+  const poolStr       = isPoolLoading ? "Loading..." : formatCurrency(pool?.totalAmount || 0);
+  const bigBetStr     = isPoolLoading ? "-"          : formatCurrency(pool?.biggestBet  || 0);
+  const bigWinStr     = isPoolLoading ? "-"          : formatCurrency(pool?.biggestWin  || 0);
+
+  // Track whether the pool grew (flash green) or shrank (flash accent)
+  const prevPool = useRef<number | null>(null);
+  const poolNum  = parseFloat(String(pool?.totalAmount ?? "0"));
+  const grew     = prevPool.current !== null && poolNum > prevPool.current;
+  if (pool) prevPool.current = poolNum;
+
   return (
     <div className="space-y-12">
       {/* Hero Section */}
       <section className="relative rounded-3xl overflow-hidden border border-white/10 bg-black shadow-2xl">
         <div className="absolute inset-0 z-0">
-          <img 
-            src={`${import.meta.env.BASE_URL}images/casino-bg.png`} 
-            alt="Casino Background" 
+          <img
+            src={`${import.meta.env.BASE_URL}images/casino-bg.png`}
+            alt="Casino Background"
             className="w-full h-full object-cover opacity-60 mix-blend-screen"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent" />
         </div>
-        
+
         <div className="relative z-10 px-6 py-16 md:py-24 lg:px-16 flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="max-w-xl space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
@@ -72,21 +108,24 @@ export default function Home() {
                     Current Global Pool
                   </p>
                   <div className="font-mono text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                    {isPoolLoading ? "Loading..." : formatCurrency(pool?.totalAmount || 0)}
+                    <AnimatedStat
+                      value={poolStr}
+                      glowColor={grew ? "rgba(0,255,170,0.9)" : "rgba(255,100,100,0.8)"}
+                    />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/10">
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Biggest Bet</p>
-                    <p className="font-mono font-medium text-lg text-primary">
-                      {isPoolLoading ? "-" : formatCurrency(pool?.biggestBet || 0)}
+                    <p className="font-mono font-medium text-lg text-primary overflow-hidden">
+                      <AnimatedStat value={bigBetStr} glowColor="rgba(0,255,170,0.8)" />
                     </p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Biggest Win</p>
-                    <p className="font-mono font-medium text-lg text-accent">
-                      {isPoolLoading ? "-" : formatCurrency(pool?.biggestWin || 0)}
+                    <p className="font-mono font-medium text-lg text-accent overflow-hidden">
+                      <AnimatedStat value={bigWinStr} glowColor="rgba(255,170,0,0.8)" />
                     </p>
                   </div>
                 </div>
@@ -104,7 +143,7 @@ export default function Home() {
             View All <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <Link href="/games/roulette" className="group block">
             <Card className="h-full overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(0,255,170,0.15)] border-white/5 hover:border-primary/50 relative">
@@ -153,33 +192,46 @@ export default function Home() {
           </div>
           <div className="p-0 overflow-x-auto hide-scrollbar">
             <div className="flex items-center gap-4 p-6 min-w-max">
-              {recentWins?.wins && recentWins.wins.length > 0 ? (
-                recentWins.wins.map((win, i) => (
-                  <motion.div 
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    key={`${win.timestamp}-${i}`} 
-                    className="flex-shrink-0 flex items-center gap-4 px-5 py-3 rounded-2xl bg-white/5 border border-white/10"
+              <AnimatePresence initial={false}>
+                {recentWins?.wins && recentWins.wins.length > 0 ? (
+                  recentWins.wins.map((win, i) => (
+                    <motion.div
+                      key={`${win.timestamp}-${win.username}`}
+                      initial={{ opacity: 0, x: 40, scale: 0.9 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: -20, scale: 0.9 }}
+                      transition={{ delay: i * 0.06, type: "spring", stiffness: 320, damping: 22 }}
+                      className="flex-shrink-0 flex items-center gap-4 px-5 py-3 rounded-2xl bg-white/5 border border-white/10"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center text-success">
+                        <DollarSign className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white">{win.username}</span>
+                          <span className="text-xs text-muted-foreground uppercase tracking-wide bg-black/50 px-2 py-0.5 rounded">{win.gameType}</span>
+                        </div>
+                        <div className="font-mono text-success font-semibold">
+                          <AnimatedStat
+                            value={`+${formatCurrency(win.payout)}`}
+                            glowColor="rgba(0,255,100,0.7)"
+                            className="text-success"
+                          />
+                          {win.multiplier && <span className="text-muted-foreground text-xs ml-2">({win.multiplier}x)</span>}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-muted-foreground text-sm"
                   >
-                    <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center text-success">
-                      <DollarSign className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white">{win.username}</span>
-                        <span className="text-xs text-muted-foreground uppercase tracking-wide bg-black/50 px-2 py-0.5 rounded">{win.gameType}</span>
-                      </div>
-                      <div className="font-mono text-success font-semibold">
-                        +{formatCurrency(win.payout)}
-                        {win.multiplier && <span className="text-muted-foreground text-xs ml-2">({win.multiplier}x)</span>}
-                      </div>
-                    </div>
+                    No recent big wins. Be the first!
                   </motion.div>
-                ))
-              ) : (
-                <div className="text-muted-foreground text-sm">No recent big wins. Be the first!</div>
-              )}
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </Card>
