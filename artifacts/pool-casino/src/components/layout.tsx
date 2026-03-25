@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
-import { Coins, LogOut, User as UserIcon, Menu, X, Mail, Dices, Crown, LayoutDashboard } from "lucide-react";
+import { Coins, LogOut, User as UserIcon, Menu, X, Mail, Dices, Crown, LayoutDashboard, MessageSquare } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -196,11 +196,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="w-6 h-6 rounded border border-white/20 flex items-center justify-center">
               <Dices className="w-3.5 h-3.5" />
             </div>
-            <span className="text-sm font-medium">PoolCasino © 2025</span>
+            <span className="text-sm font-medium">PoolCasino © 2026</span>
           </div>
           <p className="text-xs text-muted-foreground text-center md:text-right max-w-md">
             This is a simulator using fake money. No real money gambling occurs on this site.
           </p>
+          <a
+            href="mailto:hudsoduk@gmail.com?subject=PoolCasino%20Support%20%2F%20Feedback"
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full border border-white/10 text-muted-foreground hover:text-white hover:border-white/30 transition-all"
+          >
+            <MessageSquare className="w-3.5 h-3.5" /> Support &amp; Feedback
+          </a>
         </div>
       </footer>
     </div>
