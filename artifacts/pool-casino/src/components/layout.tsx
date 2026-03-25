@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
-import { Coins, LogOut, User as UserIcon, Gamepad2, Trophy, Menu, X, Gem } from "lucide-react";
+import { Coins, LogOut, User as UserIcon, Gamepad2, Trophy, Menu, X, Gem, Mail } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -66,6 +66,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 );
               })}
             </nav>
+
+            {/* Email Button */}
+            <a
+              href="mailto:hudsoduk@gmail.com?subject=I%20need%20more%20money%20on%20PoolCasino!"
+              className="hidden md:flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-all"
+            >
+              <Mail className="w-3.5 h-3.5" /> Email me for more money
+            </a>
 
             {/* User Area */}
             <div className="flex items-center gap-4">

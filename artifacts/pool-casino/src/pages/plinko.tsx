@@ -41,7 +41,7 @@ export default function Plinko() {
   const [balls, setBalls] = useState<BallState[]>([]);
   const [highlightedSlot, setHighlightedSlot] = useState<number | null>(null);
   const nextBallId = useRef(0);
-  const isBetting = useRef(false);
+  const MAX_BALLS = 100;
 
   const numericBet = parseFloat(betAmount) || 0;
 
@@ -58,14 +58,15 @@ export default function Plinko() {
       toast({ title: "Insufficient Funds", description: "You don't have enough coins.", variant: "destructive" });
       return;
     }
-    if (isBetting.current) return;
-    isBetting.current = true;
+    if (balls.length >= MAX_BALLS) {
+      toast({ title: "Max balls reached", description: "Wait for some balls to finish before dropping more.", variant: "destructive" });
+      return;
+    }
 
     playMut.mutate(
       { data: { betAmount: numericBet, risk } },
       {
         onSuccess: (data) => {
-          isBetting.current = false;
 
           // Build pixel coords for the ball path (using x/y transforms)
           let cx = 0;
@@ -118,7 +119,6 @@ export default function Plinko() {
           }, highlightDelay + 800);
         },
         onError: (err) => {
-          isBetting.current = false;
           toast({ title: "Error", description: err.error?.error || "Failed to place bet", variant: "destructive" });
         },
       }

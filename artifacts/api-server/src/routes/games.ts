@@ -163,14 +163,6 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
     return;
   }
 
-  if (user.lastBetAt) {
-    const msSinceLastBet = Date.now() - user.lastBetAt.getTime();
-    if (msSinceLastBet < BET_COOLDOWN_MS) {
-      res.status(400).json({ error: `Please wait ${Math.ceil((BET_COOLDOWN_MS - msSinceLastBet) / 1000)} second(s) between bets` });
-      return;
-    }
-  }
-
   const pool = await getOrCreatePool();
   const poolAmount = parseFloat(pool.totalAmount);
   const currentBalance = parseFloat(user.balance);
