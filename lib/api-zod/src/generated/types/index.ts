@@ -29,6 +29,7 @@ export * from "./messageResponse";
 export * from "./plinkoRequest";
 export * from "./plinkoRequestRisk";
 export * from "./plinkoResult";
+export * from "./plinkoResultPathItem";
 export * from "./poolInfo";
 export * from "./profileChangeCosts";
 export * from "./recentBet";

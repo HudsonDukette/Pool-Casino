@@ -73,21 +73,12 @@ export default function Plinko() {
       { data: { betAmount: numericBet, risk } },
       {
         onSuccess: (data) => {
-          // Build pixel coords for the ball path (using x/y transforms)
-          let cx = 0;
-          let cy = 0;
-          const coords: { x: number; y: number }[] = [{ x: cx, y: cy }];
-          data.path.forEach((dir) => {
-            cy += ROW_HEIGHT;
-            cx += dir === "R" ? PEG_SPACING / 2 : -PEG_SPACING / 2;
-            coords.push({ x: cx, y: cy });
-          });
-          // Final position in the slot
-          cy += ROW_HEIGHT * 0.6;
-          coords.push({ x: cx, y: cy });
+          // Path is now {x, y}[] pixel offsets from board center (physics simulation)
+          const coords = data.path as { x: number; y: number }[];
 
           const ballId = nextBallId.current++;
-          const animDuration = coords.length * 0.22;
+          // Physics path has ~50+ points; keep animation snappy
+          const animDuration = Math.max(1.5, coords.length * 0.055);
 
           const newBall: BallState = {
             id: ballId,
@@ -297,8 +288,8 @@ export default function Plinko() {
                     <span className="text-white font-mono font-medium">
                       {pool.totalAmount
                         ? (() => {
-                            const ratio = numericBet / (pool.totalAmount * 0.002);
-                            const chance = Math.max(0.01, 0.38 / (1 + ratio));
+                            const scale = Math.min(pool.totalAmount * 0.001, 5000);
+                            const chance = Math.max(0.01, 0.45 / (1 + numericBet / scale));
                             return `${(chance * 100).toFixed(1)}%`;
                           })()
                         : "—"}

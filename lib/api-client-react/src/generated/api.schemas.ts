@@ -123,10 +123,15 @@ export interface PlinkoRequest {
   risk: PlinkoRequestRisk;
 }
 
+export type PlinkoResultPathItem = {
+  x: number;
+  y: number;
+};
+
 export interface PlinkoResult {
   won: boolean;
   multiplier: number;
-  path: string[];
+  path: PlinkoResultPathItem[];
   betAmount: number;
   payout: number;
   newBalance: number;

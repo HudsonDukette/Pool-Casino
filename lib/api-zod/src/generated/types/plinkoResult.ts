@@ -5,11 +5,12 @@
  * PoolCasino API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { PlinkoResultPathItem } from "./plinkoResultPathItem";
 
 export interface PlinkoResult {
   won: boolean;
   multiplier: number;
-  path: string[];
+  path: PlinkoResultPathItem[];
   betAmount: number;
   payout: number;
   newBalance: number;

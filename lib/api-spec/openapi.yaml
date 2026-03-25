@@ -741,7 +741,15 @@ components:
         path:
           type: array
           items:
-            type: string
+            type: object
+            properties:
+              x:
+                type: number
+              y:
+                type: number
+            required:
+              - x
+              - y
         betAmount:
           type: number
         payout:

@@ -163,7 +163,12 @@ export const PlayPlinkoBody = zod.object({
 export const PlayPlinkoResponse = zod.object({
   won: zod.boolean(),
   multiplier: zod.number(),
-  path: zod.array(zod.string()),
+  path: zod.array(
+    zod.object({
+      x: zod.number(),
+      y: zod.number(),
+    }),
+  ),
   betAmount: zod.number(),
   payout: zod.number(),
   newBalance: zod.number(),
