@@ -10,9 +10,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 
 const RISK_LEVELS = {
-  low:    { name: "Low",    color: "bg-blue-500",       textColor: "text-blue-400",    mults: [0, 1, 1.5, 2, 2.5, 2, 1.5, 1, 0] },
-  medium: { name: "Medium", color: "bg-yellow-500",     textColor: "text-yellow-400",  mults: [0, 0, 1, 2, 5, 2, 1, 0, 0] },
-  high:   { name: "High",   color: "bg-destructive",    textColor: "text-red-400",     mults: [0, 0, 0, 1, 10, 1, 0, 0, 0] }
+  low:    { name: "Low",    color: "bg-blue-500",       textColor: "text-blue-400",    mults: [0.5, 1, 1.5, 2, 2.5, 2, 1.5, 1, 0.5] },
+  medium: { name: "Medium", color: "bg-yellow-500",     textColor: "text-yellow-400",  mults: [0.3, 0.5, 1, 2, 5, 2, 1, 0.5, 0.3] },
+  high:   { name: "High",   color: "bg-destructive",    textColor: "text-red-400",     mults: [0.1, 0.2, 0.5, 1, 10, 1, 0.5, 0.2, 0.1] }
 };
 
 interface BallState {
@@ -106,11 +106,17 @@ export default function Plinko() {
             queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
             queryClient.invalidateQueries({ queryKey: ["/api/pool"] });
 
+            const isBreakEven = visualMultiplier === 1;
             if (data.won) {
               toast({
                 title: `${visualMultiplier}x Win! 🎉`,
                 description: `+${formatCurrency(data.payout)} returned to your balance`,
                 className: "bg-success text-success-foreground border-none",
+              });
+            } else if (isBreakEven) {
+              toast({
+                title: `1x — Break Even`,
+                description: `Your ${formatCurrency(numericBet)} bet was returned`,
               });
             } else {
               toast({

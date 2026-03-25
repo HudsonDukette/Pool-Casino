@@ -161,10 +161,12 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
   const { path, slot, multiplier } = simulatePlinko(risk, winChance);
 
   const payout = betAmount * multiplier;
-  const won = payout > betAmount;
+  const won = payout > betAmount;             // actual win (profit)
+  const breakEven = payout === betAmount;     // 1x — return bet, no profit/loss
   const profit = payout - betAmount;
   const newBalance = currentBalance - betAmount + payout;
-  const newPoolAmount = poolAmount + (won ? -profit : betAmount - payout);
+  // Pool only moves on real wins/losses; break-even is neutral for the pool
+  const newPoolAmount = poolAmount + (won ? -profit : breakEven ? 0 : betAmount - payout);
 
   const newBiggestWin = won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin);
   const newBiggestBet = betAmount > parseFloat(pool.biggestBet) ? betAmount : parseFloat(pool.biggestBet);

@@ -125,8 +125,14 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 });
 
 router.post("/auth/logout", async (req, res): Promise<void> => {
-  req.session.destroy(() => {});
-  res.json(LogoutResponse.parse({ message: "Logged out" }));
+  req.session.destroy((err) => {
+    res.clearCookie("connect.sid");
+    if (err) {
+      res.status(500).json({ error: "Logout failed" });
+    } else {
+      res.json(LogoutResponse.parse({ message: "Logged out" }));
+    }
+  });
 });
 
 router.get("/auth/me", async (req, res): Promise<void> => {

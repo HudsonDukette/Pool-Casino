@@ -17,7 +17,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const handleLogout = () => {
     logoutMut.mutate(undefined, {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        queryClient.clear();
+        window.location.href = "/login";
       }
     });
   };
@@ -88,8 +89,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </span>
                   </div>
                   <Link href="/profile">
-                    <Button variant="ghost" size="icon" className="rounded-full bg-white/5 border border-white/10">
-                      <UserIcon className="w-4 h-4" />
+                    <Button variant="ghost" size="icon" className="rounded-full bg-white/5 border border-white/10 overflow-hidden p-0">
+                      {user.avatarUrl ? (
+                        <img src={user.avatarUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        <UserIcon className="w-4 h-4" />
+                      )}
                     </Button>
                   </Link>
                   <Button variant="ghost" size="icon" onClick={handleLogout} className="hidden sm:inline-flex text-muted-foreground hover:text-destructive">
