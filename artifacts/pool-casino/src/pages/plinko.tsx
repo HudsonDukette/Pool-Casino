@@ -94,21 +94,26 @@ export default function Plinko() {
           // When ball arrives at the slot: restore in-flight, refresh real balance, show toast
           const highlightDelay = animDuration * 1000 + 100;
           setTimeout(() => {
+            // Detect which slot the ball VISUALLY landed in from final physics x position
+            const finalX = coords[coords.length - 1]?.x ?? 0;
+            const visualSlot = Math.max(0, Math.min(ROWS, Math.round(finalX / (PEG_SPACING / 2) + ROWS / 2)));
+            const visualMultiplier = RISK_LEVELS[risk].mults[visualSlot] ?? data.multiplier;
+
             // Remove this bet from in-flight; server balance (with payout) comes from refresh
             setInFlightTotal((prev) => Math.max(0, prev - numericBet));
-            setHighlightedSlot(data.slot);
+            setHighlightedSlot(visualSlot);
             queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
             queryClient.invalidateQueries({ queryKey: ["/api/pool"] });
 
             if (data.won) {
               toast({
-                title: `${data.multiplier}x Win! 🎉`,
+                title: `${visualMultiplier}x Win! 🎉`,
                 description: `+${formatCurrency(data.payout)} returned to your balance`,
                 className: "bg-success text-success-foreground border-none",
               });
             } else {
               toast({
-                title: `${data.multiplier}x — No luck`,
+                title: `${visualMultiplier}x — No luck`,
                 description: `Lost ${formatCurrency(numericBet)}`,
                 variant: "destructive",
               });
