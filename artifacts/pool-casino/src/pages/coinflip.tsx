@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,18 +18,58 @@ interface FlipResult {
   newBalance: number;
 }
 
-function Coin({ side, flipping }: { side: "heads" | "tails"; flipping: boolean }) {
+function CoinFace({ side }: { side: "heads" | "tails" }) {
   return (
-    <div className="relative w-32 h-32">
+    <div className={`w-full h-full rounded-full flex items-center justify-center text-5xl select-none
+      ${side === "heads"
+        ? "bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-600 shadow-[0_0_40px_rgba(250,204,21,0.6)]"
+        : "bg-gradient-to-br from-slate-400 via-slate-500 to-slate-700 shadow-[0_0_40px_rgba(148,163,184,0.5)]"
+      }`}
+    >
+      {side === "heads" ? "👑" : "⚡"}
+    </div>
+  );
+}
+
+function Coin({ side, flipping }: { side: "heads" | "tails"; flipping: boolean }) {
+  const [showSide, setShowSide] = useState<"heads" | "tails">(side);
+
+  useEffect(() => {
+    if (!flipping) {
+      setShowSide(side);
+      return;
+    }
+    // Alternate sides while flipping for realism
+    let toggle = true;
+    const iv = setInterval(() => {
+      setShowSide(toggle ? "heads" : "tails");
+      toggle = !toggle;
+    }, 120);
+    return () => clearInterval(iv);
+  }, [flipping, side]);
+
+  return (
+    <div style={{ perspective: "600px" }} className="w-36 h-36">
       <motion.div
-        animate={flipping ? { rotateY: [0, 180, 360, 540, 720] } : { rotateY: 0 }}
-        transition={flipping ? { duration: 0.8, repeat: Infinity, ease: "easeInOut" } : { duration: 0.5 }}
-        className="w-full h-full rounded-full border-4 border-yellow-400/60 bg-gradient-to-br from-yellow-300/30 to-yellow-500/20 shadow-[0_0_40px_rgba(250,204,21,0.4)] flex items-center justify-center"
+        animate={flipping
+          ? { rotateY: [0, 180, 360, 540, 720, 900, 1080] }
+          : { rotateY: 0 }
+        }
+        transition={flipping
+          ? { duration: 0.9, ease: "easeInOut" }
+          : { duration: 0.4, type: "spring", stiffness: 200 }
+        }
+        className="w-full h-full rounded-full"
         style={{ transformStyle: "preserve-3d" }}
       >
-        <span className="text-5xl select-none">
-          {side === "heads" ? "👑" : "⚡"}
-        </span>
+        {/* Front */}
+        <div className="absolute inset-0 rounded-full border-4 border-yellow-400/50" style={{ backfaceVisibility: "hidden" }}>
+          <CoinFace side={showSide} />
+        </div>
+        {/* Back */}
+        <div className="absolute inset-0 rounded-full border-4 border-yellow-400/50" style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
+          <CoinFace side={showSide === "heads" ? "tails" : "heads"} />
+        </div>
       </motion.div>
     </div>
   );
@@ -57,8 +97,9 @@ export default function CoinFlip() {
     setFlipping(true);
     setResult(null);
 
-    setTimeout(async () => {
-      const data = await api.call("coinflip", { betAmount: bet, choice });
+    const data = await api.call("coinflip", { betAmount: bet, choice });
+
+    setTimeout(() => {
       setFlipping(false);
       if (data) {
         setCoinSide(data.result as "heads" | "tails");
@@ -71,7 +112,7 @@ export default function CoinFlip() {
           variant: data.won ? "default" : "destructive",
         });
       }
-    }, 900);
+    }, 950);
   }
 
   return (
@@ -79,33 +120,34 @@ export default function CoinFlip() {
       <Card className="bg-card/40 border-white/10">
         <CardContent className="p-8 space-y-8">
           <div className="flex flex-col items-center gap-8">
-            {/* Coin */}
-            <Coin side={flipping ? choice : coinSide} flipping={flipping} />
+            {/* Coin with drop shadow */}
+            <div className="relative flex flex-col items-center gap-3">
+              <Coin side={flipping ? choice : coinSide} flipping={flipping} />
+              {/* Shadow */}
+              <motion.div
+                animate={flipping ? { scaleX: [0.6, 1, 0.6], opacity: [0.3, 0.6, 0.3] } : { scaleX: 0.85, opacity: 0.4 }}
+                transition={flipping ? { duration: 0.9, ease: "easeInOut" } : {}}
+                className="w-28 h-3 bg-black/50 rounded-full blur-md -mt-1"
+              />
+            </div>
 
-            {/* Choice */}
+            {/* Choice buttons */}
             <div className="flex gap-4">
-              <button
-                onClick={() => setChoice("heads")}
-                disabled={flipping || api.loading}
-                className={`px-8 py-4 rounded-2xl border-2 font-display font-bold text-lg transition-all ${
-                  choice === "heads"
-                    ? "border-yellow-400 bg-yellow-400/20 text-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.3)]"
-                    : "border-white/10 bg-white/5 text-white hover:border-white/30"
-                }`}
-              >
-                👑 Heads
-              </button>
-              <button
-                onClick={() => setChoice("tails")}
-                disabled={flipping || api.loading}
-                className={`px-8 py-4 rounded-2xl border-2 font-display font-bold text-lg transition-all ${
-                  choice === "tails"
-                    ? "border-yellow-400 bg-yellow-400/20 text-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.3)]"
-                    : "border-white/10 bg-white/5 text-white hover:border-white/30"
-                }`}
-              >
-                ⚡ Tails
-              </button>
+              {(["heads", "tails"] as const).map(side => (
+                <motion.button
+                  key={side}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => !flipping && !api.loading && setChoice(side)}
+                  disabled={flipping || api.loading}
+                  className={`px-8 py-4 rounded-2xl border-2 font-display font-bold text-lg transition-all duration-200 ${
+                    choice === side
+                      ? "border-yellow-400 bg-yellow-400/20 text-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.3)]"
+                      : "border-white/10 bg-white/5 text-white hover:border-white/30"
+                  }`}
+                >
+                  {side === "heads" ? "👑 Heads" : "⚡ Tails"}
+                </motion.button>
+              ))}
             </div>
 
             {/* Bet */}
@@ -116,27 +158,36 @@ export default function CoinFlip() {
 
             {api.error && <p className="text-sm text-destructive">{api.error}</p>}
 
-            <Button
-              size="lg"
-              className="w-full max-w-sm bg-yellow-500/90 hover:bg-yellow-400 text-black font-bold"
-              disabled={flipping || api.loading}
-              onClick={handleFlip}
-            >
-              {flipping ? "Flipping…" : "Flip Coin (1.95×)"}
-            </Button>
+            <motion.div whileTap={{ scale: 0.97 }} className="w-full max-w-sm">
+              <Button
+                size="lg"
+                className="w-full bg-yellow-500/90 hover:bg-yellow-400 text-black font-bold shadow-[0_0_20px_rgba(250,204,21,0.3)] hover:shadow-[0_0_35px_rgba(250,204,21,0.5)]"
+                disabled={flipping || api.loading}
+                onClick={handleFlip}
+              >
+                {flipping ? "Flipping…" : "Flip Coin (1.95×)"}
+              </Button>
+            </motion.div>
 
             <AnimatePresence>
               {result && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className={`text-center px-6 py-3 rounded-2xl ${result.won ? "bg-primary/10 border border-primary/30" : "bg-destructive/10 border border-destructive/30"}`}
+                  initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                  className={`text-center px-6 py-4 rounded-2xl w-full max-w-sm ${
+                    result.won
+                      ? "bg-primary/10 border border-primary/30"
+                      : "bg-destructive/10 border border-destructive/30"
+                  }`}
                 >
                   <p className={`text-2xl font-display font-bold ${result.won ? "text-primary" : "text-destructive"}`}>
-                    {result.won ? "You Win!" : "You Lose"}
+                    {result.won ? "🎉 You Win!" : "You Lose"}
                   </p>
                   <p className="text-muted-foreground text-sm mt-1">
-                    {result.won ? `+${formatCurrency(result.payout)}` : `-${formatCurrency(bet)}`} · Balance: {formatCurrency(result.newBalance)}
+                    {result.won ? `+${formatCurrency(result.payout)}` : `-${formatCurrency(bet)}`}
+                    {" · "}Balance: {formatCurrency(result.newBalance)}
                   </p>
                 </motion.div>
               )}
