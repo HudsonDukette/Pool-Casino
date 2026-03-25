@@ -119,9 +119,13 @@ export default function Plinko() {
                 description: `Your ${formatCurrency(numericBet)} bet was returned`,
               });
             } else {
+              const netLoss = numericBet - data.payout;
+              const gotBack = data.payout > 0
+                ? ` (got ${formatCurrency(data.payout)} back)`
+                : "";
               toast({
                 title: `${visualMultiplier}x — No luck`,
-                description: `Lost ${formatCurrency(numericBet)}`,
+                description: `Lost ${formatCurrency(netLoss)}${gotBack}`,
                 variant: "destructive",
               });
             }
