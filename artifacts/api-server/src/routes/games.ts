@@ -5,7 +5,6 @@ import { PlayRouletteBody, PlayRouletteResponse, PlayPlinkoBody, PlayPlinkoRespo
 import {
   calculateWinChance,
   ROULETTE_NUMBERS,
-  PLINKO_MULTIPLIERS,
   simulatePlinko,
 } from "../lib/gambling";
 
@@ -159,20 +158,7 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
   const currentBalance = parseFloat(user.balance);
 
   const winChance = calculateWinChance(betAmount, poolAmount);
-  const { path, slot } = simulatePlinko(risk);
-  const multipliers = PLINKO_MULTIPLIERS[risk];
-  let multiplier = multipliers[slot];
-
-  const doWin = Math.random() < winChance;
-  if (!doWin) {
-    const losingMultipliers = multipliers.map((m, i) => ({ m, i })).filter(({ m }) => m <= 0.5);
-    if (losingMultipliers.length > 0) {
-      const chosen = losingMultipliers[Math.floor(Math.random() * losingMultipliers.length)];
-      multiplier = chosen.m;
-    } else {
-      multiplier = multipliers[0];
-    }
-  }
+  const { path, slot, multiplier } = simulatePlinko(risk, winChance);
 
   const payout = betAmount * multiplier;
   const won = payout > betAmount;

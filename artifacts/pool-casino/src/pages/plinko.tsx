@@ -40,10 +40,13 @@ export default function Plinko() {
   const [risk, setRisk] = useState<"low" | "medium" | "high">("medium");
   const [balls, setBalls] = useState<BallState[]>([]);
   const [highlightedSlot, setHighlightedSlot] = useState<number | null>(null);
+  const [inFlightTotal, setInFlightTotal] = useState(0);
   const nextBallId = useRef(0);
   const MAX_BALLS = 100;
 
   const numericBet = parseFloat(betAmount) || 0;
+  // Show balance minus whatever is currently animating in the air
+  const displayBalance = user ? Math.max(0, user.balance - inFlightTotal) : 0;
 
   const handlePlay = useCallback(() => {
     if (!user) {
@@ -54,7 +57,7 @@ export default function Plinko() {
       toast({ title: "Invalid Bet", description: "Enter a valid bet amount.", variant: "destructive" });
       return;
     }
-    if (numericBet > user.balance) {
+    if (numericBet > displayBalance) {
       toast({ title: "Insufficient Funds", description: "You don't have enough coins.", variant: "destructive" });
       return;
     }
@@ -63,11 +66,13 @@ export default function Plinko() {
       return;
     }
 
+    // Deduct immediately so balance drops the moment ball is dropped
+    setInFlightTotal((prev) => prev + numericBet);
+
     playMut.mutate(
       { data: { betAmount: numericBet, risk } },
       {
         onSuccess: (data) => {
-
           // Build pixel coords for the ball path (using x/y transforms)
           let cx = 0;
           let cy = 0;
@@ -95,35 +100,45 @@ export default function Plinko() {
 
           setBalls((prev) => [...prev, newBall]);
 
-          // Highlight slot when ball arrives
+          // When ball arrives at the slot: restore in-flight, refresh real balance, show toast
           const highlightDelay = animDuration * 1000 + 100;
           setTimeout(() => {
+            // Remove this bet from in-flight; server balance (with payout) comes from refresh
+            setInFlightTotal((prev) => Math.max(0, prev - numericBet));
             setHighlightedSlot(data.slot);
             queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
             queryClient.invalidateQueries({ queryKey: ["/api/pool"] });
 
             if (data.won) {
               toast({
-                title: `${data.multiplier}x Win!`,
-                description: `You won ${formatCurrency(data.payout)}`,
+                title: `${data.multiplier}x Win! 🎉`,
+                description: `+${formatCurrency(data.payout)} returned to your balance`,
                 className: "bg-success text-success-foreground border-none",
+              });
+            } else {
+              toast({
+                title: `${data.multiplier}x — No luck`,
+                description: `Lost ${formatCurrency(numericBet)}`,
+                variant: "destructive",
               });
             }
 
             setTimeout(() => setHighlightedSlot(null), 1200);
           }, highlightDelay);
 
-          // Remove ball after animation + a pause
+          // Remove ball visual after animation + pause
           setTimeout(() => {
             setBalls((prev) => prev.filter((b) => b.id !== ballId));
           }, highlightDelay + 800);
         },
         onError: (err) => {
+          // Refund the optimistic deduction if the request failed
+          setInFlightTotal((prev) => Math.max(0, prev - numericBet));
           toast({ title: "Error", description: err.error?.error || "Failed to place bet", variant: "destructive" });
         },
       }
     );
-  }, [user, numericBet, risk, playMut, queryClient, toast]);
+  }, [user, numericBet, risk, displayBalance, playMut, queryClient, toast]);
 
   // Render pegs
   const pegs: React.ReactNode[] = [];
@@ -248,7 +263,7 @@ export default function Plinko() {
                   <Button variant="outline" size="sm" className="flex-1" onClick={() => setBetAmount(String(Math.max(0.01, numericBet / 2)))}>½</Button>
                   <Button variant="outline" size="sm" className="flex-1" onClick={() => setBetAmount(String(numericBet * 2))}>2×</Button>
                   {user && (
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setBetAmount(String(user.balance))}>Max</Button>
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setBetAmount(String(displayBalance))}>Max</Button>
                   )}
                 </div>
               </div>

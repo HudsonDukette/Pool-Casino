@@ -53,21 +53,47 @@ export const ROULETTE_NUMBERS: { number: number; color: "red" | "black" | "green
 ];
 
 export const PLINKO_MULTIPLIERS = {
-  low: [0.5, 1, 1.5, 2, 2.5, 2, 1.5, 1, 0.5],
+  low:    [0.5, 1, 1.5, 2, 2.5, 2, 1.5, 1, 0.5],
   medium: [0.3, 0.5, 1, 2, 5, 2, 1, 0.5, 0.3],
-  high: [0.1, 0.2, 0.5, 1, 10, 1, 0.5, 0.2, 0.1],
+  high:   [0.1, 0.2, 0.5, 1, 10, 1, 0.5, 0.2, 0.1],
 };
 
-export function simulatePlinko(risk: "low" | "medium" | "high"): { path: string[]; slot: number } {
-  const rows = 8;
-  const path: string[] = [];
-  let position = 0;
-
-  for (let i = 0; i < rows; i++) {
-    const goRight = Math.random() > 0.5;
-    path.push(goRight ? "R" : "L");
-    if (goRight) position++;
+/**
+ * Generate a shuffled path of ROWS moves that ends at the given slot.
+ * A slot of N means exactly N right-moves among 8 moves.
+ */
+function generatePathToSlot(targetSlot: number, rows: number = 8): string[] {
+  const moves: string[] = [
+    ...Array(targetSlot).fill("R"),
+    ...Array(rows - targetSlot).fill("L"),
+  ];
+  for (let i = moves.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [moves[i], moves[j]] = [moves[j], moves[i]];
   }
+  return moves;
+}
 
-  return { path, slot: position };
+/**
+ * Simulate Plinko with pool-odds-aware slot selection.
+ * Win/loss is decided FIRST by winChance, then we pick a slot whose
+ * multiplier matches the outcome, then generate a valid path to that slot.
+ * This guarantees slot, path, and multiplier are always consistent.
+ */
+export function simulatePlinko(
+  risk: "low" | "medium" | "high",
+  winChance: number
+): { path: string[]; slot: number; multiplier: number } {
+  const multipliers = PLINKO_MULTIPLIERS[risk];
+  const doWin = Math.random() < winChance;
+
+  const winSlots  = multipliers.map((m, i) => ({ m, i })).filter(({ m }) => m > 1.0);
+  const loseSlots = multipliers.map((m, i) => ({ m, i })).filter(({ m }) => m <= 1.0);
+
+  const candidates = doWin && winSlots.length > 0 ? winSlots : loseSlots;
+  const { m: multiplier, i: slot } =
+    candidates[Math.floor(Math.random() * candidates.length)];
+
+  const path = generatePathToSlot(slot);
+  return { path, slot, multiplier };
 }
