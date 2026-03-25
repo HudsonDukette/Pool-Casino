@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { useGetMe, useGetUserStats, useGetTransactions, useClaimDailyReward, useAdminRefillPool, useAdminRefillPlayer, useAdminListPlayers } from "@workspace/api-client-react";
+import type { AdminPlayer } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import { Trophy, Gift, ArrowUpRight, Coins, History, Calendar, Target, Flame, ShieldAlert, RefreshCw, Users } from "lucide-react";
+import { Trophy, Gift, ArrowUpRight, Coins, History, Calendar, Target, Flame, ShieldAlert, RefreshCw, Users, X, ArrowRight, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -22,12 +23,16 @@ export default function Profile() {
   const { toast } = useToast();
 
   const [poolRefillAmount, setPoolRefillAmount] = useState("1000000");
-  const [playerRefillUserId, setPlayerRefillUserId] = useState("");
+  const [selectedPlayer, setSelectedPlayer] = useState<AdminPlayer | null>(null);
   const [playerRefillAmount, setPlayerRefillAmount] = useState("10000");
 
   const refillPoolMut = useAdminRefillPool();
   const refillPlayerMut = useAdminRefillPlayer();
   const { data: playersData, isLoading: playersLoading, refetch: refetchPlayers } = useAdminListPlayers({ query: { enabled: !!user?.isAdmin } });
+
+  const refillPreviewBalance = selectedPlayer
+    ? selectedPlayer.balance + (parseFloat(playerRefillAmount) || 0)
+    : null;
 
   if (!user && !userLoading) {
     return (
@@ -69,15 +74,19 @@ export default function Profile() {
   };
 
   const handleRefillPlayer = () => {
-    const userId = parseInt(playerRefillUserId);
-    const amount = parseFloat(playerRefillAmount);
-    if (isNaN(userId) || isNaN(amount) || amount <= 0) {
-      toast({ title: "Invalid input", description: "Enter a valid player ID and amount", variant: "destructive" });
+    if (!selectedPlayer) {
+      toast({ title: "No player selected", description: "Click a player row in the table below", variant: "destructive" });
       return;
     }
-    refillPlayerMut.mutate({ data: { userId, amount } }, {
+    const amount = parseFloat(playerRefillAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: "Invalid amount", description: "Enter a valid amount to add", variant: "destructive" });
+      return;
+    }
+    refillPlayerMut.mutate({ data: { userId: selectedPlayer.id, amount } }, {
       onSuccess: (data) => {
-        toast({ title: "Player Refilled!", description: data.message, className: "bg-success text-success-foreground border-none" });
+        toast({ title: "Balance Added!", description: data.message, className: "bg-success text-success-foreground border-none" });
+        setSelectedPlayer(prev => prev ? { ...prev, balance: prev.balance + amount } : null);
         refetchPlayers();
       },
       onError: (err: any) => {
@@ -189,50 +198,102 @@ export default function Profile() {
             </div>
 
             {/* Refill Player */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <h3 className="text-sm font-medium text-yellow-300 uppercase tracking-widest flex items-center gap-2">
                 <Users className="w-4 h-4" /> Refill Player Balance
               </h3>
-              <p className="text-xs text-muted-foreground">Add funds to a specific player's account. This creates money out of thin air.</p>
-              <div className="flex gap-3">
-                <Input
-                  type="number"
-                  min="1"
-                  value={playerRefillUserId}
-                  onChange={(e) => setPlayerRefillUserId(e.target.value)}
-                  className="w-32 bg-black/40 border-yellow-500/20 focus:border-yellow-500/50 font-mono"
-                  placeholder="Player ID"
-                />
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={playerRefillAmount}
-                    onChange={(e) => setPlayerRefillAmount(e.target.value)}
-                    className="pl-7 bg-black/40 border-yellow-500/20 focus:border-yellow-500/50 font-mono"
-                    placeholder="Amount"
-                  />
-                </div>
-                <Button
-                  onClick={handleRefillPlayer}
-                  disabled={refillPlayerMut.isPending}
-                  className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold"
-                >
-                  {refillPlayerMut.isPending ? "Refilling..." : "Refill Player"}
-                </Button>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {[1000, 10000, 50000, 100000].map(amt => (
-                  <button
-                    key={amt}
-                    onClick={() => setPlayerRefillAmount(amt.toString())}
-                    className="text-xs px-3 py-1 rounded-full border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 transition-colors"
+
+              {/* Selected player card or empty state */}
+              {selectedPlayer ? (
+                <div className="bg-black/40 border border-yellow-500/30 rounded-xl p-4 space-y-4">
+                  {/* Player info row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500/40 to-yellow-700/40 border border-yellow-500/30 flex items-center justify-center font-bold text-yellow-300 text-sm">
+                        {selectedPlayer.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-white">{selectedPlayer.username}</p>
+                        <p className="text-xs text-muted-foreground">ID #{selectedPlayer.id}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSelectedPlayer(null)}
+                      className="text-muted-foreground hover:text-white transition-colors p-1 rounded"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Amount input */}
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground uppercase tracking-wider">Amount to add</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-yellow-400 font-bold">$</span>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={playerRefillAmount}
+                          onChange={(e) => setPlayerRefillAmount(e.target.value)}
+                          className="pl-7 bg-black/60 border-yellow-500/30 focus:border-yellow-500/60 font-mono text-lg h-11"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      {[1000, 10000, 50000, 100000].map(amt => (
+                        <button
+                          key={amt}
+                          onClick={() => setPlayerRefillAmount(amt.toString())}
+                          className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                            playerRefillAmount === amt.toString()
+                              ? "bg-yellow-500/20 border-yellow-500/60 text-yellow-300"
+                              : "border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/10"
+                          }`}
+                        >
+                          +${amt.toLocaleString()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Balance preview */}
+                  <div className="flex items-center gap-3 bg-black/40 rounded-lg p-3 border border-white/5">
+                    <div className="flex-1 text-center">
+                      <p className="text-xs text-muted-foreground mb-1">Current Balance</p>
+                      <p className="font-mono font-bold text-white">{formatCurrency(selectedPlayer.balance)}</p>
+                    </div>
+                    <div className="text-yellow-500">
+                      <Plus className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 text-center">
+                      <p className="text-xs text-muted-foreground mb-1">Adding</p>
+                      <p className="font-mono font-bold text-yellow-400">+{formatCurrency(parseFloat(playerRefillAmount) || 0)}</p>
+                    </div>
+                    <div className="text-muted-foreground">
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 text-center">
+                      <p className="text-xs text-muted-foreground mb-1">New Balance</p>
+                      <p className="font-mono font-bold text-primary">{formatCurrency(refillPreviewBalance || 0)}</p>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleRefillPlayer}
+                    disabled={refillPlayerMut.isPending || !parseFloat(playerRefillAmount)}
+                    className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold h-11"
                   >
-                    ${amt.toLocaleString()}
-                  </button>
-                ))}
-              </div>
+                    {refillPlayerMut.isPending ? "Adding Funds..." : `Add ${formatCurrency(parseFloat(playerRefillAmount) || 0)} to ${selectedPlayer.username}`}
+                  </Button>
+                </div>
+              ) : (
+                <div className="border border-dashed border-yellow-500/20 rounded-xl p-6 text-center text-muted-foreground">
+                  <Users className="w-8 h-8 mx-auto mb-2 text-yellow-500/30" />
+                  <p className="text-sm">Click <span className="text-yellow-400 font-medium">Select</span> on any player in the table below to add funds to their account.</p>
+                </div>
+              )}
             </div>
 
             {/* Players Table */}
@@ -259,30 +320,37 @@ export default function Profile() {
                   <tbody className="divide-y divide-yellow-500/5">
                     {playersLoading ? (
                       <tr><td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">Loading players...</td></tr>
-                    ) : playersData?.players.map((player) => (
-                      <tr key={player.id} className="hover:bg-yellow-950/20 transition-colors">
-                        <td className="px-4 py-3 font-mono text-muted-foreground">{player.id}</td>
-                        <td className="px-4 py-3 font-medium">{player.username}</td>
-                        <td className="px-4 py-3 font-mono text-primary">{formatCurrency(player.balance)}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{player.gamesPlayed}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{player.totalWins}W / {player.totalLosses}L</td>
-                        <td className="px-4 py-3">
-                          {player.isAdmin ? (
-                            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 border text-xs">Admin</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs text-muted-foreground">Player</Badge>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <button
-                            onClick={() => setPlayerRefillUserId(player.id.toString())}
-                            className="text-xs text-yellow-400 hover:text-yellow-300 underline underline-offset-2 transition-colors"
-                          >
-                            Select
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    ) : playersData?.players.map((player) => {
+                      const isSelected = selectedPlayer?.id === player.id;
+                      return (
+                        <tr
+                          key={player.id}
+                          className={`transition-colors cursor-pointer ${isSelected ? "bg-yellow-950/40 border-l-2 border-yellow-500" : "hover:bg-yellow-950/20"}`}
+                          onClick={() => setSelectedPlayer(isSelected ? null : player)}
+                        >
+                          <td className="px-4 py-3 font-mono text-muted-foreground">{player.id}</td>
+                          <td className="px-4 py-3 font-medium">{player.username}</td>
+                          <td className="px-4 py-3 font-mono text-primary">{formatCurrency(player.balance)}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{player.gamesPlayed}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{player.totalWins}W / {player.totalLosses}L</td>
+                          <td className="px-4 py-3">
+                            {player.isAdmin ? (
+                              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 border text-xs">Admin</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs text-muted-foreground">Player</Badge>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setSelectedPlayer(isSelected ? null : player); }}
+                              className={`text-xs font-medium px-2 py-1 rounded transition-colors ${isSelected ? "bg-yellow-500/20 text-yellow-300" : "text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10"}`}
+                            >
+                              {isSelected ? "Selected ✓" : "Select"}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
