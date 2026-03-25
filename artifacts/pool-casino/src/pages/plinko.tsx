@@ -10,9 +10,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 
 const RISK_LEVELS = {
-  low:    { name: "Low",    color: "bg-blue-500",       textColor: "text-blue-400",    mults: [0.5, 1, 1.5, 2, 2.5, 2, 1.5, 1, 0.5] },
-  medium: { name: "Medium", color: "bg-yellow-500",     textColor: "text-yellow-400",  mults: [0.3, 0.5, 1, 2, 5, 2, 1, 0.5, 0.3] },
-  high:   { name: "High",   color: "bg-destructive",    textColor: "text-red-400",     mults: [0.1, 0.2, 0.5, 1, 10, 1, 0.5, 0.2, 0.1] }
+  low:    { name: "Low",    color: "bg-blue-500",       textColor: "text-blue-400",    mults: [0, 1, 1.5, 2, 2.5, 2, 1.5, 1, 0] },
+  medium: { name: "Medium", color: "bg-yellow-500",     textColor: "text-yellow-400",  mults: [0, 0, 1, 2, 5, 2, 1, 0, 0] },
+  high:   { name: "High",   color: "bg-destructive",    textColor: "text-red-400",     mults: [0, 0, 0, 1, 10, 1, 0, 0, 0] }
 };
 
 interface BallState {
@@ -94,10 +94,11 @@ export default function Plinko() {
           // When ball arrives at the slot: restore in-flight, refresh real balance, show toast
           const highlightDelay = animDuration * 1000 + 100;
           setTimeout(() => {
-            // Detect which slot the ball VISUALLY landed in from final physics x position
+            // Detect which slot the ball VISUALLY landed in from final physics x position.
+            // Slot S is centered at x = (S - ROWS/2) * PEG_SPACING → S = x/PEG_SPACING + ROWS/2
             const finalX = coords[coords.length - 1]?.x ?? 0;
-            const visualSlot = Math.max(0, Math.min(ROWS, Math.round(finalX / (PEG_SPACING / 2) + ROWS / 2)));
-            const visualMultiplier = RISK_LEVELS[risk].mults[visualSlot] ?? data.multiplier;
+            const visualSlot = Math.max(0, Math.min(ROWS, Math.round(finalX / PEG_SPACING + ROWS / 2)));
+            const visualMultiplier = RISK_LEVELS[risk].mults[visualSlot] ?? 0;
 
             // Remove this bet from in-flight; server balance (with payout) comes from refresh
             setInFlightTotal((prev) => Math.max(0, prev - numericBet));

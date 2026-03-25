@@ -58,9 +58,9 @@ export const ROULETTE_NUMBERS: { number: number; color: "red" | "black" | "green
 ];
 
 export const PLINKO_MULTIPLIERS = {
-  low:    [0.5, 1, 1.5, 2, 2.5, 2, 1.5, 1, 0.5],
-  medium: [0.3, 0.5, 1, 2, 5, 2, 1, 0.5, 0.3],
-  high:   [0.1, 0.2, 0.5, 1, 10, 1, 0.5, 0.2, 0.1],
+  low:    [0, 1, 1.5, 2, 2.5, 2, 1.5, 1, 0],
+  medium: [0, 0, 1, 2, 5, 2, 1, 0, 0],
+  high:   [0, 0, 0, 1, 10, 1, 0, 0, 0],
 };
 
 // -----------------------------------------------------------------------
@@ -194,9 +194,8 @@ export function simulatePlinko(
     }
 
     // Determine actual landed slot from final x position
-    const slotWidth = PLINKO_PEG_SPACING;
-    const halfSlots = PLINKO_ROWS / 2;
-    const rawSlot = Math.round(bx / (slotWidth / 2) + halfSlots);
+    // slot S is centered at x = (S - ROWS/2) * PEG_SPACING, so S = x/PEG_SPACING + ROWS/2
+    const rawSlot = Math.round(bx / PLINKO_PEG_SPACING + PLINKO_ROWS / 2);
     const landedSlot = Math.max(0, Math.min(PLINKO_ROWS, rawSlot));
 
     const dist = Math.abs(landedSlot - targetSlot);
@@ -208,6 +207,7 @@ export function simulatePlinko(
     if (bestDist === 0) break;
   }
 
-  // Use the target slot's multiplier (for correct odds), with path from best attempt
-  return { path: bestPath, slot: targetSlot, multiplier };
+  // Use the actual physics landing slot and its real multiplier
+  const actualMultiplier = multipliers[bestSlot] ?? 0;
+  return { path: bestPath, slot: bestSlot, multiplier: actualMultiplier };
 }
