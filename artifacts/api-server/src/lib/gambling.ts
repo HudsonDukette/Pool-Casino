@@ -1,7 +1,9 @@
 export function calculateWinChance(betAmount: number, poolTotal: number): number {
   if (poolTotal <= 0) return 0.01;
-  const ratio = betAmount / poolTotal;
-  const winChance = Math.max(0.0001, Math.min(0.9999, 1 - Math.pow(ratio * 10, 0.4)));
+  // Base win rate ~38% with house edge scaling up as bet grows relative to pool
+  const BASE_WIN_RATE = 0.38;
+  const poolPressure = betAmount / (poolTotal * 0.002);
+  const winChance = Math.max(0.01, BASE_WIN_RATE / (1 + poolPressure));
   return winChance;
 }
 
