@@ -25,12 +25,27 @@ function AnimatedStat({
         animate={{ scale: 1, textShadow: `0 0 0px ${glowColor}` }}
         transition={{ type: "spring", stiffness: 380, damping: 18, duration: 0.4 }}
         className={className}
-        style={{ display: "inline-block" }}
+        style={{ display: "block", width: "100%" }}
       >
         {value}
       </motion.span>
     </AnimatePresence>
   );
+}
+
+function poolFontClass(text: string): string {
+  if (text.length > 22) return "text-base md:text-lg";
+  if (text.length > 18) return "text-lg md:text-xl";
+  if (text.length > 14) return "text-xl md:text-2xl";
+  if (text.length > 11) return "text-2xl md:text-3xl";
+  return "text-4xl md:text-5xl";
+}
+
+function subStatFontClass(text: string): string {
+  if (text.length > 18) return "text-xs";
+  if (text.length > 14) return "text-sm";
+  if (text.length > 10) return "text-base";
+  return "text-lg";
 }
 
 export default function Home() {
@@ -98,7 +113,7 @@ export default function Home() {
           </div>
 
           {/* Pool Stats Widget */}
-          <div className="w-full md:w-auto min-w-[320px]">
+          <div className="w-full md:w-auto md:min-w-[340px] md:max-w-[420px]">
             <Card className="bg-black/60 backdrop-blur-2xl border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary via-accent to-secondary" />
               <CardContent className="p-8 space-y-8">
@@ -107,7 +122,7 @@ export default function Home() {
                     <Activity className="w-4 h-4 text-primary" />
                     Current Global Pool
                   </p>
-                  <div className="font-mono text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                  <div className={`font-mono font-bold tracking-tight text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] w-full whitespace-nowrap ${poolFontClass(poolStr)}`}>
                     <AnimatedStat
                       value={poolStr}
                       glowColor={grew ? "rgba(0,255,170,0.9)" : "rgba(255,100,100,0.8)"}
@@ -116,15 +131,15 @@ export default function Home() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/10">
-                  <div className="space-y-1">
+                  <div className="space-y-1 min-w-0">
                     <p className="text-xs text-muted-foreground">Biggest Bet</p>
-                    <p className="font-mono font-medium text-lg text-primary overflow-hidden">
+                    <p className={`font-mono font-medium text-primary whitespace-nowrap ${subStatFontClass(bigBetStr)}`}>
                       <AnimatedStat value={bigBetStr} glowColor="rgba(0,255,170,0.8)" />
                     </p>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1 min-w-0">
                     <p className="text-xs text-muted-foreground">Biggest Win</p>
-                    <p className="font-mono font-medium text-lg text-accent overflow-hidden">
+                    <p className={`font-mono font-medium text-accent whitespace-nowrap ${subStatFontClass(bigWinStr)}`}>
                       <AnimatedStat value={bigWinStr} glowColor="rgba(255,170,0,0.8)" />
                     </p>
                   </div>

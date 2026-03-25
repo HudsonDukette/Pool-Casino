@@ -42,16 +42,15 @@ artifacts-monorepo/
 1. **Authentication**: Register/login/logout with username + password, sessions via cookies
 2. **Global Pool Economy**: $1M starting pool shared by all players; wins drain it, losses fill it
 3. **Dynamic Betting Odds**: Win probability scales with bet size relative to pool; no bet limits enforced
-4. **Roulette Game**: Red/Black with animated wheel, dynamic odds
-5. **Plinko Game**: Up to 100 simultaneous balls, no cooldown between drops, risk levels (low/medium/high)
-6. **Referral Codes**: Every user gets a unique 8-char referral code; new users using a referral code get +$20K, referrer gets +$10K
-7. **Profile Picture**: Users can set avatar via URL (costs coins, admin-configurable price)
-8. **Username Change**: Users can change username (costs coins, admin-configurable price)
-9. **Coming Soon Placeholders**: Blackjack, Slots, Coin Flip, Crash Game
-10. **Player Stats**: Profit/loss, biggest win/bet, win streak, games played
-11. **Transaction History**: Full bet history with game filters
-12. **Leaderboards**: Richest players, biggest winners, biggest bettors
-10. **Daily Rewards**: $500 daily claim, balance refill option
+4. **10 Games**: Roulette, Plinko, Blackjack, Crash, Slots, Dice Roll, Coin Flip, Fortune Wheel, Number Guess, Mines
+5. **Referral Codes**: Every user gets a unique 8-char referral code; new users get +$20K, referrers get +$10K
+6. **Profile Picture**: Users can set avatar via URL (costs coins, admin-configurable price)
+7. **Username Change**: Users can change username (costs coins, admin-configurable price)
+8. **Player Stats**: Profit/loss, biggest win/bet, win streak, games played
+9. **Transaction History**: Full bet history with game filters
+10. **Leaderboards**: Richest players, biggest winners, biggest bettors
+11. **Daily Rewards**: $500 daily claim, balance refill option
+12. **Adaptive Pool Widget**: Font size scales dynamically for arbitrarily large pool amounts
 
 ## Database Tables
 
@@ -70,6 +69,15 @@ artifacts-monorepo/
 - `GET /api/pool` - global pool info
 - `POST /api/games/roulette` - play roulette
 - `POST /api/games/plinko` - play plinko
+- `POST /api/games/dice` - dice roll (exact 5x, high/low 1.9x)
+- `POST /api/games/coinflip` - coin flip (1.95x)
+- `POST /api/games/crash` - crash (auto-cashout target)
+- `POST /api/games/slots` - 3-reel slots (up to 20x)
+- `POST /api/games/wheel` - fortune wheel (0.2x–10x)
+- `POST /api/games/guess` - number guess 1–100 (up to 50x)
+- `POST /api/games/mines` - minesweeper grid (multiplier by reveals)
+- `POST /api/games/blackjack/deal` - start blackjack hand
+- `POST /api/games/blackjack/action` - hit or stand
 - `GET /api/transactions` - bet history
 - `GET /api/leaderboard/richest` - richest players
 - `GET /api/leaderboard/biggest-winners` - biggest single wins
