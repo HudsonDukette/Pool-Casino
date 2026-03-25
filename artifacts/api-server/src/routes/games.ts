@@ -53,6 +53,7 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
 
   const pool = await getOrCreatePool();
   const poolAmount = parseFloat(pool.totalAmount);
+  const currentBalance = parseFloat(user.balance);
 
   const winChance = calculateWinChance(betAmount, poolAmount);
 
@@ -155,6 +156,7 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
 
   const pool = await getOrCreatePool();
   const poolAmount = parseFloat(pool.totalAmount);
+  const currentBalance = parseFloat(user.balance);
 
   const winChance = calculateWinChance(betAmount, poolAmount);
   const { path, slot } = simulatePlinko(risk);

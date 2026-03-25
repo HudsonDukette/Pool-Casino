@@ -63,6 +63,8 @@ export default function Profile() {
   const [newAvatarUrl, setNewAvatarUrl] = useState("");
   const [showAvatarForm, setShowAvatarForm] = useState(false);
   const [referralCopied, setReferralCopied] = useState(false);
+  const [isDraggingAvatar, setIsDraggingAvatar] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const [adminUsernameCost, setAdminUsernameCost] = useState("");
   const [adminAvatarCost, setAdminAvatarCost] = useState("");
@@ -105,6 +107,52 @@ export default function Profile() {
       navigator.clipboard.writeText(user.referralCode);
       setReferralCopied(true);
       setTimeout(() => setReferralCopied(false), 2000);
+    }
+  };
+
+  const compressImageFile = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const maxSize = 200;
+          const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.75));
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleAvatarFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please drop an image file.", variant: "destructive" });
+      return;
+    }
+    try {
+      const dataUrl = await compressImageFile(file);
+      changeAvatarMut.mutate(
+        { data: { avatarUrl: dataUrl } },
+        {
+          onSuccess: (data) => {
+            toast({ title: "Avatar Updated!", description: data.message, className: "bg-success text-success-foreground border-none" });
+            queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          },
+          onError: (err) => {
+            toast({ title: "Failed", description: err.error?.error || "Could not update avatar", variant: "destructive" });
+          },
+        }
+      );
+    } catch {
+      toast({ title: "Error", description: "Could not process image.", variant: "destructive" });
     }
   };
 
@@ -229,27 +277,63 @@ export default function Profile() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
         <div className="flex items-center gap-6 relative z-10">
-          <div className="relative group">
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAvatarFile(f); e.target.value = ""; }}
+          />
+          <div
+            className="relative group cursor-pointer"
+            onDragOver={(e) => { e.preventDefault(); setIsDraggingAvatar(true); }}
+            onDragEnter={(e) => { e.preventDefault(); setIsDraggingAvatar(true); }}
+            onDragLeave={() => setIsDraggingAvatar(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDraggingAvatar(false);
+              const file = e.dataTransfer.files?.[0];
+              if (file) handleAvatarFile(file);
+            }}
+            onClick={() => fileInputRef.current?.click()}
+            title="Drag & drop or click to upload profile picture"
+          >
+            {isDraggingAvatar && (
+              <div className="absolute inset-0 rounded-full z-20 bg-primary/30 border-2 border-primary border-dashed flex items-center justify-center">
+                <Image className="w-6 h-6 text-primary" />
+              </div>
+            )}
+            {changeAvatarMut.isPending && (
+              <div className="absolute inset-0 rounded-full z-20 bg-black/60 flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
             {user?.avatarUrl ? (
               <img
                 src={user.avatarUrl}
                 alt={user.username}
-                className="w-20 h-20 rounded-full object-cover shadow-[0_0_20px_rgba(0,255,170,0.3)] border-2 border-primary/40"
+                className="w-20 h-20 rounded-full object-cover shadow-[0_0_20px_rgba(0,255,170,0.3)] border-2 border-primary/40 group-hover:brightness-75 transition-all"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
             ) : (
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-[0_0_20px_rgba(0,255,170,0.3)] border-2 border-background">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-[0_0_20px_rgba(0,255,170,0.3)] border-2 border-background group-hover:brightness-75 transition-all">
                 <span className="text-3xl font-display font-bold text-background">
                   {user?.username.charAt(0).toUpperCase()}
                 </span>
               </div>
             )}
-            <button
-              onClick={() => { setShowAvatarForm(true); setShowUsernameForm(false); }}
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-black/80 border border-white/20 flex items-center justify-center text-muted-foreground hover:text-white hover:border-primary/50 transition-all"
-              title="Change avatar"
-            >
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-black/80 border border-white/20 flex items-center justify-center text-muted-foreground group-hover:text-white group-hover:border-primary/50 transition-all">
               <Image className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <p className="text-xs text-muted-foreground">Drag & drop or click avatar</p>
+            <button
+              className="text-xs text-accent/70 hover:text-accent underline text-left mt-0.5"
+              onClick={(e) => { e.stopPropagation(); setShowAvatarForm(true); setShowUsernameForm(false); }}
+            >
+              or paste URL instead
             </button>
           </div>
           <div>
