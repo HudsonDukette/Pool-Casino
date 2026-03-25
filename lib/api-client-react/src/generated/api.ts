@@ -22,7 +22,12 @@ import type {
   AdminRefillPlayerResponse,
   AdminRefillPoolRequest,
   AdminRefillPoolResponse,
+  AdminSettingsResponse,
+  AdminUpdateSettingsRequest,
   AuthResponse,
+  ChangeAvatarRequest,
+  ChangeProfileResponse,
+  ChangeUsernameRequest,
   DailyRewardResponse,
   ErrorResponse,
   GetTransactionsParams,
@@ -33,6 +38,7 @@ import type {
   PlinkoRequest,
   PlinkoResult,
   PoolInfo,
+  ProfileChangeCosts,
   RecentWinsList,
   RegisterRequest,
   RouletteRequest,
@@ -1399,6 +1405,415 @@ export const useAdminRefillPlayer = <
   TContext
 > => {
   return useMutation(getAdminRefillPlayerMutationOptions(options));
+};
+
+/**
+ * @summary Change username (costs coins)
+ */
+export const getChangeUsernameUrl = () => {
+  return `/api/user/change-username`;
+};
+
+export const changeUsername = async (
+  changeUsernameRequest: ChangeUsernameRequest,
+  options?: RequestInit,
+): Promise<ChangeProfileResponse> => {
+  return customFetch<ChangeProfileResponse>(getChangeUsernameUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(changeUsernameRequest),
+  });
+};
+
+export const getChangeUsernameMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof changeUsername>>,
+    TError,
+    { data: BodyType<ChangeUsernameRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof changeUsername>>,
+  TError,
+  { data: BodyType<ChangeUsernameRequest> },
+  TContext
+> => {
+  const mutationKey = ["changeUsername"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof changeUsername>>,
+    { data: BodyType<ChangeUsernameRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return changeUsername(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ChangeUsernameMutationResult = NonNullable<
+  Awaited<ReturnType<typeof changeUsername>>
+>;
+export type ChangeUsernameMutationBody = BodyType<ChangeUsernameRequest>;
+export type ChangeUsernameMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Change username (costs coins)
+ */
+export const useChangeUsername = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof changeUsername>>,
+    TError,
+    { data: BodyType<ChangeUsernameRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof changeUsername>>,
+  TError,
+  { data: BodyType<ChangeUsernameRequest> },
+  TContext
+> => {
+  return useMutation(getChangeUsernameMutationOptions(options));
+};
+
+/**
+ * @summary Change avatar URL (costs coins)
+ */
+export const getChangeAvatarUrl = () => {
+  return `/api/user/change-avatar`;
+};
+
+export const changeAvatar = async (
+  changeAvatarRequest: ChangeAvatarRequest,
+  options?: RequestInit,
+): Promise<ChangeProfileResponse> => {
+  return customFetch<ChangeProfileResponse>(getChangeAvatarUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(changeAvatarRequest),
+  });
+};
+
+export const getChangeAvatarMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof changeAvatar>>,
+    TError,
+    { data: BodyType<ChangeAvatarRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof changeAvatar>>,
+  TError,
+  { data: BodyType<ChangeAvatarRequest> },
+  TContext
+> => {
+  const mutationKey = ["changeAvatar"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof changeAvatar>>,
+    { data: BodyType<ChangeAvatarRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return changeAvatar(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ChangeAvatarMutationResult = NonNullable<
+  Awaited<ReturnType<typeof changeAvatar>>
+>;
+export type ChangeAvatarMutationBody = BodyType<ChangeAvatarRequest>;
+export type ChangeAvatarMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Change avatar URL (costs coins)
+ */
+export const useChangeAvatar = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof changeAvatar>>,
+    TError,
+    { data: BodyType<ChangeAvatarRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof changeAvatar>>,
+  TError,
+  { data: BodyType<ChangeAvatarRequest> },
+  TContext
+> => {
+  return useMutation(getChangeAvatarMutationOptions(options));
+};
+
+/**
+ * @summary Get costs for profile changes
+ */
+export const getGetProfileChangeCostsUrl = () => {
+  return `/api/user/profile-change-costs`;
+};
+
+export const getProfileChangeCosts = async (
+  options?: RequestInit,
+): Promise<ProfileChangeCosts> => {
+  return customFetch<ProfileChangeCosts>(getGetProfileChangeCostsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetProfileChangeCostsQueryKey = () => {
+  return [`/api/user/profile-change-costs`] as const;
+};
+
+export const getGetProfileChangeCostsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getProfileChangeCosts>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getProfileChangeCosts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetProfileChangeCostsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getProfileChangeCosts>>
+  > = ({ signal }) => getProfileChangeCosts({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getProfileChangeCosts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetProfileChangeCostsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getProfileChangeCosts>>
+>;
+export type GetProfileChangeCostsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get costs for profile changes
+ */
+
+export function useGetProfileChangeCosts<
+  TData = Awaited<ReturnType<typeof getProfileChangeCosts>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getProfileChangeCosts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetProfileChangeCostsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get all admin settings
+ */
+export const getAdminGetSettingsUrl = () => {
+  return `/api/admin/settings`;
+};
+
+export const adminGetSettings = async (
+  options?: RequestInit,
+): Promise<AdminSettingsResponse> => {
+  return customFetch<AdminSettingsResponse>(getAdminGetSettingsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminGetSettingsQueryKey = () => {
+  return [`/api/admin/settings`] as const;
+};
+
+export const getAdminGetSettingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetSettings>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetSettings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminGetSettingsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminGetSettings>>
+  > = ({ signal }) => adminGetSettings({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetSettings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetSettingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminGetSettings>>
+>;
+export type AdminGetSettingsQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get all admin settings
+ */
+
+export function useAdminGetSettings<
+  TData = Awaited<ReturnType<typeof adminGetSettings>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetSettings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetSettingsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update admin settings
+ */
+export const getAdminUpdateSettingsUrl = () => {
+  return `/api/admin/settings`;
+};
+
+export const adminUpdateSettings = async (
+  adminUpdateSettingsRequest: AdminUpdateSettingsRequest,
+  options?: RequestInit,
+): Promise<AdminSettingsResponse> => {
+  return customFetch<AdminSettingsResponse>(getAdminUpdateSettingsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminUpdateSettingsRequest),
+  });
+};
+
+export const getAdminUpdateSettingsMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateSettings>>,
+    TError,
+    { data: BodyType<AdminUpdateSettingsRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateSettings>>,
+  TError,
+  { data: BodyType<AdminUpdateSettingsRequest> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateSettings"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateSettings>>,
+    { data: BodyType<AdminUpdateSettingsRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminUpdateSettings(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateSettingsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateSettings>>
+>;
+export type AdminUpdateSettingsMutationBody =
+  BodyType<AdminUpdateSettingsRequest>;
+export type AdminUpdateSettingsMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Update admin settings
+ */
+export const useAdminUpdateSettings = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateSettings>>,
+    TError,
+    { data: BodyType<AdminUpdateSettingsRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateSettings>>,
+  TError,
+  { data: BodyType<AdminUpdateSettingsRequest> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateSettingsMutationOptions(options));
 };
 
 /**

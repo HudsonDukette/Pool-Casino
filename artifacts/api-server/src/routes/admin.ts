@@ -1,7 +1,16 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, poolTable } from "@workspace/db";
+import { db, usersTable, poolTable, settingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { AdminRefillPoolBody, AdminRefillPoolResponse, AdminRefillPlayerBody, AdminRefillPlayerResponse, AdminListPlayersResponse } from "@workspace/api-zod";
+import {
+  AdminRefillPoolBody,
+  AdminRefillPoolResponse,
+  AdminRefillPlayerBody,
+  AdminRefillPlayerResponse,
+  AdminListPlayersResponse,
+  AdminGetSettingsResponse,
+  AdminUpdateSettingsBody,
+  AdminUpdateSettingsResponse,
+} from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -17,6 +26,19 @@ async function requireAdmin(req: any, res: any): Promise<boolean> {
     return false;
   }
   return true;
+}
+
+async function getSetting(key: string, defaultValue: number): Promise<number> {
+  const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, key)).limit(1);
+  if (!row) return defaultValue;
+  return parseFloat(row.value) || defaultValue;
+}
+
+async function upsertSetting(key: string, value: number): Promise<void> {
+  await db
+    .insert(settingsTable)
+    .values({ key, value: value.toString() })
+    .onConflictDoUpdate({ target: settingsTable.key, set: { value: value.toString() } });
 }
 
 router.post("/admin/refill-pool", async (req, res): Promise<void> => {
@@ -102,6 +124,44 @@ router.get("/admin/players", async (req, res): Promise<void> => {
         totalWins: parseInt(p.totalWins),
         totalLosses: parseInt(p.totalLosses),
       })),
+    }),
+  );
+});
+
+router.get("/admin/settings", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+
+  const usernameChangeCost = await getSetting("username_change_cost", 500);
+  const avatarChangeCost = await getSetting("avatar_change_cost", 250);
+
+  res.json(
+    AdminGetSettingsResponse.parse({ usernameChangeCost, avatarChangeCost }),
+  );
+});
+
+router.post("/admin/settings", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+
+  const parsed = AdminUpdateSettingsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { usernameChangeCost, avatarChangeCost } = parsed.data;
+
+  if (usernameChangeCost != null) await upsertSetting("username_change_cost", usernameChangeCost);
+  if (avatarChangeCost != null) await upsertSetting("avatar_change_cost", avatarChangeCost);
+
+  const finalUsernameCost = await getSetting("username_change_cost", 500);
+  const finalAvatarCost = await getSetting("avatar_change_cost", 250);
+
+  res.json(
+    AdminUpdateSettingsResponse.parse({
+      usernameChangeCost: finalUsernameCost,
+      avatarChangeCost: finalAvatarCost,
     }),
   );
 });

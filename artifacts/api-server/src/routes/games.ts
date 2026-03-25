@@ -53,16 +53,6 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
 
   const pool = await getOrCreatePool();
   const poolAmount = parseFloat(pool.totalAmount);
-  const currentBalance = parseFloat(user.balance);
-
-  if (betAmount < MIN_BET) {
-    res.status(400).json({ error: `Minimum bet is $${MIN_BET}` });
-    return;
-  }
-  if (betAmount > currentBalance) {
-    res.status(400).json({ error: "Insufficient balance" });
-    return;
-  }
 
   const winChance = calculateWinChance(betAmount, poolAmount);
 
@@ -165,16 +155,6 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
 
   const pool = await getOrCreatePool();
   const poolAmount = parseFloat(pool.totalAmount);
-  const currentBalance = parseFloat(user.balance);
-
-  if (betAmount < MIN_BET) {
-    res.status(400).json({ error: `Minimum bet is $${MIN_BET}` });
-    return;
-  }
-  if (betAmount > currentBalance) {
-    res.status(400).json({ error: "Insufficient balance" });
-    return;
-  }
 
   const winChance = calculateWinChance(betAmount, poolAmount);
   const { path, slot } = simulatePlinko(risk);

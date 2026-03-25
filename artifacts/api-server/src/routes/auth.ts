@@ -6,6 +6,37 @@ import { RegisterBody, LoginBody, RegisterResponse, LoginResponse, GetMeResponse
 
 const router: IRouter = Router();
 
+function generateReferralCode(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+async function makeUniqueReferralCode(): Promise<string> {
+  for (let attempts = 0; attempts < 10; attempts++) {
+    const code = generateReferralCode();
+    const existing = await db.select().from(usersTable).where(eq(usersTable.referralCode, code)).limit(1);
+    if (existing.length === 0) return code;
+  }
+  return generateReferralCode() + Date.now().toString(36).slice(-4).toUpperCase();
+}
+
+function formatUser(user: typeof usersTable.$inferSelect) {
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email ?? null,
+    balance: parseFloat(user.balance),
+    isAdmin: user.isAdmin,
+    referralCode: user.referralCode ?? null,
+    avatarUrl: user.avatarUrl ?? null,
+    createdAt: user.createdAt.toISOString(),
+  };
+}
+
 router.post("/auth/register", async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
@@ -13,7 +44,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     return;
   }
 
-  const { username, password, email } = parsed.data;
+  const { username, password, email, referralCode } = parsed.data;
 
   const existing = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1);
   if (existing.length > 0) {
@@ -21,7 +52,21 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     return;
   }
 
+  let referrerId: number | null = null;
+  let bonusBalance = 10000;
+
+  if (referralCode) {
+    const referrer = await db.select().from(usersTable).where(eq(usersTable.referralCode, referralCode.toUpperCase())).limit(1);
+    if (referrer.length > 0) {
+      referrerId = referrer[0].id;
+      bonusBalance += 20000;
+      const referrerNewBalance = parseFloat(referrer[0].balance) + 10000;
+      await db.update(usersTable).set({ balance: referrerNewBalance.toFixed(2) }).where(eq(usersTable.id, referrerId));
+    }
+  }
+
   const passwordHash = await bcrypt.hash(password, 12);
+  const newReferralCode = await makeUniqueReferralCode();
 
   const [user] = await db
     .insert(usersTable)
@@ -29,21 +74,19 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       username,
       passwordHash,
       email: email ?? null,
+      balance: bonusBalance.toFixed(2),
+      referralCode: newReferralCode,
+      referredBy: referrerId ?? undefined,
     })
     .returning();
 
   req.session.userId = user.id;
 
   const response = RegisterResponse.parse({
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email ?? null,
-      balance: parseFloat(user.balance),
-      isAdmin: user.isAdmin,
-      createdAt: user.createdAt.toISOString(),
-    },
-    message: "Registration successful",
+    user: formatUser(user),
+    message: referrerId
+      ? `Registration successful! You received a $20,000 referral bonus!`
+      : "Registration successful",
   });
 
   res.json(response);
@@ -74,14 +117,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   req.session.userId = user.id;
 
   const response = LoginResponse.parse({
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email ?? null,
-      balance: parseFloat(user.balance),
-      isAdmin: user.isAdmin,
-      createdAt: user.createdAt.toISOString(),
-    },
+    user: formatUser(user),
     message: "Login successful",
   });
 
@@ -106,16 +142,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(
-    GetMeResponse.parse({
-      id: user.id,
-      username: user.username,
-      email: user.email ?? null,
-      balance: parseFloat(user.balance),
-      isAdmin: user.isAdmin,
-      createdAt: user.createdAt.toISOString(),
-    }),
-  );
+  res.json(GetMeResponse.parse(formatUser(user)));
 });
 
 export default router;

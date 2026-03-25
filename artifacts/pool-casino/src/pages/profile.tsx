@@ -1,5 +1,18 @@
 import React, { useState } from "react";
-import { useGetMe, useGetUserStats, useGetTransactions, useClaimDailyReward, useAdminRefillPool, useAdminRefillPlayer, useAdminListPlayers } from "@workspace/api-client-react";
+import {
+  useGetMe,
+  useGetUserStats,
+  useGetTransactions,
+  useClaimDailyReward,
+  useAdminRefillPool,
+  useAdminRefillPlayer,
+  useAdminListPlayers,
+  useChangeUsername,
+  useChangeAvatar,
+  useGetProfileChangeCosts,
+  useAdminGetSettings,
+  useAdminUpdateSettings,
+} from "@workspace/api-client-react";
 import type { AdminPlayer } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +20,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import { Trophy, Gift, ArrowUpRight, Coins, History, Calendar, Target, Flame, ShieldAlert, RefreshCw, Users, X, ArrowRight, Plus } from "lucide-react";
+import {
+  Trophy, Gift, ArrowUpRight, Coins, History, Calendar, Target, Flame,
+  ShieldAlert, RefreshCw, Users, X, ArrowRight, Plus, Copy, Check,
+  Edit2, Image, Tag, Settings
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -16,7 +33,10 @@ export default function Profile() {
   const { data: stats, isLoading: statsLoading } = useGetUserStats({ query: { enabled: !!user } });
   const [page, setPage] = useState(0);
   const limit = 10;
-  const { data: txData, isLoading: txLoading } = useGetTransactions({ offset: page * limit, limit }, { query: { enabled: !!user, keepPreviousData: true } });
+  const { data: txData, isLoading: txLoading } = useGetTransactions(
+    { offset: page * limit, limit },
+    { query: { enabled: !!user, keepPreviousData: true } }
+  );
 
   const claimMut = useClaimDailyReward();
   const queryClient = useQueryClient();
@@ -28,17 +48,41 @@ export default function Profile() {
 
   const refillPoolMut = useAdminRefillPool();
   const refillPlayerMut = useAdminRefillPlayer();
-  const { data: playersData, isLoading: playersLoading, refetch: refetchPlayers } = useAdminListPlayers({ query: { enabled: !!user?.isAdmin } });
+  const { data: playersData, isLoading: playersLoading, refetch: refetchPlayers } = useAdminListPlayers({
+    query: { enabled: !!user?.isAdmin },
+  });
+
+  const { data: costs } = useGetProfileChangeCosts({ query: { enabled: !!user } });
+  const { data: adminSettings, refetch: refetchSettings } = useAdminGetSettings({ query: { enabled: !!user?.isAdmin } });
+  const changeUsernameMut = useChangeUsername();
+  const changeAvatarMut = useChangeAvatar();
+  const updateSettingsMut = useAdminUpdateSettings();
+
+  const [newUsername, setNewUsername] = useState("");
+  const [showUsernameForm, setShowUsernameForm] = useState(false);
+  const [newAvatarUrl, setNewAvatarUrl] = useState("");
+  const [showAvatarForm, setShowAvatarForm] = useState(false);
+  const [referralCopied, setReferralCopied] = useState(false);
+
+  const [adminUsernameCost, setAdminUsernameCost] = useState("");
+  const [adminAvatarCost, setAdminAvatarCost] = useState("");
 
   const refillPreviewBalance = selectedPlayer
     ? selectedPlayer.balance + (parseFloat(playerRefillAmount) || 0)
     : null;
 
+  React.useEffect(() => {
+    if (adminSettings) {
+      setAdminUsernameCost(adminSettings.usernameChangeCost.toString());
+      setAdminAvatarCost(adminSettings.avatarChangeCost.toString());
+    }
+  }, [adminSettings]);
+
   if (!user && !userLoading) {
     return (
       <div className="text-center py-20">
         <h2 className="text-2xl font-bold mb-4">Please log in to view your profile</h2>
-        <Button onClick={() => window.location.href = '/login'}>Go to Login</Button>
+        <Button onClick={() => (window.location.href = "/login")}>Go to Login</Button>
       </div>
     );
   }
@@ -52,8 +96,54 @@ export default function Profile() {
       },
       onError: (err) => {
         toast({ title: "Claim Failed", description: err.error?.error || "Cannot claim right now", variant: "destructive" });
-      }
+      },
     });
+  };
+
+  const handleCopyReferral = () => {
+    if (user?.referralCode) {
+      navigator.clipboard.writeText(user.referralCode);
+      setReferralCopied(true);
+      setTimeout(() => setReferralCopied(false), 2000);
+    }
+  };
+
+  const handleChangeUsername = () => {
+    if (!newUsername.trim()) return;
+    changeUsernameMut.mutate(
+      { data: { newUsername: newUsername.trim() } },
+      {
+        onSuccess: (data) => {
+          toast({ title: "Username Changed!", description: data.message, className: "bg-success text-success-foreground border-none" });
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+          setShowUsernameForm(false);
+          setNewUsername("");
+        },
+        onError: (err) => {
+          toast({ title: "Failed", description: err.error?.error || "Could not change username", variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  const handleChangeAvatar = () => {
+    if (!newAvatarUrl.trim()) return;
+    changeAvatarMut.mutate(
+      { data: { avatarUrl: newAvatarUrl.trim() } },
+      {
+        onSuccess: (data) => {
+          toast({ title: "Avatar Updated!", description: data.message, className: "bg-success text-success-foreground border-none" });
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+          setShowAvatarForm(false);
+          setNewAvatarUrl("");
+        },
+        onError: (err) => {
+          toast({ title: "Failed", description: err.error?.error || "Could not update avatar", variant: "destructive" });
+        },
+      }
+    );
   };
 
   const handleRefillPool = () => {
@@ -62,15 +152,18 @@ export default function Profile() {
       toast({ title: "Invalid amount", variant: "destructive" });
       return;
     }
-    refillPoolMut.mutate({ data: { amount } }, {
-      onSuccess: (data) => {
-        toast({ title: "Pool Refilled!", description: data.message, className: "bg-success text-success-foreground border-none" });
-        queryClient.invalidateQueries({ queryKey: ["/api/pool"] });
-      },
-      onError: (err: any) => {
-        toast({ title: "Error", description: err.error?.error || "Failed to refill pool", variant: "destructive" });
+    refillPoolMut.mutate(
+      { data: { amount } },
+      {
+        onSuccess: (data) => {
+          toast({ title: "Pool Refilled!", description: data.message, className: "bg-success text-success-foreground border-none" });
+          queryClient.invalidateQueries({ queryKey: ["/api/pool"] });
+        },
+        onError: (err: any) => {
+          toast({ title: "Error", description: err.error?.error || "Failed to refill pool", variant: "destructive" });
+        },
       }
-    });
+    );
   };
 
   const handleRefillPlayer = () => {
@@ -83,16 +176,41 @@ export default function Profile() {
       toast({ title: "Invalid amount", description: "Enter a valid amount to add", variant: "destructive" });
       return;
     }
-    refillPlayerMut.mutate({ data: { userId: selectedPlayer.id, amount } }, {
-      onSuccess: (data) => {
-        toast({ title: "Balance Added!", description: data.message, className: "bg-success text-success-foreground border-none" });
-        setSelectedPlayer(prev => prev ? { ...prev, balance: prev.balance + amount } : null);
-        refetchPlayers();
-      },
-      onError: (err: any) => {
-        toast({ title: "Error", description: err.error?.error || "Failed to refill player", variant: "destructive" });
+    refillPlayerMut.mutate(
+      { data: { userId: selectedPlayer.id, amount } },
+      {
+        onSuccess: (data) => {
+          toast({ title: "Balance Added!", description: data.message, className: "bg-success text-success-foreground border-none" });
+          setSelectedPlayer((prev) => (prev ? { ...prev, balance: prev.balance + amount } : null));
+          refetchPlayers();
+        },
+        onError: (err: any) => {
+          toast({ title: "Error", description: err.error?.error || "Failed to refill player", variant: "destructive" });
+        },
       }
-    });
+    );
+  };
+
+  const handleUpdateSettings = () => {
+    const uCost = parseFloat(adminUsernameCost);
+    const aCost = parseFloat(adminAvatarCost);
+    if (isNaN(uCost) || isNaN(aCost) || uCost < 0 || aCost < 0) {
+      toast({ title: "Invalid costs", variant: "destructive" });
+      return;
+    }
+    updateSettingsMut.mutate(
+      { data: { usernameChangeCost: uCost, avatarChangeCost: aCost } },
+      {
+        onSuccess: () => {
+          toast({ title: "Settings Saved!", description: "Profile change costs updated.", className: "bg-success text-success-foreground border-none" });
+          refetchSettings();
+          queryClient.invalidateQueries({ queryKey: ["/api/user/profile-change-costs"] });
+        },
+        onError: (err: any) => {
+          toast({ title: "Error", description: err.error?.error || "Failed to update settings", variant: "destructive" });
+        },
+      }
+    );
   };
 
   const statCards = [
@@ -111,8 +229,28 @@ export default function Profile() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
         <div className="flex items-center gap-6 relative z-10">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-[0_0_20px_rgba(0,255,170,0.3)] border-2 border-background">
-            <span className="text-3xl font-display font-bold text-background">{user?.username.charAt(0).toUpperCase()}</span>
+          <div className="relative group">
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.username}
+                className="w-20 h-20 rounded-full object-cover shadow-[0_0_20px_rgba(0,255,170,0.3)] border-2 border-primary/40"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-[0_0_20px_rgba(0,255,170,0.3)] border-2 border-background">
+                <span className="text-3xl font-display font-bold text-background">
+                  {user?.username.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+            <button
+              onClick={() => { setShowAvatarForm(true); setShowUsernameForm(false); }}
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-black/80 border border-white/20 flex items-center justify-center text-muted-foreground hover:text-white hover:border-primary/50 transition-all"
+              title="Change avatar"
+            >
+              <Image className="w-3.5 h-3.5" />
+            </button>
           </div>
           <div>
             <div className="flex items-center gap-3">
@@ -122,11 +260,32 @@ export default function Profile() {
                   <ShieldAlert className="w-3 h-3" /> Admin
                 </Badge>
               )}
+              <button
+                onClick={() => { setShowUsernameForm(true); setShowAvatarForm(false); }}
+                className="text-muted-foreground hover:text-primary transition-colors"
+                title="Change username"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
             </div>
             <p className="text-muted-foreground flex items-center gap-2 mt-1">
               <Calendar className="w-4 h-4" />
-              Joined {user ? format(new Date(user.createdAt), 'MMM yyyy') : '...'}
+              Joined {user ? format(new Date(user.createdAt), "MMM yyyy") : "..."}
             </p>
+            {/* Referral Code */}
+            {user?.referralCode && (
+              <div className="flex items-center gap-2 mt-2">
+                <Tag className="w-3.5 h-3.5 text-accent" />
+                <span className="text-xs text-muted-foreground">Referral code:</span>
+                <span className="text-xs font-mono font-bold text-accent tracking-widest">{user.referralCode}</span>
+                <button
+                  onClick={handleCopyReferral}
+                  className="text-muted-foreground hover:text-accent transition-colors"
+                >
+                  {referralCopied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -148,6 +307,88 @@ export default function Profile() {
         </div>
       </div>
 
+      {/* Change Username Form */}
+      {showUsernameForm && (
+        <Card className="bg-black/60 border-primary/20">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2"><Edit2 className="w-4 h-4 text-primary" /> Change Username</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Cost: <span className="text-primary font-mono font-bold">{formatCurrency(costs?.usernameChangeCost ?? 500)}</span> — deducted from your balance
+                </p>
+              </div>
+              <button onClick={() => setShowUsernameForm(false)} className="text-muted-foreground hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex gap-3">
+              <Input
+                placeholder="New username"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                minLength={3}
+                maxLength={30}
+                className="bg-black/50"
+              />
+              <Button
+                onClick={handleChangeUsername}
+                disabled={changeUsernameMut.isPending || newUsername.trim().length < 3}
+                className="shrink-0"
+              >
+                {changeUsernameMut.isPending ? "Saving..." : "Confirm"}
+              </Button>
+            </div>
+            {costs && user && user.balance < costs.usernameChangeCost && (
+              <p className="text-xs text-destructive">Insufficient balance. You need {formatCurrency(costs.usernameChangeCost)} to change your username.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Change Avatar Form */}
+      {showAvatarForm && (
+        <Card className="bg-black/60 border-accent/20">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2"><Image className="w-4 h-4 text-accent" /> Change Profile Picture</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Cost: <span className="text-accent font-mono font-bold">{formatCurrency(costs?.avatarChangeCost ?? 250)}</span> — paste any image URL
+                </p>
+              </div>
+              <button onClick={() => setShowAvatarForm(false)} className="text-muted-foreground hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex gap-3">
+              <Input
+                placeholder="https://example.com/avatar.jpg"
+                value={newAvatarUrl}
+                onChange={(e) => setNewAvatarUrl(e.target.value)}
+                className="bg-black/50"
+              />
+              <Button
+                onClick={handleChangeAvatar}
+                disabled={changeAvatarMut.isPending || !newAvatarUrl.trim()}
+                className="shrink-0 bg-accent hover:bg-accent/80 text-black"
+              >
+                {changeAvatarMut.isPending ? "Saving..." : "Confirm"}
+              </Button>
+            </div>
+            {newAvatarUrl.trim() && (
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <img src={newAvatarUrl} alt="preview" className="w-10 h-10 rounded-full object-cover border border-white/10" onError={() => {}} />
+                Preview
+              </div>
+            )}
+            {costs && user && user.balance < costs.avatarChangeCost && (
+              <p className="text-xs text-destructive">Insufficient balance. You need {formatCurrency(costs.avatarChangeCost)} to change your avatar.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Admin Panel */}
       {user?.isAdmin && (
         <Card className="bg-yellow-950/20 border-yellow-500/20">
@@ -157,6 +398,49 @@ export default function Profile() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-8">
+
+            {/* Profile Change Costs */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-yellow-300 uppercase tracking-widest flex items-center gap-2">
+                <Settings className="w-4 h-4" /> Profile Change Costs
+              </h3>
+              <p className="text-xs text-muted-foreground">Set how much players pay to change their username or profile picture.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-yellow-400 uppercase tracking-wider">Username Change Cost</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={adminUsernameCost}
+                      onChange={(e) => setAdminUsernameCost(e.target.value)}
+                      className="pl-7 bg-black/40 border-yellow-500/20 focus:border-yellow-500/50 font-mono"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs text-yellow-400 uppercase tracking-wider">Avatar Change Cost</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={adminAvatarCost}
+                      onChange={(e) => setAdminAvatarCost(e.target.value)}
+                      className="pl-7 bg-black/40 border-yellow-500/20 focus:border-yellow-500/50 font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+              <Button
+                onClick={handleUpdateSettings}
+                disabled={updateSettingsMut.isPending}
+                className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold"
+              >
+                {updateSettingsMut.isPending ? "Saving..." : "Save Costs"}
+              </Button>
+            </div>
 
             {/* Refill Pool */}
             <div className="space-y-3">
@@ -185,7 +469,7 @@ export default function Profile() {
                 </Button>
               </div>
               <div className="flex gap-2 flex-wrap">
-                {[100000, 500000, 1000000, 5000000].map(amt => (
+                {[100000, 500000, 1000000, 5000000].map((amt) => (
                   <button
                     key={amt}
                     onClick={() => setPoolRefillAmount(amt.toString())}
@@ -203,10 +487,8 @@ export default function Profile() {
                 <Users className="w-4 h-4" /> Refill Player Balance
               </h3>
 
-              {/* Selected player card or empty state */}
               {selectedPlayer ? (
                 <div className="bg-black/40 border border-yellow-500/30 rounded-xl p-4 space-y-4">
-                  {/* Player info row */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500/40 to-yellow-700/40 border border-yellow-500/30 flex items-center justify-center font-bold text-yellow-300 text-sm">
@@ -217,15 +499,11 @@ export default function Profile() {
                         <p className="text-xs text-muted-foreground">ID #{selectedPlayer.id}</p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => setSelectedPlayer(null)}
-                      className="text-muted-foreground hover:text-white transition-colors p-1 rounded"
-                    >
+                    <button onClick={() => setSelectedPlayer(null)} className="text-muted-foreground hover:text-white transition-colors p-1 rounded">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
 
-                  {/* Amount input */}
                   <div className="space-y-2">
                     <label className="text-xs text-muted-foreground uppercase tracking-wider">Amount to add</label>
                     <div className="flex gap-2">
@@ -242,7 +520,7 @@ export default function Profile() {
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      {[1000, 10000, 50000, 100000].map(amt => (
+                      {[1000, 10000, 50000, 100000].map((amt) => (
                         <button
                           key={amt}
                           onClick={() => setPlayerRefillAmount(amt.toString())}
@@ -258,22 +536,17 @@ export default function Profile() {
                     </div>
                   </div>
 
-                  {/* Balance preview */}
                   <div className="flex items-center gap-3 bg-black/40 rounded-lg p-3 border border-white/5">
                     <div className="flex-1 text-center">
                       <p className="text-xs text-muted-foreground mb-1">Current Balance</p>
                       <p className="font-mono font-bold text-white">{formatCurrency(selectedPlayer.balance)}</p>
                     </div>
-                    <div className="text-yellow-500">
-                      <Plus className="w-4 h-4" />
-                    </div>
+                    <div className="text-yellow-500"><Plus className="w-4 h-4" /></div>
                     <div className="flex-1 text-center">
                       <p className="text-xs text-muted-foreground mb-1">Adding</p>
                       <p className="font-mono font-bold text-yellow-400">+{formatCurrency(parseFloat(playerRefillAmount) || 0)}</p>
                     </div>
-                    <div className="text-muted-foreground">
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
+                    <div className="text-muted-foreground"><ArrowRight className="w-4 h-4" /></div>
                     <div className="flex-1 text-center">
                       <p className="text-xs text-muted-foreground mb-1">New Balance</p>
                       <p className="font-mono font-bold text-primary">{formatCurrency(refillPreviewBalance || 0)}</p>
@@ -291,7 +564,9 @@ export default function Profile() {
               ) : (
                 <div className="border border-dashed border-yellow-500/20 rounded-xl p-6 text-center text-muted-foreground">
                   <Users className="w-8 h-8 mx-auto mb-2 text-yellow-500/30" />
-                  <p className="text-sm">Click <span className="text-yellow-400 font-medium">Select</span> on any player in the table below to add funds to their account.</p>
+                  <p className="text-sm">
+                    Click <span className="text-yellow-400 font-medium">Select</span> on any player in the table below to add funds to their account.
+                  </p>
                 </div>
               )}
             </div>
@@ -319,43 +594,46 @@ export default function Profile() {
                   </thead>
                   <tbody className="divide-y divide-yellow-500/5">
                     {playersLoading ? (
-                      <tr><td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">Loading players...</td></tr>
-                    ) : playersData?.players.map((player) => {
-                      const isSelected = selectedPlayer?.id === player.id;
-                      return (
-                        <tr
-                          key={player.id}
-                          className={`transition-colors cursor-pointer ${isSelected ? "bg-yellow-950/40 border-l-2 border-yellow-500" : "hover:bg-yellow-950/20"}`}
-                          onClick={() => setSelectedPlayer(isSelected ? null : player)}
-                        >
-                          <td className="px-4 py-3 font-mono text-muted-foreground">{player.id}</td>
-                          <td className="px-4 py-3 font-medium">{player.username}</td>
-                          <td className="px-4 py-3 font-mono text-primary">{formatCurrency(player.balance)}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{player.gamesPlayed}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{player.totalWins}W / {player.totalLosses}L</td>
-                          <td className="px-4 py-3">
-                            {player.isAdmin ? (
-                              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 border text-xs">Admin</Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs text-muted-foreground">Player</Badge>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setSelectedPlayer(isSelected ? null : player); }}
-                              className={`text-xs font-medium px-2 py-1 rounded transition-colors ${isSelected ? "bg-yellow-500/20 text-yellow-300" : "text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10"}`}
-                            >
-                              {isSelected ? "Selected ✓" : "Select"}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                      <tr>
+                        <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">Loading players...</td>
+                      </tr>
+                    ) : (
+                      playersData?.players.map((player) => {
+                        const isSelected = selectedPlayer?.id === player.id;
+                        return (
+                          <tr
+                            key={player.id}
+                            className={`transition-colors cursor-pointer ${isSelected ? "bg-yellow-950/40 border-l-2 border-yellow-500" : "hover:bg-yellow-950/20"}`}
+                            onClick={() => setSelectedPlayer(isSelected ? null : player)}
+                          >
+                            <td className="px-4 py-3 font-mono text-muted-foreground">{player.id}</td>
+                            <td className="px-4 py-3 font-medium">{player.username}</td>
+                            <td className="px-4 py-3 font-mono text-primary">{formatCurrency(player.balance)}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{player.gamesPlayed}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{player.totalWins}W / {player.totalLosses}L</td>
+                            <td className="px-4 py-3">
+                              {player.isAdmin ? (
+                                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 border text-xs">Admin</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-muted-foreground">Player</Badge>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setSelectedPlayer(isSelected ? null : player); }}
+                                className={`text-xs font-medium px-2 py-1 rounded transition-colors ${isSelected ? "bg-yellow-500/20 text-yellow-300" : "text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10"}`}
+                              >
+                                {isSelected ? "Selected ✓" : "Select"}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
-
           </CardContent>
         </Card>
       )}
@@ -365,9 +643,7 @@ export default function Profile() {
         {statCards.map((stat, i) => (
           <Card key={i} className="bg-black/40 border-white/5">
             <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-2">
-              <div className="p-3 bg-white/5 rounded-full mb-2">
-                {stat.icon}
-              </div>
+              <div className="p-3 bg-white/5 rounded-full mb-2">{stat.icon}</div>
               <h4 className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{stat.label}</h4>
               <p className={`text-xl md:text-2xl font-mono font-bold ${stat.color || "text-white"}`}>
                 {statsLoading ? "-" : stat.value}
@@ -398,51 +674,59 @@ export default function Profile() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {txLoading ? (
-                  <tr><td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">Loading...</td></tr>
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">Loading...</td>
+                  </tr>
                 ) : txData?.transactions && txData.transactions.length > 0 ? (
                   txData.transactions.map((tx) => (
                     <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-6 py-4">
                         <Badge variant="outline" className="capitalize bg-black/50">{tx.gameType}</Badge>
                       </td>
-                      <td className="px-6 py-4 font-mono text-muted-foreground">
-                        {formatCurrency(tx.betAmount)}
-                      </td>
+                      <td className="px-6 py-4 font-mono text-muted-foreground">{formatCurrency(tx.betAmount)}</td>
                       <td className="px-6 py-4">
                         {tx.result === "win" ? (
-                          <Badge variant="success" className="bg-success/20 text-success border-none">WIN {tx.multiplier ? `${tx.multiplier}x` : ''}</Badge>
+                          <Badge variant="success" className="bg-success/20 text-success border-none">
+                            WIN {tx.multiplier ? `${tx.multiplier}x` : ""}
+                          </Badge>
                         ) : (
                           <Badge variant="destructive" className="bg-destructive/20 text-destructive border-none">LOSS</Badge>
                         )}
                       </td>
-                      <td className={`px-6 py-4 font-mono text-right font-medium ${tx.payout > 0 ? 'text-success' : 'text-muted-foreground'}`}>
-                        {tx.payout > 0 ? '+' : ''}{formatCurrency(tx.payout)}
+                      <td className={`px-6 py-4 font-mono text-right font-medium ${tx.payout > 0 ? "text-success" : "text-muted-foreground"}`}>
+                        {tx.payout > 0 ? "+" : ""}{formatCurrency(tx.payout)}
                       </td>
                       <td className="px-6 py-4 text-right text-muted-foreground">
-                        {format(new Date(tx.timestamp), 'MMM d, HH:mm')}
+                        {format(new Date(tx.timestamp), "MMM d, HH:mm")}
                       </td>
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">No transactions yet.</td></tr>
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">No transactions yet.</td>
+                  </tr>
                 )}
               </tbody>
             </table>
           </div>
 
-          {/* Pagination */}
           {txData && txData.total > limit && (
             <div className="p-4 border-t border-white/5 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Showing {page * limit + 1} to {Math.min((page + 1) * limit, txData.total)} of {txData.total}</span>
+              <span className="text-sm text-muted-foreground">
+                Showing {page * limit + 1} to {Math.min((page + 1) * limit, txData.total)} of {txData.total}
+              </span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>Previous</Button>
-                <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={(page + 1) * limit >= txData.total}>Next</Button>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={(page + 1) * limit >= txData.total}>
+                  Next
+                </Button>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
-
     </div>
   );
 }
@@ -452,8 +736,6 @@ function Gamepad2Icon(props: any) {
     <svg
       {...props}
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -467,5 +749,5 @@ function Gamepad2Icon(props: any) {
       <line x1="18" x2="18.01" y1="11" y2="11" />
       <rect width="20" height="12" x="2" y="6" rx="2" />
     </svg>
-  )
+  );
 }

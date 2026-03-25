@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Lock, Mail, AlertCircle } from "lucide-react";
+import { User, Lock, Mail, AlertCircle, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 
@@ -92,6 +92,7 @@ export function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const registerMut = useRegister();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
@@ -100,11 +101,11 @@ export function Register() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     registerMut.mutate(
-      { data: { username, password, email: email || undefined } },
+      { data: { username, password, email: email || undefined, referralCode: referralCode.trim().toUpperCase() || undefined } },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-          toast({ title: "Account Created!", description: "Welcome to PoolCasino.", className: "bg-success text-success-foreground border-none" });
+          toast({ title: "Account Created!", description: data.message, className: "bg-success text-success-foreground border-none" });
           setLocation("/");
         },
         onError: (err) => {
@@ -160,7 +161,25 @@ export function Register() {
                 className="bg-black/50"
               />
             </div>
+            <div className="space-y-2">
+              <Input
+                placeholder="Referral Code (Optional)"
+                icon={<Tag className="w-5 h-5" />}
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                className="bg-black/50 font-mono tracking-widest"
+              />
+            </div>
             
+            {referralCode.trim().length > 0 && (
+              <div className="bg-green-950/30 border border-green-500/30 rounded-lg p-3 flex items-start gap-3">
+                <Tag className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-green-300 leading-relaxed">
+                  Referral code applied! You'll receive an extra <span className="font-bold text-green-200">$20,000</span> bonus on signup.
+                </p>
+              </div>
+            )}
+
             <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-start gap-3 mt-2">
               <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
               <p className="text-xs text-primary/90 leading-relaxed">

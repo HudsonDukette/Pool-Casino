@@ -29,6 +29,7 @@ export const RegisterBody = zod.object({
     .max(registerBodyUsernameMax),
   password: zod.string().min(registerBodyPasswordMin),
   email: zod.string().nullish(),
+  referralCode: zod.string().nullish(),
 });
 
 export const RegisterResponse = zod.object({
@@ -38,6 +39,8 @@ export const RegisterResponse = zod.object({
     email: zod.string().nullish(),
     balance: zod.number(),
     isAdmin: zod.boolean(),
+    referralCode: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
     createdAt: zod.string(),
   }),
   message: zod.string(),
@@ -58,6 +61,8 @@ export const LoginResponse = zod.object({
     email: zod.string().nullish(),
     balance: zod.number(),
     isAdmin: zod.boolean(),
+    referralCode: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
     createdAt: zod.string(),
   }),
   message: zod.string(),
@@ -79,6 +84,8 @@ export const GetMeResponse = zod.object({
   email: zod.string().nullish(),
   balance: zod.number(),
   isAdmin: zod.boolean(),
+  referralCode: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
   createdAt: zod.string(),
 });
 
@@ -269,6 +276,67 @@ export const AdminRefillPlayerBody = zod.object({
 export const AdminRefillPlayerResponse = zod.object({
   message: zod.string(),
   newBalance: zod.number(),
+});
+
+/**
+ * @summary Change username (costs coins)
+ */
+export const changeUsernameBodyNewUsernameMin = 3;
+export const changeUsernameBodyNewUsernameMax = 30;
+
+export const ChangeUsernameBody = zod.object({
+  newUsername: zod
+    .string()
+    .min(changeUsernameBodyNewUsernameMin)
+    .max(changeUsernameBodyNewUsernameMax),
+});
+
+export const ChangeUsernameResponse = zod.object({
+  message: zod.string(),
+  newBalance: zod.number(),
+  cost: zod.number(),
+});
+
+/**
+ * @summary Change avatar URL (costs coins)
+ */
+export const ChangeAvatarBody = zod.object({
+  avatarUrl: zod.string(),
+});
+
+export const ChangeAvatarResponse = zod.object({
+  message: zod.string(),
+  newBalance: zod.number(),
+  cost: zod.number(),
+});
+
+/**
+ * @summary Get costs for profile changes
+ */
+export const GetProfileChangeCostsResponse = zod.object({
+  usernameChangeCost: zod.number(),
+  avatarChangeCost: zod.number(),
+});
+
+/**
+ * @summary Get all admin settings
+ */
+export const AdminGetSettingsResponse = zod.object({
+  usernameChangeCost: zod.number(),
+  avatarChangeCost: zod.number(),
+});
+
+/**
+ * @summary Update admin settings
+ */
+export const AdminUpdateSettingsBody = zod.object({
+  usernameChangeCost: zod.number().nullish(),
+  avatarChangeCost: zod.number().nullish(),
+});
+
+export const AdminUpdateSettingsResponse = zod.object({
+  usernameChangeCost: zod.number(),
+  avatarChangeCost: zod.number(),
 });
 
 /**

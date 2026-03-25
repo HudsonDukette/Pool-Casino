@@ -366,6 +366,111 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /user/change-username:
+    post:
+      operationId: changeUsername
+      tags: [user]
+      summary: Change username (costs coins)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeUsernameRequest"
+      responses:
+        "200":
+          description: Username changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeProfileResponse"
+        "400":
+          description: Invalid or insufficient funds
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /user/change-avatar:
+    post:
+      operationId: changeAvatar
+      tags: [user]
+      summary: Change avatar URL (costs coins)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeAvatarRequest"
+      responses:
+        "200":
+          description: Avatar changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeProfileResponse"
+        "400":
+          description: Invalid or insufficient funds
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /user/profile-change-costs:
+    get:
+      operationId: getProfileChangeCosts
+      tags: [user]
+      summary: Get costs for profile changes
+      responses:
+        "200":
+          description: Profile change costs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileChangeCosts"
+
+  /admin/settings:
+    get:
+      operationId: adminGetSettings
+      tags: [admin]
+      summary: Get all admin settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettingsResponse"
+        "403":
+          description: Not admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: adminUpdateSettings
+      tags: [admin]
+      summary: Update admin settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateSettingsRequest"
+      responses:
+        "200":
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettingsResponse"
+        "403":
+          description: Not admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /admin/players:
     get:
       operationId: adminListPlayers
@@ -424,6 +529,9 @@ components:
         email:
           type: string
           nullable: true
+        referralCode:
+          type: string
+          nullable: true
       required:
         - username
         - password
@@ -464,6 +572,12 @@ components:
           type: number
         isAdmin:
           type: boolean
+        referralCode:
+          type: string
+          nullable: true
+        avatarUrl:
+          type: string
+          nullable: true
         createdAt:
           type: string
       required:
@@ -823,3 +937,67 @@ components:
             $ref: "#/components/schemas/AdminPlayer"
       required:
         - players
+
+    ChangeUsernameRequest:
+      type: object
+      properties:
+        newUsername:
+          type: string
+          minLength: 3
+          maxLength: 30
+      required:
+        - newUsername
+
+    ChangeAvatarRequest:
+      type: object
+      properties:
+        avatarUrl:
+          type: string
+      required:
+        - avatarUrl
+
+    ChangeProfileResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        newBalance:
+          type: number
+        cost:
+          type: number
+      required:
+        - message
+        - newBalance
+        - cost
+
+    ProfileChangeCosts:
+      type: object
+      properties:
+        usernameChangeCost:
+          type: number
+        avatarChangeCost:
+          type: number
+      required:
+        - usernameChangeCost
+        - avatarChangeCost
+
+    AdminSettingsResponse:
+      type: object
+      properties:
+        usernameChangeCost:
+          type: number
+        avatarChangeCost:
+          type: number
+      required:
+        - usernameChangeCost
+        - avatarChangeCost
+
+    AdminUpdateSettingsRequest:
+      type: object
+      properties:
+        usernameChangeCost:
+          type: number
+          nullable: true
+        avatarChangeCost:
+          type: number
+          nullable: true

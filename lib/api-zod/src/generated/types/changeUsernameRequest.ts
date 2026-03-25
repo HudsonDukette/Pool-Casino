@@ -6,14 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface RegisterRequest {
+export interface ChangeUsernameRequest {
   /**
    * @minLength 3
    * @maxLength 30
    */
-  username: string;
-  /** @minLength 6 */
-  password: string;
-  email?: string | null;
-  referralCode?: string | null;
+  newUsername: string;
 }

@@ -26,6 +26,7 @@ export interface RegisterRequest {
   /** @minLength 6 */
   password: string;
   email?: string | null;
+  referralCode?: string | null;
 }
 
 export interface LoginRequest {
@@ -39,6 +40,8 @@ export interface User {
   email?: string | null;
   balance: number;
   isAdmin: boolean;
+  referralCode?: string | null;
+  avatarUrl?: string | null;
   createdAt: string;
 }
 
@@ -201,6 +204,39 @@ export interface AdminPlayer {
 
 export interface AdminPlayerList {
   players: AdminPlayer[];
+}
+
+export interface ChangeUsernameRequest {
+  /**
+   * @minLength 3
+   * @maxLength 30
+   */
+  newUsername: string;
+}
+
+export interface ChangeAvatarRequest {
+  avatarUrl: string;
+}
+
+export interface ChangeProfileResponse {
+  message: string;
+  newBalance: number;
+  cost: number;
+}
+
+export interface ProfileChangeCosts {
+  usernameChangeCost: number;
+  avatarChangeCost: number;
+}
+
+export interface AdminSettingsResponse {
+  usernameChangeCost: number;
+  avatarChangeCost: number;
+}
+
+export interface AdminUpdateSettingsRequest {
+  usernameChangeCost?: number | null;
+  avatarChangeCost?: number | null;
 }
 
 export type GetTransactionsParams = {

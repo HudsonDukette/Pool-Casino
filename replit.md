@@ -41,13 +41,16 @@ artifacts-monorepo/
 
 1. **Authentication**: Register/login/logout with username + password, sessions via cookies
 2. **Global Pool Economy**: $1M starting pool shared by all players; wins drain it, losses fill it
-3. **Dynamic Betting Odds**: Win probability scales with bet size relative to pool
+3. **Dynamic Betting Odds**: Win probability scales with bet size relative to pool; no bet limits enforced
 4. **Roulette Game**: Red/Black with animated wheel, dynamic odds
-5. **Plinko Game**: Ball drop with risk levels (low/medium/high), multiplier slots
-6. **Coming Soon Placeholders**: Blackjack, Slots, Coin Flip, Crash Game
-7. **Player Stats**: Profit/loss, biggest win/bet, win streak, games played
-8. **Transaction History**: Full bet history with game filters
-9. **Leaderboards**: Richest players, biggest winners, biggest bettors
+5. **Plinko Game**: Up to 100 simultaneous balls, no cooldown between drops, risk levels (low/medium/high)
+6. **Referral Codes**: Every user gets a unique 8-char referral code; new users using a referral code get +$20K, referrer gets +$10K
+7. **Profile Picture**: Users can set avatar via URL (costs coins, admin-configurable price)
+8. **Username Change**: Users can change username (costs coins, admin-configurable price)
+9. **Coming Soon Placeholders**: Blackjack, Slots, Coin Flip, Crash Game
+10. **Player Stats**: Profit/loss, biggest win/bet, win streak, games played
+11. **Transaction History**: Full bet history with game filters
+12. **Leaderboards**: Richest players, biggest winners, biggest bettors
 10. **Daily Rewards**: $500 daily claim, balance refill option
 
 ## Database Tables

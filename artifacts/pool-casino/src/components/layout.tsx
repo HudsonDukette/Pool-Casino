@@ -69,7 +69,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Email Button */}
             <a
-              href="mailto:hudsoduk@gmail.com?subject=I%20need%20more%20money%20on%20PoolCasino!"
+              href="https://mail.google.com/mail/?view=cm&to=hudsoduk@gmail.com&su=I+need+more+money+on+PoolCasino!"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hidden md:flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-all"
             >
               <Mail className="w-3.5 h-3.5" /> Email me for more money

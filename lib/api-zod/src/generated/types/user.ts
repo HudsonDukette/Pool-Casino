@@ -12,5 +12,7 @@ export interface User {
   email?: string | null;
   balance: number;
   isAdmin: boolean;
+  referralCode?: string | null;
+  avatarUrl?: string | null;
   createdAt: string;
 }
