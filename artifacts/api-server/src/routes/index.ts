@@ -6,6 +6,7 @@ import poolRouter from "./pool";
 import gamesRouter from "./games";
 import transactionsRouter from "./transactions";
 import leaderboardRouter from "./leaderboard";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(poolRouter);
 router.use(gamesRouter);
 router.use(transactionsRouter);
 router.use(leaderboardRouter);
+router.use(adminRouter);
 
 export default router;

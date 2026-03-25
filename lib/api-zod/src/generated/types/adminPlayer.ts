@@ -6,11 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface User {
+export interface AdminPlayer {
   id: number;
   username: string;
-  email?: string | null;
   balance: number;
   isAdmin: boolean;
-  createdAt: string;
+  gamesPlayed: number;
+  totalWins: number;
+  totalLosses: number;
 }

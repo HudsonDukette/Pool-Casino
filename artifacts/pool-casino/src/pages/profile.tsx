@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { useGetMe, useGetUserStats, useGetTransactions, useClaimDailyReward } from "@workspace/api-client-react";
+import { useGetMe, useGetUserStats, useGetTransactions, useClaimDailyReward, useAdminRefillPool, useAdminRefillPlayer, useAdminListPlayers } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import { Trophy, Gift, ArrowDownToLine, ArrowUpRight, Coins, History, Calendar, Target, Flame } from "lucide-react";
+import { Trophy, Gift, ArrowUpRight, Coins, History, Calendar, Target, Flame, ShieldAlert, RefreshCw, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -15,10 +16,18 @@ export default function Profile() {
   const [page, setPage] = useState(0);
   const limit = 10;
   const { data: txData, isLoading: txLoading } = useGetTransactions({ offset: page * limit, limit }, { query: { enabled: !!user, keepPreviousData: true } });
-  
+
   const claimMut = useClaimDailyReward();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const [poolRefillAmount, setPoolRefillAmount] = useState("1000000");
+  const [playerRefillUserId, setPlayerRefillUserId] = useState("");
+  const [playerRefillAmount, setPlayerRefillAmount] = useState("10000");
+
+  const refillPoolMut = useAdminRefillPool();
+  const refillPlayerMut = useAdminRefillPlayer();
+  const { data: playersData, isLoading: playersLoading, refetch: refetchPlayers } = useAdminListPlayers({ query: { enabled: !!user?.isAdmin } });
 
   if (!user && !userLoading) {
     return (
@@ -42,6 +51,41 @@ export default function Profile() {
     });
   };
 
+  const handleRefillPool = () => {
+    const amount = parseFloat(poolRefillAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: "Invalid amount", variant: "destructive" });
+      return;
+    }
+    refillPoolMut.mutate({ data: { amount } }, {
+      onSuccess: (data) => {
+        toast({ title: "Pool Refilled!", description: data.message, className: "bg-success text-success-foreground border-none" });
+        queryClient.invalidateQueries({ queryKey: ["/api/pool"] });
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err.error?.error || "Failed to refill pool", variant: "destructive" });
+      }
+    });
+  };
+
+  const handleRefillPlayer = () => {
+    const userId = parseInt(playerRefillUserId);
+    const amount = parseFloat(playerRefillAmount);
+    if (isNaN(userId) || isNaN(amount) || amount <= 0) {
+      toast({ title: "Invalid input", description: "Enter a valid player ID and amount", variant: "destructive" });
+      return;
+    }
+    refillPlayerMut.mutate({ data: { userId, amount } }, {
+      onSuccess: (data) => {
+        toast({ title: "Player Refilled!", description: data.message, className: "bg-success text-success-foreground border-none" });
+        refetchPlayers();
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err.error?.error || "Failed to refill player", variant: "destructive" });
+      }
+    });
+  };
+
   const statCards = [
     { label: "Total Profit", value: formatCurrency(stats?.totalProfit || 0), icon: <Trophy className="w-5 h-5 text-yellow-400" />, color: stats?.totalProfit && stats.totalProfit > 0 ? "text-success" : "text-white" },
     { label: "Biggest Win", value: formatCurrency(stats?.biggestWin || 0), icon: <ArrowUpRight className="w-5 h-5 text-primary" /> },
@@ -56,15 +100,22 @@ export default function Profile() {
       {/* Header Profile Area */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 p-8 bg-card border border-white/5 rounded-3xl shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-        
+
         <div className="flex items-center gap-6 relative z-10">
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-[0_0_20px_rgba(0,255,170,0.3)] border-2 border-background">
             <span className="text-3xl font-display font-bold text-background">{user?.username.charAt(0).toUpperCase()}</span>
           </div>
           <div>
-            <h1 className="text-3xl font-display font-bold">{user?.username}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-display font-bold">{user?.username}</h1>
+              {user?.isAdmin && (
+                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 border flex items-center gap-1">
+                  <ShieldAlert className="w-3 h-3" /> Admin
+                </Badge>
+              )}
+            </div>
             <p className="text-muted-foreground flex items-center gap-2 mt-1">
-              <Calendar className="w-4 h-4" /> 
+              <Calendar className="w-4 h-4" />
               Joined {user ? format(new Date(user.createdAt), 'MMM yyyy') : '...'}
             </p>
           </div>
@@ -77,8 +128,8 @@ export default function Profile() {
               {formatCurrency(user?.balance || 0)}
             </span>
           </div>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full md:w-auto bg-white/5 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all"
             onClick={handleClaim}
             disabled={claimMut.isPending}
@@ -87,6 +138,159 @@ export default function Profile() {
           </Button>
         </div>
       </div>
+
+      {/* Admin Panel */}
+      {user?.isAdmin && (
+        <Card className="bg-yellow-950/20 border-yellow-500/20">
+          <CardHeader className="border-b border-yellow-500/10">
+            <CardTitle className="flex items-center gap-2 text-xl text-yellow-400">
+              <ShieldAlert className="w-5 h-5" /> Admin Controls
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-8">
+
+            {/* Refill Pool */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-yellow-300 uppercase tracking-widest flex items-center gap-2">
+                <RefreshCw className="w-4 h-4" /> Refill Global Pool
+              </h3>
+              <p className="text-xs text-muted-foreground">Add funds to the global pool. This creates money out of thin air.</p>
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={poolRefillAmount}
+                    onChange={(e) => setPoolRefillAmount(e.target.value)}
+                    className="pl-7 bg-black/40 border-yellow-500/20 focus:border-yellow-500/50 font-mono"
+                    placeholder="Amount"
+                  />
+                </div>
+                <Button
+                  onClick={handleRefillPool}
+                  disabled={refillPoolMut.isPending}
+                  className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold"
+                >
+                  {refillPoolMut.isPending ? "Refilling..." : "Refill Pool"}
+                </Button>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {[100000, 500000, 1000000, 5000000].map(amt => (
+                  <button
+                    key={amt}
+                    onClick={() => setPoolRefillAmount(amt.toString())}
+                    className="text-xs px-3 py-1 rounded-full border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 transition-colors"
+                  >
+                    ${(amt / 1000000).toFixed(1)}M
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Refill Player */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-yellow-300 uppercase tracking-widest flex items-center gap-2">
+                <Users className="w-4 h-4" /> Refill Player Balance
+              </h3>
+              <p className="text-xs text-muted-foreground">Add funds to a specific player's account. This creates money out of thin air.</p>
+              <div className="flex gap-3">
+                <Input
+                  type="number"
+                  min="1"
+                  value={playerRefillUserId}
+                  onChange={(e) => setPlayerRefillUserId(e.target.value)}
+                  className="w-32 bg-black/40 border-yellow-500/20 focus:border-yellow-500/50 font-mono"
+                  placeholder="Player ID"
+                />
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={playerRefillAmount}
+                    onChange={(e) => setPlayerRefillAmount(e.target.value)}
+                    className="pl-7 bg-black/40 border-yellow-500/20 focus:border-yellow-500/50 font-mono"
+                    placeholder="Amount"
+                  />
+                </div>
+                <Button
+                  onClick={handleRefillPlayer}
+                  disabled={refillPlayerMut.isPending}
+                  className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold"
+                >
+                  {refillPlayerMut.isPending ? "Refilling..." : "Refill Player"}
+                </Button>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {[1000, 10000, 50000, 100000].map(amt => (
+                  <button
+                    key={amt}
+                    onClick={() => setPlayerRefillAmount(amt.toString())}
+                    className="text-xs px-3 py-1 rounded-full border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 transition-colors"
+                  >
+                    ${amt.toLocaleString()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Players Table */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-yellow-300 uppercase tracking-widest">All Players</h3>
+                <Button variant="ghost" size="sm" onClick={() => refetchPlayers()} className="text-yellow-400 hover:text-yellow-300">
+                  <RefreshCw className="w-3 h-3 mr-1" /> Refresh
+                </Button>
+              </div>
+              <div className="rounded-xl overflow-hidden border border-yellow-500/10">
+                <table className="w-full text-sm">
+                  <thead className="bg-yellow-950/40 text-yellow-400 text-xs">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-medium">ID</th>
+                      <th className="px-4 py-3 text-left font-medium">Username</th>
+                      <th className="px-4 py-3 text-left font-medium">Balance</th>
+                      <th className="px-4 py-3 text-left font-medium">Games</th>
+                      <th className="px-4 py-3 text-left font-medium">W/L</th>
+                      <th className="px-4 py-3 text-left font-medium">Role</th>
+                      <th className="px-4 py-3 text-left font-medium">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-yellow-500/5">
+                    {playersLoading ? (
+                      <tr><td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">Loading players...</td></tr>
+                    ) : playersData?.players.map((player) => (
+                      <tr key={player.id} className="hover:bg-yellow-950/20 transition-colors">
+                        <td className="px-4 py-3 font-mono text-muted-foreground">{player.id}</td>
+                        <td className="px-4 py-3 font-medium">{player.username}</td>
+                        <td className="px-4 py-3 font-mono text-primary">{formatCurrency(player.balance)}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{player.gamesPlayed}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{player.totalWins}W / {player.totalLosses}L</td>
+                        <td className="px-4 py-3">
+                          {player.isAdmin ? (
+                            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 border text-xs">Admin</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs text-muted-foreground">Player</Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => setPlayerRefillUserId(player.id.toString())}
+                            className="text-xs text-yellow-400 hover:text-yellow-300 underline underline-offset-2 transition-colors"
+                          >
+                            Select
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -157,16 +361,16 @@ export default function Profile() {
               </tbody>
             </table>
           </div>
-          
+
           {/* Pagination */}
           {txData && txData.total > limit && (
-             <div className="p-4 border-t border-white/5 flex items-center justify-between">
-               <span className="text-sm text-muted-foreground">Showing {page * limit + 1} to Math.min((page + 1) * limit, txData.total) of {txData.total}</span>
-               <div className="flex gap-2">
-                 <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>Previous</Button>
-                 <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={(page + 1) * limit >= txData.total}>Next</Button>
-               </div>
-             </div>
+            <div className="p-4 border-t border-white/5 flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Showing {page * limit + 1} to {Math.min((page + 1) * limit, txData.total)} of {txData.total}</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>Previous</Button>
+                <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={(page + 1) * limit >= txData.total}>Next</Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

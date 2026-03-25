@@ -17,6 +17,11 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AdminPlayerList,
+  AdminRefillPlayerRequest,
+  AdminRefillPlayerResponse,
+  AdminRefillPoolRequest,
+  AdminRefillPoolResponse,
   AuthResponse,
   DailyRewardResponse,
   ErrorResponse,
@@ -1216,6 +1221,253 @@ export function useGetRecentBigWins<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetRecentBigWinsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Refill the global pool (admin only)
+ */
+export const getAdminRefillPoolUrl = () => {
+  return `/api/admin/refill-pool`;
+};
+
+export const adminRefillPool = async (
+  adminRefillPoolRequest: AdminRefillPoolRequest,
+  options?: RequestInit,
+): Promise<AdminRefillPoolResponse> => {
+  return customFetch<AdminRefillPoolResponse>(getAdminRefillPoolUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminRefillPoolRequest),
+  });
+};
+
+export const getAdminRefillPoolMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminRefillPool>>,
+    TError,
+    { data: BodyType<AdminRefillPoolRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminRefillPool>>,
+  TError,
+  { data: BodyType<AdminRefillPoolRequest> },
+  TContext
+> => {
+  const mutationKey = ["adminRefillPool"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminRefillPool>>,
+    { data: BodyType<AdminRefillPoolRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminRefillPool(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminRefillPoolMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminRefillPool>>
+>;
+export type AdminRefillPoolMutationBody = BodyType<AdminRefillPoolRequest>;
+export type AdminRefillPoolMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Refill the global pool (admin only)
+ */
+export const useAdminRefillPool = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminRefillPool>>,
+    TError,
+    { data: BodyType<AdminRefillPoolRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminRefillPool>>,
+  TError,
+  { data: BodyType<AdminRefillPoolRequest> },
+  TContext
+> => {
+  return useMutation(getAdminRefillPoolMutationOptions(options));
+};
+
+/**
+ * @summary Refill a player's balance (admin only)
+ */
+export const getAdminRefillPlayerUrl = () => {
+  return `/api/admin/refill-player`;
+};
+
+export const adminRefillPlayer = async (
+  adminRefillPlayerRequest: AdminRefillPlayerRequest,
+  options?: RequestInit,
+): Promise<AdminRefillPlayerResponse> => {
+  return customFetch<AdminRefillPlayerResponse>(getAdminRefillPlayerUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminRefillPlayerRequest),
+  });
+};
+
+export const getAdminRefillPlayerMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminRefillPlayer>>,
+    TError,
+    { data: BodyType<AdminRefillPlayerRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminRefillPlayer>>,
+  TError,
+  { data: BodyType<AdminRefillPlayerRequest> },
+  TContext
+> => {
+  const mutationKey = ["adminRefillPlayer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminRefillPlayer>>,
+    { data: BodyType<AdminRefillPlayerRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminRefillPlayer(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminRefillPlayerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminRefillPlayer>>
+>;
+export type AdminRefillPlayerMutationBody = BodyType<AdminRefillPlayerRequest>;
+export type AdminRefillPlayerMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Refill a player's balance (admin only)
+ */
+export const useAdminRefillPlayer = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminRefillPlayer>>,
+    TError,
+    { data: BodyType<AdminRefillPlayerRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminRefillPlayer>>,
+  TError,
+  { data: BodyType<AdminRefillPlayerRequest> },
+  TContext
+> => {
+  return useMutation(getAdminRefillPlayerMutationOptions(options));
+};
+
+/**
+ * @summary List all players (admin only)
+ */
+export const getAdminListPlayersUrl = () => {
+  return `/api/admin/players`;
+};
+
+export const adminListPlayers = async (
+  options?: RequestInit,
+): Promise<AdminPlayerList> => {
+  return customFetch<AdminPlayerList>(getAdminListPlayersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminListPlayersQueryKey = () => {
+  return [`/api/admin/players`] as const;
+};
+
+export const getAdminListPlayersQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListPlayers>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminListPlayers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminListPlayersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminListPlayers>>
+  > = ({ signal }) => adminListPlayers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListPlayers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListPlayersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListPlayers>>
+>;
+export type AdminListPlayersQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary List all players (admin only)
+ */
+
+export function useAdminListPlayers<
+  TData = Awaited<ReturnType<typeof adminListPlayers>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminListPlayers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListPlayersQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

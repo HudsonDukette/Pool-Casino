@@ -78,9 +78,9 @@ export default function Home() {
                 
                 <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/10">
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Max Allowed Bet</p>
+                    <p className="text-xs text-muted-foreground">Biggest Bet</p>
                     <p className="font-mono font-medium text-lg text-primary">
-                      {isPoolLoading ? "-" : formatCurrency(pool?.maxBet || 0)}
+                      {isPoolLoading ? "-" : formatCurrency(pool?.biggestBet || 0)}
                     </p>
                   </div>
                   <div className="space-y-1">

@@ -40,6 +40,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       username: user.username,
       email: user.email ?? null,
       balance: parseFloat(user.balance),
+      isAdmin: user.isAdmin,
       createdAt: user.createdAt.toISOString(),
     },
     message: "Registration successful",
@@ -78,6 +79,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       username: user.username,
       email: user.email ?? null,
       balance: parseFloat(user.balance),
+      isAdmin: user.isAdmin,
       createdAt: user.createdAt.toISOString(),
     },
     message: "Login successful",
@@ -110,6 +112,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
       username: user.username,
       email: user.email ?? null,
       balance: parseFloat(user.balance),
+      isAdmin: user.isAdmin,
       createdAt: user.createdAt.toISOString(),
     }),
   );

@@ -37,6 +37,7 @@ export const RegisterResponse = zod.object({
     username: zod.string(),
     email: zod.string().nullish(),
     balance: zod.number(),
+    isAdmin: zod.boolean(),
     createdAt: zod.string(),
   }),
   message: zod.string(),
@@ -56,6 +57,7 @@ export const LoginResponse = zod.object({
     username: zod.string(),
     email: zod.string().nullish(),
     balance: zod.number(),
+    isAdmin: zod.boolean(),
     createdAt: zod.string(),
   }),
   message: zod.string(),
@@ -76,6 +78,7 @@ export const GetMeResponse = zod.object({
   username: zod.string(),
   email: zod.string().nullish(),
   balance: zod.number(),
+  isAdmin: zod.boolean(),
   createdAt: zod.string(),
 });
 
@@ -239,6 +242,48 @@ export const GetRecentBigWinsResponse = zod.object({
       gameType: zod.string(),
       multiplier: zod.number().nullish(),
       timestamp: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary Refill the global pool (admin only)
+ */
+export const AdminRefillPoolBody = zod.object({
+  amount: zod.number(),
+});
+
+export const AdminRefillPoolResponse = zod.object({
+  message: zod.string(),
+  newPoolAmount: zod.number(),
+});
+
+/**
+ * @summary Refill a player's balance (admin only)
+ */
+export const AdminRefillPlayerBody = zod.object({
+  userId: zod.number(),
+  amount: zod.number(),
+});
+
+export const AdminRefillPlayerResponse = zod.object({
+  message: zod.string(),
+  newBalance: zod.number(),
+});
+
+/**
+ * @summary List all players (admin only)
+ */
+export const AdminListPlayersResponse = zod.object({
+  players: zod.array(
+    zod.object({
+      id: zod.number(),
+      username: zod.string(),
+      balance: zod.number(),
+      isAdmin: zod.boolean(),
+      gamesPlayed: zod.number(),
+      totalWins: zod.number(),
+      totalLosses: zod.number(),
     }),
   ),
 });

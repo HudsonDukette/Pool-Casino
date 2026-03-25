@@ -38,6 +38,7 @@ export interface User {
   username: string;
   email?: string | null;
   balance: number;
+  isAdmin: boolean;
   createdAt: string;
 }
 
@@ -167,6 +168,39 @@ export interface RecentWin {
 
 export interface RecentWinsList {
   wins: RecentWin[];
+}
+
+export interface AdminRefillPoolRequest {
+  amount: number;
+}
+
+export interface AdminRefillPoolResponse {
+  message: string;
+  newPoolAmount: number;
+}
+
+export interface AdminRefillPlayerRequest {
+  userId: number;
+  amount: number;
+}
+
+export interface AdminRefillPlayerResponse {
+  message: string;
+  newBalance: number;
+}
+
+export interface AdminPlayer {
+  id: number;
+  username: string;
+  balance: number;
+  isAdmin: boolean;
+  gamesPlayed: number;
+  totalWins: number;
+  totalLosses: number;
+}
+
+export interface AdminPlayerList {
+  players: AdminPlayer[];
 }
 
 export type GetTransactionsParams = {

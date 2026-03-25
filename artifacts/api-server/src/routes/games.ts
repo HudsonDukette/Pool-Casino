@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, poolTable, betsTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { PlayRouletteBody, PlayRouletteResponse, PlayPlinkoBody, PlayPlinkoResponse } from "@workspace/api-zod";
 import {
   calculateWinChance,
@@ -53,15 +53,10 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
 
   const pool = await getOrCreatePool();
   const poolAmount = parseFloat(pool.totalAmount);
-  const maxBet = poolAmount * 0.1;
   const currentBalance = parseFloat(user.balance);
 
   if (betAmount < MIN_BET) {
     res.status(400).json({ error: `Minimum bet is $${MIN_BET}` });
-    return;
-  }
-  if (betAmount > maxBet) {
-    res.status(400).json({ error: `Maximum bet is $${maxBet.toFixed(2)}` });
     return;
   }
   if (betAmount > currentBalance) {
@@ -71,36 +66,22 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
 
   const winChance = calculateWinChance(betAmount, poolAmount);
 
-  const spinResult = ROULETTE_NUMBERS[Math.floor(Math.random() * ROULETTE_NUMBERS.length)];
+  // Determine win/loss by probability FIRST, then pick a consistent wheel result
+  const won = Math.random() < winChance;
+
+  let spinResult: typeof ROULETTE_NUMBERS[0];
+  if (won) {
+    // Pick a number matching the chosen color
+    const matchingNumbers = ROULETTE_NUMBERS.filter((n) => n.color === color);
+    spinResult = matchingNumbers[Math.floor(Math.random() * matchingNumbers.length)];
+  } else {
+    // Pick a number NOT matching the chosen color (includes green)
+    const nonMatchingNumbers = ROULETTE_NUMBERS.filter((n) => n.color !== color);
+    spinResult = nonMatchingNumbers[Math.floor(Math.random() * nonMatchingNumbers.length)];
+  }
+
   const resultColor = spinResult.color;
-
-  let won = false;
-  let payout = 0;
-
-  if (resultColor === "green") {
-    won = false;
-    payout = 0;
-  } else if (resultColor === color) {
-    won = Math.random() < winChance;
-    if (won) {
-      payout = betAmount * 2;
-    }
-  } else {
-    const inverseChance = 1 - winChance;
-    won = Math.random() >= inverseChance;
-    if (won) {
-      payout = betAmount * 2;
-    }
-  }
-
-  if (resultColor === color) {
-    won = Math.random() < winChance;
-  } else if (resultColor === "green") {
-    won = false;
-  } else {
-    won = false;
-  }
-  payout = won ? betAmount * 2 : 0;
+  const payout = won ? betAmount * 2 : 0;
 
   const newBalance = currentBalance - betAmount + payout;
   const profit = payout - betAmount;
@@ -192,15 +173,10 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
 
   const pool = await getOrCreatePool();
   const poolAmount = parseFloat(pool.totalAmount);
-  const maxBet = poolAmount * 0.1;
   const currentBalance = parseFloat(user.balance);
 
   if (betAmount < MIN_BET) {
     res.status(400).json({ error: `Minimum bet is $${MIN_BET}` });
-    return;
-  }
-  if (betAmount > maxBet) {
-    res.status(400).json({ error: `Maximum bet is $${maxBet.toFixed(2)}` });
     return;
   }
   if (betAmount > currentBalance) {
