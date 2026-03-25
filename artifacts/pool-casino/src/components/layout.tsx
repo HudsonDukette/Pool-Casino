@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
-import { Coins, LogOut, User as UserIcon, Gamepad2, Trophy, Menu, X, Gem, Mail } from "lucide-react";
+import { Coins, LogOut, User as UserIcon, Menu, X, Mail, Dices, Crown, LayoutDashboard } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -24,9 +24,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const navLinks = [
-    { href: "/", label: "Dashboard", icon: <Gem className="w-4 h-4" /> },
-    { href: "/games", label: "Games", icon: <Gamepad2 className="w-4 h-4" /> },
-    { href: "/leaderboard", label: "Leaderboard", icon: <Trophy className="w-4 h-4" /> },
+    { href: "/", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { href: "/games", label: "Games", icon: <Dices className="w-4 h-4" /> },
+    { href: "/leaderboard", label: "Leaderboard", icon: <Crown className="w-4 h-4" /> },
   ];
 
   return (
@@ -39,7 +39,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="flex items-center gap-2 group cursor-pointer">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-[0_0_15px_rgba(0,255,170,0.4)] group-hover:shadow-[0_0_25px_rgba(0,255,170,0.6)] transition-all">
-                  <span className="font-display font-bold text-background text-lg">P</span>
+                  <Dices className="w-4 h-4 text-black" />
                 </div>
                 <span className="font-display font-bold text-xl tracking-tight hidden sm:block">
                   Pool<span className="text-primary neon-text-primary">Casino</span>
@@ -56,8 +56,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     key={link.href}
                     href={link.href}
                     className={`px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200 cursor-pointer ${
-                      isActive 
-                        ? "bg-white/10 text-white" 
+                      isActive
+                        ? "bg-white/10 text-white"
                         : "text-muted-foreground hover:text-white hover:bg-white/5"
                     }`}
                   >
@@ -167,8 +167,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               )}
               {user && (
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="w-full mt-2 justify-start text-destructive"
                   onClick={() => {
                     handleLogout();
@@ -194,7 +194,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 opacity-50">
             <div className="w-6 h-6 rounded border border-white/20 flex items-center justify-center">
-              <span className="font-display font-bold text-xs">P</span>
+              <Dices className="w-3.5 h-3.5" />
             </div>
             <span className="text-sm font-medium">PoolCasino © 2025</span>
           </div>
