@@ -236,11 +236,14 @@ router.post("/auth/crazygames", async (req, res): Promise<void> => {
         avatarUrl: profilePictureUrl ?? null,
         referralCode: newReferralCode,
         crazyGamesUserId: cgUserId,
+        isCrazyGamesLinked: true,
       })
       .returning();
-  } else if (profilePictureUrl && user.avatarUrl !== profilePictureUrl) {
-    await db.update(usersTable).set({ avatarUrl: profilePictureUrl }).where(eq(usersTable.id, user.id));
-    user.avatarUrl = profilePictureUrl;
+  } else {
+    const updates: Record<string, unknown> = { isCrazyGamesLinked: true };
+    if (profilePictureUrl && user.avatarUrl !== profilePictureUrl) updates.avatarUrl = profilePictureUrl;
+    await db.update(usersTable).set(updates).where(eq(usersTable.id, user.id));
+    user = { ...user, ...updates };
   }
 
   const prevGuestId = req.session.userId;

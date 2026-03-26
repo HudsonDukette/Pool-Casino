@@ -10,6 +10,8 @@ const PgSession = connectPgSimple(session);
 
 const app: Express = express();
 
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
@@ -46,8 +48,8 @@ app.use(
     rolling: true,
     cookie: {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: true,
+      sameSite: "none",
       maxAge: 30 * 24 * 60 * 60 * 1000,
     },
   }),
