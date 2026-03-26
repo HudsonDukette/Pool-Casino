@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, friendsTable } from "@workspace/db";
 import { eq, and, or, inArray, ilike, ne } from "drizzle-orm";
+import { sendPushToUser } from "../lib/push";
 
 const router: IRouter = Router();
 
@@ -98,6 +99,15 @@ router.post("/friends/request", async (req, res): Promise<void> => {
   }
 
   await db.insert(friendsTable).values({ requesterId: userId, recipientId: target.id, status: "pending" });
+
+  const [sender] = await db.select({ username: usersTable.username }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  sendPushToUser(target.id, {
+    title: "New Friend Request",
+    body: `${sender?.username ?? "Someone"} sent you a friend request`,
+    url: "/notifications",
+    tag: "friend-request",
+  }).catch(() => {});
+
   res.json({ message: `Friend request sent to ${target.username}` });
 });
 

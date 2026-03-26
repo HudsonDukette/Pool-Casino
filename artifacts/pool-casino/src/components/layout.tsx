@@ -8,6 +8,7 @@ import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGuestSession } from "@/hooks/use-guest-session";
 import { useToast } from "@/hooks/use-toast";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -27,6 +28,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const initialForceReloadAt = React.useRef<number | null>(null);
+  usePushNotifications((user as any)?.id);
 
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [pendingFriends, setPendingFriends] = React.useState(0);

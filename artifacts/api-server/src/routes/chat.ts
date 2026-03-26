@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, chatRoomsTable, chatMessagesTable, chatRoomMembersTable, friendsTable } from "@workspace/db";
-import { eq, and, or, desc, gt, inArray, sql } from "drizzle-orm";
+import { eq, and, or, desc, gt, inArray, sql, ne } from "drizzle-orm";
+import { sendPushToUser } from "../lib/push";
 
 const router: IRouter = Router();
 
@@ -209,6 +210,25 @@ router.post("/chat/rooms/:id/messages", async (req, res): Promise<void> => {
 
   const [user] = await db.select({ username: usersTable.username, avatarUrl: usersTable.avatarUrl })
     .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+
+  const [room] = await db.select({ name: chatRoomsTable.name, type: chatRoomsTable.type })
+    .from(chatRoomsTable).where(eq(chatRoomsTable.id, roomId)).limit(1);
+
+  const otherMembers = await db.select({ userId: chatRoomMembersTable.userId })
+    .from(chatRoomMembersTable)
+    .where(and(eq(chatRoomMembersTable.roomId, roomId), ne(chatRoomMembersTable.userId, userId)));
+
+  const roomLabel = room?.type === "dm" ? user?.username ?? "PoolCasino" : `#${room?.name ?? "chat"}`;
+  const preview = content.length > 80 ? content.slice(0, 77) + "…" : content;
+
+  otherMembers.forEach(m => {
+    sendPushToUser(m.userId, {
+      title: roomLabel,
+      body: room?.type === "dm" ? preview : `${user?.username ?? "Someone"}: ${preview}`,
+      url: "/chat",
+      tag: `chat-room-${roomId}`,
+    }).catch(() => {});
+  });
 
   res.json({ message: { ...msg, username: user?.username, avatarUrl: user?.avatarUrl } });
 });
