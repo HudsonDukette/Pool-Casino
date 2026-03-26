@@ -39,7 +39,7 @@ artifacts-monorepo/
 
 ## Features
 
-1. **Authentication**: Register/login/logout with username + password; CrazyGames SDK v3 auto-login when embedded in CrazyGames platform
+1. **Authentication**: Register/login/logout with username + password; CrazyGames SDK v3 platform-aware login (CG-only UI when on platform, normal UI off-platform); account linking from profile; guest mode with per-device tracking + merge on login/register
 2. **Global Pool Economy**: $1M starting pool shared by all players; wins drain it, losses fill it
 3. **Dynamic Betting Odds**: Win probability scales with bet size relative to pool; no bet limits enforced
 4. **10 Games**: Roulette, Plinko, Blackjack, Crash, Slots, Dice Roll, Coin Flip, Fortune Wheel, Number Guess, Mines

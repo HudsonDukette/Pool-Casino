@@ -34,6 +34,7 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     balance: parseFloat(user.balance),
     isAdmin: user.isAdmin,
     isGuest: user.isGuest,
+    isCrazyGamesLinked: user.isCrazyGamesLinked,
     referralCode: user.referralCode ?? null,
     avatarUrl: user.avatarUrl ?? null,
     createdAt: user.createdAt.toISOString(),
@@ -288,6 +289,86 @@ router.post("/auth/guest/init", async (req, res): Promise<void> => {
 
   req.session.userId = guest.id;
   res.json({ user: formatUser(guest), isGuest: true });
+});
+
+router.post("/auth/crazygames/link", async (req, res): Promise<void> => {
+  const userId = req.session.userId;
+  if (!userId) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const [currentUser] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!currentUser || currentUser.isGuest) {
+    res.status(403).json({ error: "Must be logged in to a real account to link CrazyGames" });
+    return;
+  }
+
+  if (currentUser.isCrazyGamesLinked && currentUser.crazyGamesUserId) {
+    res.status(400).json({ error: "CrazyGames account already linked" });
+    return;
+  }
+
+  const { token } = req.body as { token?: string };
+  if (!token || typeof token !== "string") {
+    res.status(400).json({ error: "CrazyGames token required" });
+    return;
+  }
+
+  const publicKeyUrl = "https://sdk.crazygames.com/publicKey.json";
+  let publicKeyPem: string;
+  try {
+    const pkRes = await fetch(publicKeyUrl);
+    if (!pkRes.ok) throw new Error("Failed to fetch CG public key");
+    const pkData = await pkRes.json() as { publicKey: string };
+    publicKeyPem = pkData.publicKey;
+  } catch {
+    res.status(502).json({ error: "Could not verify CrazyGames token" });
+    return;
+  }
+
+  let payload: { userId: string; username?: string; profilePictureUrl?: string };
+  try {
+    const { createPublicKey, createVerify } = await import("crypto");
+    const publicKey = createPublicKey(publicKeyPem);
+    const [headerB64, payloadB64, sigB64] = token.split(".");
+    if (!headerB64 || !payloadB64 || !sigB64) throw new Error("Invalid JWT");
+    const signingInput = `${headerB64}.${payloadB64}`;
+    const signature = Buffer.from(sigB64.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+    const verify = createVerify("sha256");
+    verify.update(signingInput);
+    if (!verify.verify(publicKey, signature)) throw new Error("Invalid JWT signature");
+    payload = JSON.parse(Buffer.from(payloadB64.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+  } catch {
+    res.status(401).json({ error: "Invalid CrazyGames token" });
+    return;
+  }
+
+  const cgUserId = payload.userId;
+  if (!cgUserId) {
+    res.status(400).json({ error: "No user ID in CrazyGames token" });
+    return;
+  }
+
+  const [existingLinked] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.crazyGamesUserId, cgUserId))
+    .limit(1);
+
+  if (existingLinked && existingLinked.id !== userId) {
+    res.status(409).json({ error: "This CrazyGames account is already linked to another user" });
+    return;
+  }
+
+  await db.update(usersTable).set({
+    crazyGamesUserId: cgUserId,
+    isCrazyGamesLinked: true,
+    avatarUrl: payload.profilePictureUrl ?? currentUser.avatarUrl,
+  }).where(eq(usersTable.id, userId));
+
+  const [updated] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  res.json({ user: formatUser(updated!), message: "CrazyGames account linked successfully" });
 });
 
 router.get("/auth/me", async (req, res): Promise<void> => {

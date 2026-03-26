@@ -85,6 +85,7 @@ export const GetMeResponse = zod.object({
   balance: zod.number(),
   isAdmin: zod.boolean(),
   isGuest: zod.boolean().optional(),
+  isCrazyGamesLinked: zod.boolean().optional(),
   referralCode: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
   createdAt: zod.string(),
