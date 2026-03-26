@@ -500,8 +500,8 @@ export default function Chat() {
   const totalUnread = rooms.reduce((sum, r) => sum + (r.unreadCount ?? 0), 0);
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex h-[calc(100vh-120px)] rounded-2xl overflow-hidden border border-white/5 bg-black/40">
+    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -my-8" style={{ height: "calc(100dvh - 64px)" }}>
+      <div className="flex h-full border-t border-white/5 bg-black/40">
         {/* Sidebar */}
         <div className={`flex flex-col w-64 flex-shrink-0 border-r border-white/5 bg-black/20 ${showMobileRooms ? "block" : "hidden md:flex"}`}>
           {/* Tabs */}

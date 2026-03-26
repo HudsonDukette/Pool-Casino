@@ -167,7 +167,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
               {/* Notifications Bell */}
               {user && !isGuest && (
-                <Link href="/chat">
+                <Link href="/notifications">
                   <button className="relative p-2 rounded-xl hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors">
                     <Bell className="w-4 h-4" />
                     {totalNotifs > 0 && (

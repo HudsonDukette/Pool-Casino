@@ -19,6 +19,7 @@ import Blackjack from "@/pages/blackjack";
 import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
 import Chat from "@/pages/chat";
+import Notifications from "@/pages/notifications";
 import Leaderboard from "@/pages/leaderboard";
 import { Login, Register } from "@/pages/auth";
 import NotFound from "@/pages/not-found";
@@ -52,6 +53,7 @@ function Router() {
         <Route path="/profile" component={Profile} />
         <Route path="/admin" component={Admin} />
         <Route path="/chat" component={Chat} />
+        <Route path="/notifications" component={Notifications} />
         <Route path="/leaderboard" component={Leaderboard} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />

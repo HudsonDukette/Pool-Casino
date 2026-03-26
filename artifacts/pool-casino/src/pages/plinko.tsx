@@ -1,18 +1,18 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { usePlayPlinko, useGetPool, useGetMe } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
-import { Coins, Info } from "lucide-react";
+import { Coins, Info, StopCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 
 const RISK_LEVELS = {
-  low:    { name: "Low",    color: "bg-blue-500",       textColor: "text-blue-400",    mults: [0.5, 1, 1.5, 2, 2.5, 2, 1.5, 1, 0.5] },
-  medium: { name: "Medium", color: "bg-yellow-500",     textColor: "text-yellow-400",  mults: [0.3, 0.5, 1, 2, 5, 2, 1, 0.5, 0.3] },
-  high:   { name: "High",   color: "bg-destructive",    textColor: "text-red-400",     mults: [0.1, 0.2, 0.5, 1, 10, 1, 0.5, 0.2, 0.1] }
+  low:    { name: "Low",    color: "bg-blue-500",    textColor: "text-blue-400",   mults: [0.5, 1, 1.5, 2, 2.5, 2, 1.5, 1, 0.5] },
+  medium: { name: "Medium", color: "bg-yellow-500",  textColor: "text-yellow-400", mults: [0.3, 0.5, 1, 2, 5, 2, 1, 0.5, 0.3] },
+  high:   { name: "High",   color: "bg-destructive", textColor: "text-red-400",    mults: [0.1, 0.2, 0.5, 1, 10, 1, 0.5, 0.2, 0.1] }
 };
 
 interface BallState {
@@ -27,7 +27,7 @@ interface BallState {
 const ROWS = 8;
 const ROW_HEIGHT = 44;
 const PEG_SPACING = 42;
-const BOARD_WIDTH = (ROWS + 2) * PEG_SPACING; // dynamic based on slots
+const BALL_SPAWN_DELAY = 400;
 
 export default function Plinko() {
   const { data: pool } = useGetPool();
@@ -44,64 +44,46 @@ export default function Plinko() {
   const nextBallId = useRef(0);
   const MAX_BALLS = 100;
 
+  // Multi-ball state
+  const [ballCount, setBallCount] = useState<string>("1");
+  const [isDropping, setIsDropping] = useState(false);
+  const droppingRef = useRef(false);
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
   const numericBet = parseFloat(betAmount) || 0;
-  // Show balance minus whatever is currently animating in the air
+  const numericCount = Math.max(1, Math.min(100, parseInt(ballCount) || 1));
   const displayBalance = user ? Math.max(0, user.balance - inFlightTotal) : 0;
+  const totalCost = numericBet * numericCount;
 
-  const handlePlay = useCallback(() => {
-    if (!user) {
-      toast({ title: "Not Authenticated", description: "Please log in to play.", variant: "destructive" });
-      return;
-    }
-    if (numericBet <= 0) {
-      toast({ title: "Invalid Bet", description: "Enter a valid bet amount.", variant: "destructive" });
-      return;
-    }
-    if (numericBet > displayBalance) {
-      toast({ title: "Insufficient Funds", description: "You don't have enough coins.", variant: "destructive" });
-      return;
-    }
-    if (balls.length >= MAX_BALLS) {
-      toast({ title: "Max balls reached", description: "Wait for some balls to finish before dropping more.", variant: "destructive" });
-      return;
-    }
+  const stopDropping = useCallback(() => {
+    droppingRef.current = false;
+    setIsDropping(false);
+    timeoutsRef.current.forEach(t => clearTimeout(t));
+    timeoutsRef.current = [];
+  }, []);
 
-    // Deduct immediately so balance drops the moment ball is dropped
-    setInFlightTotal((prev) => prev + numericBet);
+  useEffect(() => () => stopDropping(), [stopDropping]);
+
+  const dropOneBall = useCallback((betAmt: number, riskLevel: "low" | "medium" | "high") => {
+    setInFlightTotal(prev => prev + betAmt);
 
     playMut.mutate(
-      { data: { betAmount: numericBet, risk } },
+      { data: { betAmount: betAmt, risk: riskLevel } },
       {
         onSuccess: (data) => {
-          // Path is now {x, y}[] pixel offsets from board center (physics simulation)
           const coords = data.path as { x: number; y: number }[];
-
           const ballId = nextBallId.current++;
-          // Physics path has ~50+ points; keep animation snappy
           const animDuration = Math.max(1.5, coords.length * 0.055);
 
-          const newBall: BallState = {
-            id: ballId,
-            coords,
-            multiplier: data.multiplier,
-            slot: data.slot,
-            won: data.won,
-            animDuration,
-          };
+          setBalls(prev => [...prev, { id: ballId, coords, multiplier: data.multiplier, slot: data.slot, won: data.won, animDuration }]);
 
-          setBalls((prev) => [...prev, newBall]);
-
-          // When ball arrives at the slot: restore in-flight, refresh real balance, show toast
           const highlightDelay = animDuration * 1000 + 100;
-          setTimeout(() => {
-            // Detect which slot the ball VISUALLY landed in from final physics x position.
-            // Slot S is centered at x = (S - ROWS/2) * PEG_SPACING → S = x/PEG_SPACING + ROWS/2
+          const t1 = setTimeout(() => {
             const finalX = coords[coords.length - 1]?.x ?? 0;
             const visualSlot = Math.max(0, Math.min(ROWS, Math.round(finalX / PEG_SPACING + ROWS / 2)));
-            const visualMultiplier = RISK_LEVELS[risk].mults[visualSlot] ?? 0;
+            const visualMultiplier = RISK_LEVELS[riskLevel].mults[visualSlot] ?? 0;
 
-            // Remove this bet from in-flight; server balance (with payout) comes from refresh
-            setInFlightTotal((prev) => Math.max(0, prev - numericBet));
+            setInFlightTotal(prev => Math.max(0, prev - betAmt));
             setHighlightedSlot(visualSlot);
             queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
             queryClient.invalidateQueries({ queryKey: ["/api/pool"] });
@@ -114,38 +96,71 @@ export default function Plinko() {
                 className: "bg-success text-success-foreground border-none",
               });
             } else if (isBreakEven) {
-              toast({
-                title: `1x — Break Even`,
-                description: `Your ${formatCurrency(numericBet)} bet was returned`,
-              });
+              toast({ title: `1x — Break Even`, description: `Your ${formatCurrency(betAmt)} bet was returned` });
             } else {
-              const netLoss = numericBet - data.payout;
-              const gotBack = data.payout > 0
-                ? ` (got ${formatCurrency(data.payout)} back)`
-                : "";
-              toast({
-                title: `${visualMultiplier}x — No luck`,
-                description: `Lost ${formatCurrency(netLoss)}${gotBack}`,
-                variant: "destructive",
-              });
+              const netLoss = betAmt - data.payout;
+              const gotBack = data.payout > 0 ? ` (got ${formatCurrency(data.payout)} back)` : "";
+              toast({ title: `${visualMultiplier}x — No luck`, description: `Lost ${formatCurrency(netLoss)}${gotBack}`, variant: "destructive" });
             }
 
             setTimeout(() => setHighlightedSlot(null), 1200);
           }, highlightDelay);
 
-          // Remove ball visual after animation + pause
-          setTimeout(() => {
-            setBalls((prev) => prev.filter((b) => b.id !== ballId));
+          const t2 = setTimeout(() => {
+            setBalls(prev => prev.filter(b => b.id !== ballId));
           }, highlightDelay + 800);
+
+          timeoutsRef.current.push(t1, t2);
         },
         onError: (err) => {
-          // Refund the optimistic deduction if the request failed
-          setInFlightTotal((prev) => Math.max(0, prev - numericBet));
-          toast({ title: "Error", description: err.error?.error || "Failed to place bet", variant: "destructive" });
+          setInFlightTotal(prev => Math.max(0, prev - betAmt));
+          toast({ title: "Error", description: (err as any).error?.error || "Failed to place bet", variant: "destructive" });
         },
       }
     );
-  }, [user, numericBet, risk, displayBalance, playMut, queryClient, toast]);
+  }, [playMut, queryClient, toast]);
+
+  const handleDrop = useCallback(() => {
+    if (!user) {
+      toast({ title: "Not Authenticated", description: "Please log in to play.", variant: "destructive" });
+      return;
+    }
+    if (numericBet <= 0) {
+      toast({ title: "Invalid Bet", description: "Enter a valid bet amount.", variant: "destructive" });
+      return;
+    }
+    if (numericCount === 1) {
+      if (numericBet > displayBalance) {
+        toast({ title: "Insufficient Funds", description: "You don't have enough coins.", variant: "destructive" });
+        return;
+      }
+      if (balls.length >= MAX_BALLS) {
+        toast({ title: "Max balls reached", description: "Wait for some balls to finish.", variant: "destructive" });
+        return;
+      }
+      dropOneBall(numericBet, risk);
+    } else {
+      if (totalCost > displayBalance) {
+        toast({ title: "Insufficient Funds", description: `Need ${formatCurrency(totalCost)} for ${numericCount} balls.`, variant: "destructive" });
+        return;
+      }
+      droppingRef.current = true;
+      setIsDropping(true);
+
+      for (let i = 0; i < numericCount; i++) {
+        const t = setTimeout(() => {
+          if (!droppingRef.current) return;
+          if (balls.length + i >= MAX_BALLS) { stopDropping(); return; }
+          dropOneBall(numericBet, risk);
+          if (i === numericCount - 1) {
+            droppingRef.current = false;
+            setIsDropping(false);
+          }
+        }, i * BALL_SPAWN_DELAY);
+        timeoutsRef.current.push(t);
+      }
+    }
+  }, [user, numericBet, numericCount, risk, displayBalance, totalCost, balls.length, dropOneBall, stopDropping, toast]);
 
   // Render pegs
   const pegs: React.ReactNode[] = [];
@@ -154,14 +169,9 @@ export default function Plinko() {
     const startX = -((pegsInRow - 1) * PEG_SPACING) / 2;
     for (let p = 0; p < pegsInRow; p++) {
       pegs.push(
-        <div
-          key={`peg-${r}-${p}`}
+        <div key={`peg-${r}-${p}`}
           className="absolute w-2.5 h-2.5 rounded-full bg-white/30 shadow-[0_0_6px_rgba(255,255,255,0.25)]"
-          style={{
-            top: `${r * ROW_HEIGHT}px`,
-            left: `calc(50% + ${startX + p * PEG_SPACING}px)`,
-            transform: "translate(-50%, -50%)",
-          }}
+          style={{ top: `${r * ROW_HEIGHT}px`, left: `calc(50% + ${startX + p * PEG_SPACING}px)`, transform: "translate(-50%, -50%)" }}
         />
       );
     }
@@ -178,59 +188,32 @@ export default function Plinko() {
         <div className="flex-1 flex flex-col">
           <Card className="bg-black border-white/10 overflow-hidden relative flex-1 flex flex-col shadow-2xl">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,0,255,0.06),transparent_70%)]" />
-
-            <div
-              className="relative w-full max-w-md mx-auto"
-              style={{ height: `${boardHeight}px` }}
-            >
-              {/* Pegs */}
+            <div className="relative w-full max-w-md mx-auto" style={{ height: `${boardHeight}px` }}>
               {pegs}
-
-              {/* Active balls */}
               <AnimatePresence>
                 {balls.map((ball) => (
-                  <motion.div
-                    key={ball.id}
+                  <motion.div key={ball.id}
                     className="absolute w-4 h-4 rounded-full z-20 pointer-events-none"
                     style={{
-                      left: "50%",
-                      top: 0,
-                      marginLeft: -8,
-                      marginTop: -8,
-                      background: ball.won
-                        ? "radial-gradient(circle, #fbbf24, #f59e0b)"
-                        : "radial-gradient(circle, #e879f9, #a21caf)",
-                      boxShadow: ball.won
-                        ? "0 0 14px 3px rgba(251,191,36,0.8)"
-                        : "0 0 14px 3px rgba(232,121,249,0.8)",
+                      left: "50%", top: 0, marginLeft: -8, marginTop: -8,
+                      background: ball.won ? "radial-gradient(circle, #fbbf24, #f59e0b)" : "radial-gradient(circle, #e879f9, #a21caf)",
+                      boxShadow: ball.won ? "0 0 14px 3px rgba(251,191,36,0.8)" : "0 0 14px 3px rgba(232,121,249,0.8)",
                     }}
                     initial={{ x: 0, y: 0, opacity: 1 }}
-                    animate={{
-                      x: ball.coords.map((c) => c.x),
-                      y: ball.coords.map((c) => c.y),
-                    }}
+                    animate={{ x: ball.coords.map(c => c.x), y: ball.coords.map(c => c.y) }}
                     exit={{ opacity: 0, scale: 0 }}
                     transition={{
-                      duration: ball.animDuration,
-                      ease: "linear",
-                      times: ball.coords.map((_, i) =>
-                        i / Math.max(1, ball.coords.length - 1)
-                      ),
+                      duration: ball.animDuration, ease: "linear",
+                      times: ball.coords.map((_, i) => i / Math.max(1, ball.coords.length - 1)),
                     }}
                   />
                 ))}
               </AnimatePresence>
-
-              {/* Multiplier slots */}
-              <div
-                className="absolute w-full flex justify-center gap-1 px-3"
-                style={{ top: `${ROWS * ROW_HEIGHT + ROW_HEIGHT * 0.4}px` }}
-              >
+              <div className="absolute w-full flex justify-center gap-1 px-3" style={{ top: `${ROWS * ROW_HEIGHT + ROW_HEIGHT * 0.4}px` }}>
                 {mults.map((m, i) => {
                   const isHighlighted = highlightedSlot === i;
                   return (
-                    <motion.div
-                      key={i}
+                    <motion.div key={i}
                       animate={isHighlighted ? { scale: 1.15 } : { scale: 1 }}
                       transition={{ type: "spring", stiffness: 300, damping: 15 }}
                       className={`flex-1 flex items-center justify-center rounded-md py-2 text-xs font-mono font-bold transition-colors duration-200 ${
@@ -253,15 +236,12 @@ export default function Plinko() {
           <Card className="border-white/10 bg-card/80">
             <CardContent className="p-6 space-y-6">
 
+              {/* Bet Amount */}
               <div className="space-y-3">
                 <label className="text-sm font-medium text-muted-foreground">Bet Amount</label>
                 <div className="relative">
-                  <Input
-                    type="number"
-                    min="0.01"
-                    step="1"
-                    value={betAmount}
-                    onChange={(e) => setBetAmount(e.target.value)}
+                  <Input type="number" min="0.01" step="1" value={betAmount}
+                    onChange={e => setBetAmount(e.target.value)}
                     className="pl-10 font-mono text-lg h-14 bg-black/50 focus-visible:ring-secondary focus-visible:border-secondary"
                     icon={<Coins className="w-5 h-5" />}
                   />
@@ -269,12 +249,11 @@ export default function Plinko() {
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" className="flex-1" onClick={() => setBetAmount(String(Math.max(0.01, numericBet / 2)))}>½</Button>
                   <Button variant="outline" size="sm" className="flex-1" onClick={() => setBetAmount(String(numericBet * 2))}>2×</Button>
-                  {user && (
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setBetAmount(String(displayBalance))}>Max</Button>
-                  )}
+                  {user && <Button variant="outline" size="sm" className="flex-1" onClick={() => setBetAmount(String(displayBalance))}>Max</Button>}
                 </div>
               </div>
 
+              {/* Risk Level */}
               <div className="space-y-3">
                 <label className="text-sm font-medium text-muted-foreground flex justify-between">
                   Risk Level
@@ -283,20 +262,47 @@ export default function Plinko() {
                   </span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
-                  {(["low", "medium", "high"] as const).map((r) => (
-                    <Button
-                      key={r}
-                      variant={risk === r ? "default" : "outline"}
-                      onClick={() => setRisk(r)}
-                      className={`capitalize ${risk === r ? "bg-secondary hover:bg-secondary/90 shadow-secondary/20" : "hover:text-secondary hover:border-secondary/50"}`}
-                    >
+                  {(["low", "medium", "high"] as const).map(r => (
+                    <Button key={r} variant={risk === r ? "default" : "outline"} onClick={() => setRisk(r)}
+                      className={`capitalize ${risk === r ? "bg-secondary hover:bg-secondary/90 shadow-secondary/20" : "hover:text-secondary hover:border-secondary/50"}`}>
                       {r}
                     </Button>
                   ))}
                 </div>
               </div>
 
-              {/* Win odds display */}
+              {/* Ball Count */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-muted-foreground flex justify-between">
+                  Balls to Drop
+                  <span className="text-xs text-secondary/70">0.4s delay each</span>
+                </label>
+                <div className="flex gap-2">
+                  {[1, 3, 5, 10].map(n => (
+                    <Button key={n} variant={numericCount === n && !isDropping ? "default" : "outline"}
+                      size="sm" className="flex-1" disabled={isDropping}
+                      onClick={() => setBallCount(String(n))}>
+                      {n}
+                    </Button>
+                  ))}
+                </div>
+                <div className="relative">
+                  <Input type="number" min="1" max="100" value={ballCount}
+                    onChange={e => setBallCount(e.target.value)}
+                    disabled={isDropping}
+                    className="font-mono text-center bg-black/50 h-10"
+                    placeholder="Custom..."
+                  />
+                </div>
+                {numericCount > 1 && (
+                  <div className="flex justify-between text-xs text-muted-foreground bg-white/5 rounded-lg px-3 py-2 border border-white/5">
+                    <span>Total cost</span>
+                    <span className="font-mono font-bold text-secondary">{formatCurrency(totalCost)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Stats */}
               {pool && (
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5 space-y-1.5 text-xs">
                   <div className="flex justify-between text-muted-foreground">
@@ -320,14 +326,21 @@ export default function Plinko() {
                 </div>
               )}
 
-              <Button
-                size="lg"
-                className="w-full h-16 text-xl bg-secondary hover:bg-secondary/90 shadow-secondary/20"
-                onClick={handlePlay}
-                disabled={numericBet <= 0 || !user}
-              >
-                Drop Ball
-              </Button>
+              {/* Drop Button */}
+              {isDropping ? (
+                <Button size="lg" variant="destructive"
+                  className="w-full h-16 text-xl gap-3"
+                  onClick={stopDropping}>
+                  <StopCircle className="w-6 h-6" /> Stop Dropping
+                </Button>
+              ) : (
+                <Button size="lg"
+                  className="w-full h-16 text-xl bg-secondary hover:bg-secondary/90 shadow-secondary/20"
+                  onClick={handleDrop}
+                  disabled={numericBet <= 0 || !user}>
+                  {numericCount === 1 ? "Drop Ball" : `Drop ${numericCount} Balls`}
+                </Button>
+              )}
 
             </CardContent>
           </Card>
