@@ -52,6 +52,7 @@ export default function Profile() {
   const [balanceMode, setBalanceMode] = useState<"add" | "subtract">("add");
   const [resetBalanceAmount, setResetBalanceAmount] = useState("10000");
   const [confirmReset, setConfirmReset] = useState(false);
+  const [forceReloadPending, setForceReloadPending] = useState(false);
 
   const refillPoolMut = useAdminRefillPool();
   const refillPlayerMut = useAdminRefillPlayer();
@@ -308,6 +309,23 @@ export default function Profile() {
         },
       }
     );
+  };
+
+  const handleForceReload = async () => {
+    setForceReloadPending(true);
+    try {
+      const res = await fetch("/api/admin/force-reload", { method: "POST", credentials: "include" });
+      if (res.ok) {
+        toast({ title: "Reload Signal Sent!", description: "All connected players will reload within 3 seconds.", className: "bg-success text-success-foreground border-none" });
+      } else {
+        const data = await res.json();
+        toast({ title: "Error", description: data.error || "Failed to send reload signal", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Network error", variant: "destructive" });
+    } finally {
+      setForceReloadPending(false);
+    }
   };
 
   const handleUpdateSettings = () => {
@@ -689,6 +707,25 @@ export default function Profile() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Force Reload All Players */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-orange-400 uppercase tracking-widest flex items-center gap-2">
+                <RefreshCw className="w-4 h-4" /> Force Reload All Players
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Sends a signal to every connected browser — they will all refresh within 3 seconds.
+              </p>
+              <Button
+                onClick={handleForceReload}
+                disabled={forceReloadPending}
+                variant="outline"
+                className="border-orange-500/40 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300 gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${forceReloadPending ? "animate-spin" : ""}`} />
+                {forceReloadPending ? "Sending Signal..." : "Reload Everyone's Browser"}
+              </Button>
             </div>
 
             {/* Force Reset All Balances */}

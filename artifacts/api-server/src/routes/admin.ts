@@ -201,6 +201,19 @@ router.post("/admin/reset-all-balances", async (req, res): Promise<void> => {
   );
 });
 
+router.post("/admin/force-reload", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+
+  const ts = Date.now();
+  await db
+    .insert(settingsTable)
+    .values({ key: "force_reload_at", value: ts.toString() })
+    .onConflictDoUpdate({ target: settingsTable.key, set: { value: ts.toString() } });
+
+  res.json({ message: "Force reload signal sent", timestamp: ts });
+});
+
 function formatCurrency(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }

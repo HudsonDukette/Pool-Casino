@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, poolTable, betsTable, usersTable } from "@workspace/db";
+import { db, poolTable, betsTable, usersTable, settingsTable } from "@workspace/db";
 import { desc, gte, eq } from "drizzle-orm";
 import { GetPoolResponse } from "@workspace/api-zod";
 
@@ -28,7 +28,14 @@ router.get("/pool", async (req, res): Promise<void> => {
     .limit(10);
 
   const totalAmount = parseFloat(pool.totalAmount);
-  const maxBet = totalAmount * 0.1;
+  const maxBet = totalAmount;
+
+  const [forceReloadRow] = await db
+    .select()
+    .from(settingsTable)
+    .where(eq(settingsTable.key, "force_reload_at"))
+    .limit(1);
+  const forceReloadAt = forceReloadRow ? parseFloat(forceReloadRow.value) : 0;
 
   res.json(
     GetPoolResponse.parse({
@@ -36,6 +43,7 @@ router.get("/pool", async (req, res): Promise<void> => {
       biggestWin: parseFloat(pool.biggestWin),
       biggestBet: parseFloat(pool.biggestBet),
       maxBet,
+      forceReloadAt,
       recentBigBets: recentBigBets.map((b) => ({
         username: b.username,
         betAmount: parseFloat(b.betAmount),

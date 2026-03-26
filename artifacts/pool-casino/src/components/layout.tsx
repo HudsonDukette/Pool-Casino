@@ -15,6 +15,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const logoutMut = useLogout();
   const queryClient = useQueryClient();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const initialForceReloadAt = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (!pool?.forceReloadAt) return;
+    if (initialForceReloadAt.current === null) {
+      initialForceReloadAt.current = pool.forceReloadAt;
+      return;
+    }
+    if (pool.forceReloadAt !== initialForceReloadAt.current) {
+      window.location.reload();
+    }
+  }, [pool?.forceReloadAt]);
 
   const isGuest = user?.isGuest === true;
   useGuestSession(!!user && !isGuest, isLoading);

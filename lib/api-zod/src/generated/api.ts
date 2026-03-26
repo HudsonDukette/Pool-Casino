@@ -124,6 +124,7 @@ export const GetPoolResponse = zod.object({
   biggestWin: zod.number(),
   biggestBet: zod.number(),
   maxBet: zod.number(),
+  forceReloadAt: zod.number().optional(),
   recentBigBets: zod.array(
     zod.object({
       username: zod.string(),
