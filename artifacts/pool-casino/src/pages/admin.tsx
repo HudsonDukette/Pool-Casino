@@ -20,11 +20,54 @@ import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
 import {
   ShieldAlert, RefreshCw, Users, X, Plus, ArrowRight,
-  Settings, Gamepad2, Power, PowerOff,
+  Settings, Gamepad2, Power, PowerOff, Bell, Crown, Megaphone,
+  CheckCircle2, XCircle, Clock, BanknoteIcon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const BASE = import.meta.env.BASE_URL;
+
+function MoneyRequestRow({ req, onFulfill, onDismiss, loading }: { req: any; onFulfill: (id: number, amt: string) => void; onDismiss: (id: number) => void; loading: boolean }) {
+  const [fulfillAmt, setFulfillAmt] = useState(req.amount?.toString() ?? "10000");
+  return (
+    <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex-1 min-w-0 space-y-0.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-sm">{req.username ?? "Unknown"}</span>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
+            req.status === "pending" ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400" :
+            req.status === "fulfilled" ? "bg-green-500/10 border-green-500/30 text-green-400" :
+            "bg-white/5 border-white/10 text-muted-foreground"
+          }`}>
+            {req.status === "pending" ? <><Clock className="w-2.5 h-2.5 inline mr-1" />Pending</> :
+             req.status === "fulfilled" ? <><CheckCircle2 className="w-2.5 h-2.5 inline mr-1" />Fulfilled</> :
+             <><XCircle className="w-2.5 h-2.5 inline mr-1" />Dismissed</>}
+          </span>
+          <span className="text-xs font-mono text-green-400 font-bold">${parseFloat(req.amount ?? 0).toLocaleString()}</span>
+        </div>
+        {req.message && <p className="text-xs text-muted-foreground italic truncate">"{req.message}"</p>}
+        <p className="text-[10px] text-muted-foreground/60">{new Date(req.createdAt).toLocaleString()}</p>
+      </div>
+      {req.status === "pending" && (
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="relative">
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+            <input type="number" min="1" value={fulfillAmt} onChange={e => setFulfillAmt(e.target.value)}
+              className="pl-5 pr-2 py-1.5 w-28 rounded-lg bg-black/40 border border-white/10 font-mono text-xs outline-none focus:border-green-500/50" />
+          </div>
+          <Button size="sm" onClick={() => onFulfill(req.id, fulfillAmt)} disabled={loading}
+            className="bg-green-600 hover:bg-green-500 text-white h-8 gap-1 text-xs whitespace-nowrap">
+            <CheckCircle2 className="w-3.5 h-3.5" /> Fulfill
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => onDismiss(req.id)} disabled={loading}
+            className="text-muted-foreground hover:text-red-400 h-8 text-xs">
+            <X className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const ALL_GAMES = [
   { id: "roulette",  name: "Neon Roulette",   emoji: "🎡" },
@@ -72,6 +115,65 @@ export default function Admin() {
   const [adminAvatarCost, setAdminAvatarCost] = useState("");
   const [disabledGames, setDisabledGames] = useState<string[]>([]);
   const [togglingGame, setTogglingGame] = useState<string | null>(null);
+
+  const [moneyRequests, setMoneyRequests] = useState<any[]>([]);
+  const [mrLoading, setMrLoading] = useState(false);
+  const [broadcastMsg, setBroadcastMsg] = useState("");
+  const [broadcastPending, setBroadcastPending] = useState(false);
+
+  const loadMoneyRequests = React.useCallback(async () => {
+    if (!user?.isAdmin) return;
+    try {
+      const r = await fetch(`${BASE}api/admin/money-requests`, { credentials: "include" });
+      const data = await r.json();
+      setMoneyRequests(data.requests ?? []);
+    } catch {}
+  }, [user?.isAdmin]);
+
+  useEffect(() => { loadMoneyRequests(); }, [loadMoneyRequests]);
+
+  const fulfillRequest = async (id: number, amount: string) => {
+    setMrLoading(true);
+    try {
+      const r = await fetch(`${BASE}api/admin/money-requests/${id}/fulfill`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: parseFloat(amount) }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error);
+      toast({ title: "Fulfilled!", description: data.message, className: "bg-success text-success-foreground border-none" });
+      loadMoneyRequests();
+      qc.invalidateQueries({ queryKey: ["/api/pool"] });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setMrLoading(false); }
+  };
+
+  const dismissRequest = async (id: number) => {
+    try {
+      await fetch(`${BASE}api/admin/money-requests/${id}/dismiss`, { method: "POST", credentials: "include" });
+      loadMoneyRequests();
+    } catch {}
+  };
+
+  const sendBroadcast = async () => {
+    if (!broadcastMsg.trim()) return;
+    setBroadcastPending(true);
+    try {
+      const r = await fetch(`${BASE}api/admin/broadcast`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: broadcastMsg.trim() }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error);
+      toast({ title: "Broadcast Sent!", description: data.message, className: "bg-success text-success-foreground border-none" });
+      setBroadcastMsg("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setBroadcastPending(false); }
+  };
 
   const adjustedAmount = balanceMode === "subtract"
     ? -(parseFloat(playerRefillAmount) || 0)
@@ -613,6 +715,66 @@ export default function Admin() {
             className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold">
             {updateSettingsMut.isPending ? "Saving..." : "Save Settings"}
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* ── Admin Broadcast ──────────────────────────────────────────────────── */}
+      <Card className="bg-purple-950/20 border-purple-500/20">
+        <CardHeader className="border-b border-purple-500/10 pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg text-purple-300">
+            <Megaphone className="w-5 h-5" /> Admin Broadcast
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 space-y-3">
+          <p className="text-xs text-muted-foreground">Send a highlighted announcement to the General chat room. It appears as a golden banner visible to all players.</p>
+          <div className="flex gap-2">
+            <Input
+              value={broadcastMsg}
+              onChange={e => setBroadcastMsg(e.target.value)}
+              placeholder="Type your announcement..."
+              maxLength={300}
+              className="flex-1 bg-black/40 border-purple-500/20 focus:border-purple-400/50"
+              onKeyDown={e => e.key === "Enter" && !broadcastPending && sendBroadcast()}
+            />
+            <Button onClick={sendBroadcast} disabled={!broadcastMsg.trim() || broadcastPending}
+              className="bg-purple-600 hover:bg-purple-500 text-white font-bold gap-2 whitespace-nowrap">
+              <Megaphone className="w-4 h-4" />
+              {broadcastPending ? "Sending..." : "Send"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Money Requests Inbox ─────────────────────────────────────────────── */}
+      <Card className="bg-green-950/20 border-green-500/20">
+        <CardHeader className="border-b border-green-500/10 pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg text-green-300">
+              <BanknoteIcon className="w-5 h-5" /> Money Requests
+              {moneyRequests.filter(r => r.status === "pending").length > 0 && (
+                <Badge className="bg-green-500 text-black font-bold ml-1">
+                  {moneyRequests.filter(r => r.status === "pending").length} pending
+                </Badge>
+              )}
+            </CardTitle>
+            <Button variant="ghost" size="icon" onClick={loadMoneyRequests} className="text-muted-foreground hover:text-green-300">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {moneyRequests.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <BanknoteIcon className="w-10 h-10 mx-auto mb-3 opacity-20" />
+              <p className="text-sm">No money requests yet.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-white/5">
+              {moneyRequests.map(req => (
+                <MoneyRequestRow key={req.id} req={req} onFulfill={fulfillRequest} onDismiss={dismissRequest} loading={mrLoading} />
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

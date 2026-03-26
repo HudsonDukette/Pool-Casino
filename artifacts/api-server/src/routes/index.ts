@@ -9,6 +9,9 @@ import transactionsRouter from "./transactions";
 import leaderboardRouter from "./leaderboard";
 import adminRouter from "./admin";
 import transferRouter from "./transfer";
+import chatRouter from "./chat";
+import friendsRouter from "./friends";
+import moneyRequestsRouter from "./money-requests";
 
 const router: IRouter = Router();
 
@@ -22,5 +25,8 @@ router.use(transactionsRouter);
 router.use(leaderboardRouter);
 router.use(adminRouter);
 router.use(transferRouter);
+router.use(chatRouter);
+router.use(friendsRouter);
+router.use(moneyRequestsRouter);
 
 export default router;

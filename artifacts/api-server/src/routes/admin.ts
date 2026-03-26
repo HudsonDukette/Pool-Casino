@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, poolTable, settingsTable } from "@workspace/db";
+import { db, usersTable, poolTable, settingsTable, chatMessagesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import {
   AdminRefillPoolBody,
@@ -284,6 +284,23 @@ router.post("/admin/force-reload", async (req, res): Promise<void> => {
     .onConflictDoUpdate({ target: settingsTable.key, set: { value: ts.toString() } });
 
   res.json({ message: "Force reload signal sent", timestamp: ts });
+});
+
+router.post("/admin/broadcast", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+
+  const { content } = req.body;
+  if (!content?.trim()) { res.status(400).json({ error: "Message required" }); return; }
+
+  await db.insert(chatMessagesTable).values({
+    roomId: 1,
+    userId: null,
+    content: content.trim(),
+    isAdminBroadcast: true,
+  });
+
+  res.json({ message: "Broadcast sent to General chat" });
 });
 
 function formatCurrency(n: number) {
