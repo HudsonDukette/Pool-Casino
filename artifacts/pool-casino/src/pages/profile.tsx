@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   useGetMe,
   useGetUserStats,
@@ -68,6 +68,27 @@ export default function Profile() {
 
   const [adminUsernameCost, setAdminUsernameCost] = useState("");
   const [adminAvatarCost, setAdminAvatarCost] = useState("");
+
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const { canClaim, countdownLabel } = useMemo(() => {
+    const lastClaim = stats?.lastDailyClaim ? new Date(stats.lastDailyClaim) : null;
+    if (!lastClaim) return { canClaim: true, countdownLabel: null };
+    const todayUTC = now.toISOString().slice(0, 10);
+    const lastClaimUTC = lastClaim.toISOString().slice(0, 10);
+    if (todayUTC !== lastClaimUTC) return { canClaim: true, countdownLabel: null };
+    const midnight = new Date(now);
+    midnight.setUTCHours(24, 0, 0, 0);
+    const msLeft = midnight.getTime() - now.getTime();
+    const h = Math.floor(msLeft / (1000 * 60 * 60));
+    const m = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
+    const label = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    return { canClaim: false, countdownLabel: label };
+  }, [stats?.lastDailyClaim, now]);
 
   const refillPreviewBalance = selectedPlayer
     ? selectedPlayer.balance + (parseFloat(playerRefillAmount) || 0)
@@ -382,11 +403,20 @@ export default function Profile() {
           </div>
           <Button
             variant="outline"
-            className="w-full md:w-auto bg-white/5 hover:bg-primary/20 hover:text-primary hover:border-primary/50 transition-all"
-            onClick={handleClaim}
-            disabled={claimMut.isPending}
+            className={`w-full md:w-auto transition-all ${
+              canClaim
+                ? "bg-primary/10 hover:bg-primary/20 text-primary border-primary/40 hover:border-primary/70 shadow-[0_0_10px_rgba(0,255,170,0.15)]"
+                : "bg-white/5 text-muted-foreground border-white/10 cursor-not-allowed"
+            }`}
+            onClick={canClaim ? handleClaim : undefined}
+            disabled={claimMut.isPending || !canClaim}
           >
-            <Gift className="w-4 h-4 mr-2" /> Daily Reward
+            <Gift className="w-4 h-4 mr-2" />
+            {claimMut.isPending
+              ? "Claiming..."
+              : canClaim
+              ? "Claim Daily $500"
+              : `Next reward in ${countdownLabel}`}
           </Button>
         </div>
       </div>

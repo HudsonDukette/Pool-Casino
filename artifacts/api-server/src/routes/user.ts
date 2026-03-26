@@ -65,10 +65,16 @@ router.post("/user/claim-daily", async (req, res): Promise<void> => {
   const lastClaim = user.lastDailyClaim;
 
   if (lastClaim) {
-    const diffMs = now.getTime() - lastClaim.getTime();
-    const diffHours = diffMs / (1000 * 60 * 60);
-    if (diffHours < 24) {
-      res.status(400).json({ error: "Already claimed today. Come back in " + Math.ceil(24 - diffHours) + " hours." });
+    const todayUTC = now.toISOString().slice(0, 10);
+    const lastClaimUTC = lastClaim.toISOString().slice(0, 10);
+    if (todayUTC === lastClaimUTC) {
+      const midnight = new Date(now);
+      midnight.setUTCHours(24, 0, 0, 0);
+      const msUntilMidnight = midnight.getTime() - now.getTime();
+      const hoursLeft = Math.floor(msUntilMidnight / (1000 * 60 * 60));
+      const minutesLeft = Math.floor((msUntilMidnight % (1000 * 60 * 60)) / (1000 * 60));
+      const timeStr = hoursLeft > 0 ? `${hoursLeft}h ${minutesLeft}m` : `${minutesLeft}m`;
+      res.status(400).json({ error: `Already claimed today. Resets at midnight UTC — come back in ${timeStr}.` });
       return;
     }
   }
