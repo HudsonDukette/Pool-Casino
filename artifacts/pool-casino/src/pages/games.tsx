@@ -127,15 +127,14 @@ const games = [
   {
     id: "mines",
     name: "Mines",
-    description: "Place mines and reveal safe tiles. More reveals = bigger multiplier. Hit a mine and you lose.",
+    description: "Choose your mines, reveal safe tiles one by one, and cash out before you explode.",
     image: minesImg,
     href: "/games/mines",
-    accentClass: "",
-    titleClass: "",
-    tag: "Maintenance",
-    tagColor: "bg-yellow-500/20 text-yellow-400",
-    glowColor: "rgba(0,0,0,0)",
-    disabled: true,
+    accentClass: "group-hover:border-orange-500/50 group-hover:shadow-[0_0_30px_rgba(249,115,22,0.2)]",
+    titleClass: "group-hover:text-orange-400",
+    tag: "Risk",
+    tagColor: "bg-orange-500/20 text-orange-400",
+    glowColor: "rgba(249,115,22,0.15)",
   },
 ];
 

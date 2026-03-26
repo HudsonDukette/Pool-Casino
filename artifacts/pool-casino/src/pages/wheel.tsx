@@ -109,11 +109,14 @@ export default function Wheel() {
     if (!data) { setSpinning(false); return; }
 
     // Spin to land on the winning segment
+    // targetEffective = how far the wheel needs to be rotated so segment i aligns with the top marker
     const segIdx = data.segmentIndex;
-    const targetAngle = segIdx * SEGMENT_ANGLE + SEGMENT_ANGLE / 2;
-    const landingOffset = 360 - targetAngle;
-    const extraSpins = 5 * 360;
-    totalRotation.current += extraSpins + landingOffset;
+    const targetAngle = (segIdx + 0.5) * SEGMENT_ANGLE;
+    const targetEffective = (360 - targetAngle + 360) % 360;
+    // Compute delta from current position so cumulative rotation stays consistent
+    const currentEffective = totalRotation.current % 360;
+    const additionalOffset = (targetEffective - currentEffective + 360) % 360;
+    totalRotation.current += 5 * 360 + additionalOffset;
 
     setRotation(totalRotation.current);
 

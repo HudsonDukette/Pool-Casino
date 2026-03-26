@@ -297,6 +297,14 @@ export function Register() {
                   className="bg-black/50"
                 />
                 <Input
+                  type="email"
+                  placeholder="Email (Optional)"
+                  icon={<Mail className="w-5 h-5" />}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-black/50"
+                />
+                <Input
                   type="password"
                   placeholder="Password (min 6 chars)"
                   icon={<Lock className="w-5 h-5" />}
@@ -306,6 +314,21 @@ export function Register() {
                   minLength={6}
                   className="bg-black/50"
                 />
+                <Input
+                  placeholder="Referral Code (Optional)"
+                  icon={<Tag className="w-5 h-5" />}
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  className="bg-black/50 font-mono tracking-widest"
+                />
+                {referralCode.trim().length > 0 && (
+                  <div className="bg-green-950/30 border border-green-500/30 rounded-lg p-3 flex items-start gap-3">
+                    <Tag className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-green-300 leading-relaxed">
+                      Referral code applied! You'll receive an extra <span className="font-bold text-green-200">$20,000</span> bonus on signup.
+                    </p>
+                  </div>
+                )}
                 <Button
                   type="submit"
                   variant="outline"

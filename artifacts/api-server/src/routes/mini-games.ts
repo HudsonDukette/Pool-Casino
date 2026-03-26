@@ -362,57 +362,209 @@ router.post("/games/guess", async (req, res): Promise<void> => {
   res.json({ ...result, guessed, actual, distance });
 });
 
-// ─── 7. Mines ────────────────────────────────────────────────────────────────
-router.post("/games/mines", async (req, res): Promise<void> => {
+// ─── 7. Mines — Stateful (start / reveal / cashout) ──────────────────────────
+interface MinesGameState {
+  betAmount: number;
+  minesCount: number;
+  minePositions: Set<number>;
+  revealedSafe: number[];
+  poolId: number;
+  poolAmountAtStart: number; // pool after bet was added
+}
+const minesGames = new Map<number, MinesGameState>();
+
+function minesMultiplier(minesCount: number, safeReveals: number): number {
+  let m = 1;
+  for (let i = 0; i < safeReveals; i++) {
+    m *= ((25 - i) / (25 - minesCount - i)) * 0.97;
+  }
+  return parseFloat(m.toFixed(4));
+}
+
+// Start a new mines game — deducts bet immediately
+router.post("/games/mines/start", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const betAmount = parseBet(req, res); if (!betAmount) return;
-
   const minesCount = parseInt(req.body?.minesCount);
-  const revealCount = parseInt(req.body?.revealCount);
-  if (isNaN(minesCount) || minesCount < 1 || minesCount > 20) {
-    res.status(400).json({ error: "minesCount must be 1–20" }); return;
+  if (isNaN(minesCount) || minesCount < 1 || minesCount > 24) {
+    res.status(400).json({ error: "minesCount must be 1–24" }); return;
   }
-  if (isNaN(revealCount) || revealCount < 1 || revealCount > (25 - minesCount)) {
-    res.status(400).json({ error: `revealCount must be 1–${25 - minesCount}` }); return;
+
+  if (minesGames.has(userId)) {
+    res.status(400).json({ error: "You already have an active mines game. Cash out or let it resolve first." }); return;
   }
 
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  const currentBalance = parseFloat(user.balance);
+  if (currentBalance < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
-  const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
-  const doWin = Math.random() < winChance;
-
-  // Multiplier formula: each safe reveal × (25/(25-mines)) with 0.97 house edge
-  let multiplier = 1;
-  for (let i = 0; i < revealCount; i++) {
-    const safeLeft = 25 - minesCount - i;
-    const tilesLeft = 25 - i;
-    multiplier *= (tilesLeft / safeLeft) * 0.97;
-  }
-  multiplier = parseFloat(multiplier.toFixed(4));
-
-  // Place mines randomly, but if doWin = false, one of the revealed tiles hits a mine
+  // Place mines randomly across the 25-tile grid
   const allTiles = Array.from({ length: 25 }, (_, i) => i);
-  const revealedTiles = [...allTiles].sort(() => Math.random() - 0.5).slice(0, revealCount);
-  const safeTilePool = allTiles.filter(t => !revealedTiles.includes(t));
-  const mines: number[] = [];
+  const shuffled = [...allTiles].sort(() => Math.random() - 0.5);
+  const minePositions = new Set(shuffled.slice(0, minesCount));
 
-  if (!doWin) {
-    // Put at least one mine in revealed tiles
-    mines.push(revealedTiles[Math.floor(Math.random() * revealedTiles.length)]);
-    const remaining = safeTilePool.sort(() => Math.random() - 0.5).slice(0, minesCount - 1);
-    mines.push(...remaining);
-  } else {
-    // All mines in non-revealed tiles
-    const minePool = safeTilePool.sort(() => Math.random() - 0.5).slice(0, minesCount);
-    mines.push(...minePool);
+  const poolAmount = parseFloat(pool.totalAmount);
+  const newBalance = currentBalance - betAmount;
+  const newPool = poolAmount + betAmount;
+
+  // Deduct bet immediately; pool receives it
+  await Promise.all([
+    db.update(usersTable).set({ balance: newBalance.toFixed(2) }).where(eq(usersTable.id, userId)),
+    db.update(poolTable).set({ totalAmount: newPool.toFixed(2) }).where(eq(poolTable.id, pool.id)),
+  ]);
+
+  minesGames.set(userId, {
+    betAmount,
+    minesCount,
+    minePositions,
+    revealedSafe: [],
+    poolId: pool.id,
+    poolAmountAtStart: newPool,
+  });
+
+  res.json({ started: true, minesCount, totalTiles: 25, newBalance });
+});
+
+// Reveal a tile
+router.post("/games/mines/reveal", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const tileIndex = parseInt(req.body?.tileIndex);
+  if (isNaN(tileIndex) || tileIndex < 0 || tileIndex > 24) {
+    res.status(400).json({ error: "tileIndex must be 0–24" }); return;
   }
 
-  const hitMine = !doWin;
-  const finalMultiplier = hitMine ? 0 : multiplier;
-  const result = await settleGame(userId, "mines", betAmount, finalMultiplier, user, pool);
-  res.json({ ...result, minesCount, revealCount, revealedTiles, mines, hitMine, potentialMultiplier: multiplier });
+  const game = minesGames.get(userId);
+  if (!game) { res.status(400).json({ error: "No active mines game. Start a new game first." }); return; }
+  if (game.revealedSafe.includes(tileIndex)) {
+    res.status(400).json({ error: "Tile already revealed" }); return;
+  }
+
+  const hitMine = game.minePositions.has(tileIndex);
+
+  if (hitMine) {
+    minesGames.delete(userId);
+    // Bet already in pool; no payout. Just record the bet.
+    const [[user], [pool]] = await Promise.all([
+      db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
+      db.select().from(poolTable).limit(1),
+    ]);
+    const newBiggestBet = game.betAmount > parseFloat(pool.biggestBet) ? game.betAmount : parseFloat(pool.biggestBet);
+    await Promise.all([
+      db.update(usersTable).set({
+        gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(),
+        totalLosses: (parseInt(user.totalLosses) + 1).toString(),
+        currentStreak: "0",
+        biggestBet: game.betAmount > parseFloat(user.biggestBet) ? game.betAmount.toFixed(2) : user.biggestBet,
+        lastBetAt: new Date(),
+      }).where(eq(usersTable.id, userId)),
+      db.update(poolTable).set({ biggestBet: newBiggestBet.toFixed(2) }).where(eq(poolTable.id, pool.id)),
+      db.insert(betsTable).values({
+        userId,
+        gameType: "mines",
+        betAmount: game.betAmount.toFixed(2),
+        result: "loss",
+        payout: "0.00",
+        multiplier: "0.0000",
+      }),
+    ]);
+    res.json({
+      hitMine: true,
+      minePositions: [...game.minePositions],
+      newBalance: parseFloat(user.balance),
+    });
+    return;
+  }
+
+  game.revealedSafe.push(tileIndex);
+  const currentMultiplier = minesMultiplier(game.minesCount, game.revealedSafe.length);
+  const [[user], [pool]] = await Promise.all([
+    db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
+    db.select().from(poolTable).limit(1),
+  ]);
+  const potentialPayout = Math.min(game.betAmount * currentMultiplier, parseFloat(pool.totalAmount));
+  res.json({
+    hitMine: false,
+    tileIndex,
+    revealedSafe: game.revealedSafe,
+    currentMultiplier,
+    potentialPayout,
+    currentBalance: parseFloat(user.balance),
+    safeLeft: 25 - game.minesCount - game.revealedSafe.length,
+  });
+});
+
+// Cash out current winnings
+router.post("/games/mines/cashout", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+
+  const game = minesGames.get(userId);
+  if (!game) { res.status(400).json({ error: "No active mines game." }); return; }
+  if (game.revealedSafe.length === 0) {
+    res.status(400).json({ error: "Reveal at least one tile before cashing out." }); return;
+  }
+
+  minesGames.delete(userId);
+
+  const [[user], [pool]] = await Promise.all([
+    db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
+    db.select().from(poolTable).limit(1),
+  ]);
+  const currentBalance = parseFloat(user.balance);
+  const poolAmount = parseFloat(pool.totalAmount);
+  const multiplier = minesMultiplier(game.minesCount, game.revealedSafe.length);
+  const uncappedPayout = game.betAmount * multiplier;
+  const payout = Math.min(uncappedPayout, poolAmount);
+  const newBalance = currentBalance + payout;
+  const newPool = Math.max(0, poolAmount - payout);
+  const won = payout > game.betAmount;
+
+  const newBiggestWin = won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin);
+  const newBiggestBet = game.betAmount > parseFloat(pool.biggestBet) ? game.betAmount : parseFloat(pool.biggestBet);
+  const gamesPlayed = parseInt(user.gamesPlayed) + 1;
+  const totalWins = parseInt(user.totalWins) + (won ? 1 : 0);
+  const totalLosses = parseInt(user.totalLosses) + (!won ? 1 : 0);
+  const currentStreak = won ? parseInt(user.currentStreak) + 1 : 0;
+  const winStreak = Math.max(parseInt(user.winStreak), currentStreak);
+  const profit = payout - game.betAmount;
+  const totalProfit = parseFloat(user.totalProfit) + profit;
+
+  await Promise.all([
+    db.update(usersTable).set({
+      balance: newBalance.toFixed(2),
+      totalProfit: totalProfit.toFixed(2),
+      biggestWin: (won && payout > parseFloat(user.biggestWin) ? payout : parseFloat(user.biggestWin)).toFixed(2),
+      biggestBet: (game.betAmount > parseFloat(user.biggestBet) ? game.betAmount : parseFloat(user.biggestBet)).toFixed(2),
+      gamesPlayed: gamesPlayed.toString(),
+      winStreak: winStreak.toString(),
+      currentStreak: currentStreak.toString(),
+      totalWins: totalWins.toString(),
+      totalLosses: totalLosses.toString(),
+      lastBetAt: new Date(),
+    }).where(eq(usersTable.id, userId)),
+    db.update(poolTable).set({
+      totalAmount: newPool.toFixed(2),
+      biggestWin: newBiggestWin.toFixed(2),
+      biggestBet: newBiggestBet.toFixed(2),
+    }).where(eq(poolTable.id, pool.id)),
+    db.insert(betsTable).values({
+      userId,
+      gameType: "mines",
+      betAmount: game.betAmount.toFixed(2),
+      result: won ? "win" : "loss",
+      payout: payout.toFixed(2),
+      multiplier: multiplier.toFixed(4),
+    }),
+  ]);
+
+  res.json({
+    payout,
+    multiplier,
+    newBalance,
+    minePositions: [...game.minePositions],
+    revealedSafe: game.revealedSafe,
+    won,
+  });
 });
 
 // ─── 8. Blackjack — Deal ─────────────────────────────────────────────────────
