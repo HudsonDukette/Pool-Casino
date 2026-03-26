@@ -141,7 +141,7 @@ export const GetPoolResponse = zod.object({
  */
 export const PlayRouletteBody = zod.object({
   betAmount: zod.number(),
-  color: zod.enum(["red", "black"]),
+  color: zod.enum(["red", "black", "green"]),
 });
 
 export const PlayRouletteResponse = zod.object({

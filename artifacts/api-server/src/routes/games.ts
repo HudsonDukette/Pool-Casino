@@ -54,7 +54,11 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
   const poolAmount = parseFloat(pool.totalAmount);
   const currentBalance = parseFloat(user.balance);
 
-  const winChance = calculateWinChance(betAmount, poolAmount);
+  // Green is a fixed rare bet: ~2.5% win chance regardless of pool, 50x payout
+  const isGreen = color === "green";
+  const winChance = isGreen
+    ? Math.min(calculateWinChance(betAmount, poolAmount), 0.025)
+    : calculateWinChance(betAmount, poolAmount);
 
   // Determine win/loss by probability FIRST, then pick a consistent wheel result
   const won = Math.random() < winChance;
@@ -65,13 +69,14 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
     const matchingNumbers = ROULETTE_NUMBERS.filter((n) => n.color === color);
     spinResult = matchingNumbers[Math.floor(Math.random() * matchingNumbers.length)];
   } else {
-    // Pick a number NOT matching the chosen color (includes green)
+    // Pick a number NOT matching the chosen color
     const nonMatchingNumbers = ROULETTE_NUMBERS.filter((n) => n.color !== color);
     spinResult = nonMatchingNumbers[Math.floor(Math.random() * nonMatchingNumbers.length)];
   }
 
   const resultColor = spinResult.color;
-  const payout = won ? betAmount * 2 : 0;
+  const payoutMultiplier = isGreen ? 50 : 2;
+  const payout = won ? betAmount * payoutMultiplier : 0;
 
   const newBalance = currentBalance - betAmount + payout;
   const profit = payout - betAmount;
@@ -115,7 +120,7 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
       betAmount: betAmount.toFixed(2),
       result: won ? "win" : "loss",
       payout: payout.toFixed(2),
-      multiplier: won ? "2.0000" : "0.0000",
+      multiplier: won ? payoutMultiplier.toFixed(4) : "0.0000",
     }),
   ]);
 
