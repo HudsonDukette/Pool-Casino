@@ -43,12 +43,16 @@ export default function Plinko() {
   const [inFlightTotal, setInFlightTotal] = useState(0);
   const nextBallId = useRef(0);
   const MAX_BALLS = 100;
+  const ballsCountRef = useRef(0);
 
   // Multi-ball state
   const [ballCount, setBallCount] = useState<string>("1");
   const [isDropping, setIsDropping] = useState(false);
   const droppingRef = useRef(false);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Keep ballsCountRef always current so closures can read live count
+  useEffect(() => { ballsCountRef.current = balls.length; }, [balls]);
 
   const numericBet = parseFloat(betAmount) || 0;
   const numericCount = Math.max(1, Math.min(100, parseInt(ballCount) || 1));
@@ -150,7 +154,7 @@ export default function Plinko() {
       for (let i = 0; i < numericCount; i++) {
         const t = setTimeout(() => {
           if (!droppingRef.current) return;
-          if (balls.length + i >= MAX_BALLS) { stopDropping(); return; }
+          if (ballsCountRef.current >= MAX_BALLS) { stopDropping(); return; }
           dropOneBall(numericBet, risk);
           if (i === numericCount - 1) {
             droppingRef.current = false;
@@ -160,7 +164,7 @@ export default function Plinko() {
         timeoutsRef.current.push(t);
       }
     }
-  }, [user, numericBet, numericCount, risk, displayBalance, totalCost, balls.length, dropOneBall, stopDropping, toast]);
+  }, [user, numericBet, numericCount, risk, displayBalance, totalCost, dropOneBall, stopDropping, toast]);
 
   // Render pegs
   const pegs: React.ReactNode[] = [];
