@@ -130,11 +130,12 @@ const games = [
     description: "Place mines and reveal safe tiles. More reveals = bigger multiplier. Hit a mine and you lose.",
     image: minesImg,
     href: "/games/mines",
-    accentClass: "group-hover:border-orange-500/50 group-hover:shadow-[0_0_30px_rgba(249,115,22,0.2)]",
-    titleClass: "group-hover:text-orange-400",
-    tag: "Risk",
-    tagColor: "bg-orange-500/20 text-orange-400",
-    glowColor: "rgba(249,115,22,0.15)",
+    accentClass: "",
+    titleClass: "",
+    tag: "Maintenance",
+    tagColor: "bg-yellow-500/20 text-yellow-400",
+    glowColor: "rgba(0,0,0,0)",
+    disabled: true,
   },
 ];
 
@@ -171,33 +172,57 @@ export default function Games() {
       >
         {games.map((game) => (
           <motion.div key={game.id} variants={item}>
-            <Link href={game.href} className="block group h-full">
-              <Card className={`h-full overflow-hidden transition-all duration-500 bg-card/40 border-white/5 relative cursor-pointer ${game.accentClass}`}>
+            {game.disabled ? (
+              <Card className="h-full overflow-hidden bg-card/20 border-white/5 relative opacity-50 cursor-not-allowed select-none">
                 <div className="absolute top-3 right-3 z-20">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${game.tagColor}`}>{game.tag}</span>
+                </div>
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                  <div className="text-center space-y-1">
+                    <p className="text-2xl">🔧</p>
+                    <p className="text-xs font-medium text-yellow-400">Temporarily Unavailable</p>
+                  </div>
                 </div>
                 <CardContent className="p-0 flex flex-col h-[300px]">
                   <div className="h-[175px] relative overflow-hidden border-b border-white/5">
                     <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent z-10" />
-                    <motion.img
-                      src={game.image}
-                      alt={game.name}
-                      className="w-full h-full object-cover"
-                      whileHover={{ scale: 1.06 }}
-                      transition={{ duration: 0.5, ease: "easeOut" }}
-                    />
+                    <img src={game.image} alt={game.name} className="w-full h-full object-cover grayscale" />
                   </div>
                   <div className="p-5 flex-1 flex flex-col justify-center space-y-1.5">
-                    <h3 className={`text-xl font-display font-bold transition-colors duration-300 ${game.titleClass}`}>
-                      {game.name}
-                    </h3>
-                    <p className="text-muted-foreground text-xs line-clamp-2 leading-relaxed">
-                      {game.description}
-                    </p>
+                    <h3 className="text-xl font-display font-bold text-white/40">{game.name}</h3>
+                    <p className="text-muted-foreground/50 text-xs line-clamp-2 leading-relaxed">{game.description}</p>
                   </div>
                 </CardContent>
               </Card>
-            </Link>
+            ) : (
+              <Link href={game.href} className="block group h-full">
+                <Card className={`h-full overflow-hidden transition-all duration-500 bg-card/40 border-white/5 relative cursor-pointer ${game.accentClass}`}>
+                  <div className="absolute top-3 right-3 z-20">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${game.tagColor}`}>{game.tag}</span>
+                  </div>
+                  <CardContent className="p-0 flex flex-col h-[300px]">
+                    <div className="h-[175px] relative overflow-hidden border-b border-white/5">
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent z-10" />
+                      <motion.img
+                        src={game.image}
+                        alt={game.name}
+                        className="w-full h-full object-cover"
+                        whileHover={{ scale: 1.06 }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                      />
+                    </div>
+                    <div className="p-5 flex-1 flex flex-col justify-center space-y-1.5">
+                      <h3 className={`text-xl font-display font-bold transition-colors duration-300 ${game.titleClass}`}>
+                        {game.name}
+                      </h3>
+                      <p className="text-muted-foreground text-xs line-clamp-2 leading-relaxed">
+                        {game.description}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
           </motion.div>
         ))}
       </motion.div>
