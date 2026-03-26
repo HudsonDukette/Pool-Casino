@@ -286,6 +286,18 @@ export const AdminRefillPlayerResponse = zod.object({
 });
 
 /**
+ * @summary Reset all players' balances to a default amount (admin only)
+ */
+export const AdminResetAllBalancesBody = zod.object({
+  newBalance: zod.number().optional(),
+});
+
+export const AdminResetAllBalancesResponse = zod.object({
+  message: zod.string(),
+  usersReset: zod.number(),
+});
+
+/**
  * @summary Change username (costs coins)
  */
 export const changeUsernameBodyNewUsernameMin = 3;

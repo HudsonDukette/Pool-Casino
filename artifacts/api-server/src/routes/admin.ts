@@ -10,6 +10,8 @@ import {
   AdminGetSettingsResponse,
   AdminUpdateSettingsBody,
   AdminUpdateSettingsResponse,
+  AdminResetAllBalancesBody,
+  AdminResetAllBalancesResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -165,5 +167,42 @@ router.post("/admin/settings", async (req, res): Promise<void> => {
     }),
   );
 });
+
+router.post("/admin/reset-all-balances", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+
+  const parsed = AdminResetAllBalancesBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const resetBalance = parsed.data.newBalance ?? 10000;
+
+  const allUsers = await db.select({ id: usersTable.id, isAdmin: usersTable.isAdmin })
+    .from(usersTable);
+
+  const nonAdminUsers = allUsers.filter((u) => !u.isAdmin);
+
+  await Promise.all(
+    nonAdminUsers.map((u) =>
+      db.update(usersTable)
+        .set({ balance: resetBalance.toFixed(2) })
+        .where(eq(usersTable.id, u.id))
+    )
+  );
+
+  res.json(
+    AdminResetAllBalancesResponse.parse({
+      message: `Reset ${nonAdminUsers.length} player balance(s) to ${formatCurrency(resetBalance)}`,
+      usersReset: nonAdminUsers.length,
+    }),
+  );
+});
+
+function formatCurrency(n: number) {
+  return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
 
 export default router;

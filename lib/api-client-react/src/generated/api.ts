@@ -1408,6 +1408,88 @@ export const useAdminRefillPlayer = <
 };
 
 /**
+ * @summary Reset all players' balances (admin only)
+ */
+export const getAdminResetAllBalancesUrl = () => {
+  return `/api/admin/reset-all-balances`;
+};
+
+export const adminResetAllBalances = async (
+  adminResetAllBalancesRequest: AdminResetAllBalancesRequest,
+  options?: RequestInit,
+): Promise<AdminResetAllBalancesResponse> => {
+  return customFetch<AdminResetAllBalancesResponse>(getAdminResetAllBalancesUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminResetAllBalancesRequest),
+  });
+};
+
+export const getAdminResetAllBalancesMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminResetAllBalances>>,
+    TError,
+    { data: BodyType<AdminResetAllBalancesRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminResetAllBalances>>,
+  TError,
+  { data: BodyType<AdminResetAllBalancesRequest> },
+  TContext
+> => {
+  const mutationKey = ["adminResetAllBalances"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminResetAllBalances>>,
+    { data: BodyType<AdminResetAllBalancesRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+    return adminResetAllBalances(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminResetAllBalancesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminResetAllBalances>>
+>;
+export type AdminResetAllBalancesMutationBody = BodyType<AdminResetAllBalancesRequest>;
+export type AdminResetAllBalancesMutationError = ErrorType<ErrorResponse>;
+
+export const useAdminResetAllBalances = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminResetAllBalances>>,
+    TError,
+    { data: BodyType<AdminResetAllBalancesRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminResetAllBalances>>,
+  TError,
+  { data: BodyType<AdminResetAllBalancesRequest> },
+  TContext
+> => {
+  return useMutation(getAdminResetAllBalancesMutationOptions(options));
+};
+
+/**
  * @summary Change username (costs coins)
  */
 export const getChangeUsernameUrl = () => {

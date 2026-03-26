@@ -197,6 +197,15 @@ export interface AdminRefillPlayerResponse {
   newBalance: number;
 }
 
+export interface AdminResetAllBalancesRequest {
+  newBalance?: number;
+}
+
+export interface AdminResetAllBalancesResponse {
+  message: string;
+  usersReset: number;
+}
+
 export interface AdminPlayer {
   id: number;
   username: string;

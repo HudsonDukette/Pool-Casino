@@ -7,6 +7,7 @@ import {
   useAdminRefillPool,
   useAdminRefillPlayer,
   useAdminListPlayers,
+  useAdminResetAllBalances,
   useChangeUsername,
   useChangeAvatar,
   useGetProfileChangeCosts,
@@ -48,9 +49,13 @@ export default function Profile() {
   const [poolRefillAmount, setPoolRefillAmount] = useState("1000000");
   const [selectedPlayer, setSelectedPlayer] = useState<AdminPlayer | null>(null);
   const [playerRefillAmount, setPlayerRefillAmount] = useState("10000");
+  const [balanceMode, setBalanceMode] = useState<"add" | "subtract">("add");
+  const [resetBalanceAmount, setResetBalanceAmount] = useState("10000");
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const refillPoolMut = useAdminRefillPool();
   const refillPlayerMut = useAdminRefillPlayer();
+  const resetAllBalancesMut = useAdminResetAllBalances();
   const { data: playersData, isLoading: playersLoading, refetch: refetchPlayers } = useAdminListPlayers({
     query: { enabled: !!user?.isAdmin },
   });
@@ -93,8 +98,11 @@ export default function Profile() {
     return { canClaim: false, countdownLabel: label };
   }, [stats?.lastDailyClaim, now]);
 
+  const adjustedAmount = balanceMode === "subtract"
+    ? -(parseFloat(playerRefillAmount) || 0)
+    : (parseFloat(playerRefillAmount) || 0);
   const refillPreviewBalance = selectedPlayer
-    ? selectedPlayer.balance + (parseFloat(playerRefillAmount) || 0)
+    ? selectedPlayer.balance + adjustedAmount
     : null;
 
   React.useEffect(() => {
@@ -257,21 +265,46 @@ export default function Profile() {
       toast({ title: "No player selected", description: "Click a player row in the table below", variant: "destructive" });
       return;
     }
-    const amount = parseFloat(playerRefillAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast({ title: "Invalid amount", description: "Enter a valid amount to add", variant: "destructive" });
+    const rawAmount = parseFloat(playerRefillAmount);
+    if (isNaN(rawAmount) || rawAmount <= 0) {
+      toast({ title: "Invalid amount", description: "Enter a valid positive amount", variant: "destructive" });
       return;
     }
+    const amount = balanceMode === "subtract" ? -rawAmount : rawAmount;
     refillPlayerMut.mutate(
       { data: { userId: selectedPlayer.id, amount } },
       {
         onSuccess: (data) => {
-          toast({ title: "Balance Added!", description: data.message, className: "bg-success text-success-foreground border-none" });
+          const verb = balanceMode === "subtract" ? "Subtracted!" : "Added!";
+          toast({ title: `Balance ${verb}`, description: data.message, className: "bg-success text-success-foreground border-none" });
           setSelectedPlayer((prev) => (prev ? { ...prev, balance: prev.balance + amount } : null));
           refetchPlayers();
         },
         onError: (err: any) => {
-          toast({ title: "Error", description: err.error?.error || "Failed to refill player", variant: "destructive" });
+          toast({ title: "Error", description: err.error?.error || "Failed to update balance", variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  const handleResetAllBalances = () => {
+    const newBalance = parseFloat(resetBalanceAmount);
+    if (isNaN(newBalance) || newBalance < 0) {
+      toast({ title: "Invalid amount", variant: "destructive" });
+      return;
+    }
+    resetAllBalancesMut.mutate(
+      { data: { newBalance } },
+      {
+        onSuccess: (data) => {
+          toast({ title: "Balances Reset!", description: data.message, className: "bg-success text-success-foreground border-none" });
+          setConfirmReset(false);
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          refetchPlayers();
+        },
+        onError: (err: any) => {
+          toast({ title: "Error", description: err.error?.error || "Failed to reset balances", variant: "destructive" });
+          setConfirmReset(false);
         },
       }
     );
@@ -658,11 +691,93 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Refill Player */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-yellow-300 uppercase tracking-widest flex items-center gap-2">
-                <Users className="w-4 h-4" /> Refill Player Balance
+            {/* Force Reset All Balances */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-red-400 uppercase tracking-widest flex items-center gap-2">
+                <RefreshCw className="w-4 h-4" /> Force Reset All Balances
               </h3>
+              <p className="text-xs text-muted-foreground">
+                Set every non-admin player's balance to a specific amount. This cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={resetBalanceAmount}
+                    onChange={(e) => { setResetBalanceAmount(e.target.value); setConfirmReset(false); }}
+                    className="pl-7 bg-black/40 border-red-500/20 focus:border-red-500/50 font-mono"
+                    placeholder="10000"
+                  />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {[0, 1000, 10000, 100000].map((amt) => (
+                    <button
+                      key={amt}
+                      onClick={() => { setResetBalanceAmount(amt.toString()); setConfirmReset(false); }}
+                      className="text-xs px-3 py-1.5 rounded-full border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      ${amt.toLocaleString()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {!confirmReset ? (
+                <Button
+                  onClick={() => setConfirmReset(true)}
+                  variant="outline"
+                  className="border-red-500/40 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                >
+                  Reset All Player Balances to {formatCurrency(parseFloat(resetBalanceAmount) || 0)}
+                </Button>
+              ) : (
+                <div className="flex items-center gap-3 bg-red-950/30 border border-red-500/30 rounded-xl p-4">
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-red-300">Are you sure?</p>
+                    <p className="text-xs text-muted-foreground">This will reset ALL player balances to {formatCurrency(parseFloat(resetBalanceAmount) || 0)}.</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setConfirmReset(false)}
+                    className="text-muted-foreground"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleResetAllBalances}
+                    disabled={resetAllBalancesMut.isPending}
+                    className="bg-red-600 hover:bg-red-500 text-white font-bold"
+                  >
+                    {resetAllBalancesMut.isPending ? "Resetting..." : "Confirm Reset"}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Refill / Subtract Player */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-yellow-300 uppercase tracking-widest flex items-center gap-2">
+                  <Users className="w-4 h-4" /> Adjust Player Balance
+                </h3>
+                <div className="flex rounded-lg overflow-hidden border border-yellow-500/30 text-xs font-medium">
+                  <button
+                    onClick={() => setBalanceMode("add")}
+                    className={`px-3 py-1.5 transition-colors ${balanceMode === "add" ? "bg-yellow-500 text-black" : "bg-black/40 text-yellow-400 hover:bg-yellow-500/10"}`}
+                  >
+                    + Add
+                  </button>
+                  <button
+                    onClick={() => setBalanceMode("subtract")}
+                    className={`px-3 py-1.5 transition-colors ${balanceMode === "subtract" ? "bg-red-500 text-white" : "bg-black/40 text-red-400 hover:bg-red-500/10"}`}
+                  >
+                    − Subtract
+                  </button>
+                </div>
+              </div>
 
               {selectedPlayer ? (
                 <div className="bg-black/40 border border-yellow-500/30 rounded-xl p-4 space-y-4">
@@ -682,16 +797,18 @@ export default function Profile() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground uppercase tracking-wider">Amount to add</label>
+                    <label className="text-xs text-muted-foreground uppercase tracking-wider">
+                      Amount to {balanceMode === "subtract" ? "subtract" : "add"}
+                    </label>
                     <div className="flex gap-2">
                       <div className="relative flex-1">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-yellow-400 font-bold">$</span>
+                        <span className={`absolute left-3 top-1/2 -translate-y-1/2 font-bold ${balanceMode === "subtract" ? "text-red-400" : "text-yellow-400"}`}>$</span>
                         <Input
                           type="number"
                           min="1"
                           value={playerRefillAmount}
                           onChange={(e) => setPlayerRefillAmount(e.target.value)}
-                          className="pl-7 bg-black/60 border-yellow-500/30 focus:border-yellow-500/60 font-mono text-lg h-11"
+                          className={`pl-7 bg-black/60 font-mono text-lg h-11 ${balanceMode === "subtract" ? "border-red-500/30 focus:border-red-500/60" : "border-yellow-500/30 focus:border-yellow-500/60"}`}
                           placeholder="0"
                         />
                       </div>
@@ -703,11 +820,11 @@ export default function Profile() {
                           onClick={() => setPlayerRefillAmount(amt.toString())}
                           className={`text-xs px-3 py-1 rounded-full border transition-colors ${
                             playerRefillAmount === amt.toString()
-                              ? "bg-yellow-500/20 border-yellow-500/60 text-yellow-300"
-                              : "border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/10"
+                              ? balanceMode === "subtract" ? "bg-red-500/20 border-red-500/60 text-red-300" : "bg-yellow-500/20 border-yellow-500/60 text-yellow-300"
+                              : balanceMode === "subtract" ? "border-red-500/20 text-red-500 hover:bg-red-500/10" : "border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/10"
                           }`}
                         >
-                          +${amt.toLocaleString()}
+                          {balanceMode === "subtract" ? "-" : "+"}${amt.toLocaleString()}
                         </button>
                       ))}
                     </div>
@@ -718,24 +835,35 @@ export default function Profile() {
                       <p className="text-xs text-muted-foreground mb-1">Current Balance</p>
                       <p className="font-mono font-bold text-white">{formatCurrency(selectedPlayer.balance)}</p>
                     </div>
-                    <div className="text-yellow-500"><Plus className="w-4 h-4" /></div>
+                    <div className={balanceMode === "subtract" ? "text-red-400" : "text-yellow-500"}>
+                      {balanceMode === "subtract" ? <span className="font-bold text-lg">−</span> : <Plus className="w-4 h-4" />}
+                    </div>
                     <div className="flex-1 text-center">
-                      <p className="text-xs text-muted-foreground mb-1">Adding</p>
-                      <p className="font-mono font-bold text-yellow-400">+{formatCurrency(parseFloat(playerRefillAmount) || 0)}</p>
+                      <p className="text-xs text-muted-foreground mb-1">{balanceMode === "subtract" ? "Subtracting" : "Adding"}</p>
+                      <p className={`font-mono font-bold ${balanceMode === "subtract" ? "text-red-400" : "text-yellow-400"}`}>
+                        {balanceMode === "subtract" ? "-" : "+"}{formatCurrency(parseFloat(playerRefillAmount) || 0)}
+                      </p>
                     </div>
                     <div className="text-muted-foreground"><ArrowRight className="w-4 h-4" /></div>
                     <div className="flex-1 text-center">
                       <p className="text-xs text-muted-foreground mb-1">New Balance</p>
-                      <p className="font-mono font-bold text-primary">{formatCurrency(refillPreviewBalance || 0)}</p>
+                      <p className={`font-mono font-bold ${(refillPreviewBalance || 0) < 0 ? "text-destructive" : "text-primary"}`}>
+                        {formatCurrency(Math.max(0, refillPreviewBalance || 0))}
+                      </p>
                     </div>
                   </div>
 
                   <Button
                     onClick={handleRefillPlayer}
                     disabled={refillPlayerMut.isPending || !parseFloat(playerRefillAmount)}
-                    className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold h-11"
+                    className={`w-full font-bold h-11 ${balanceMode === "subtract" ? "bg-red-600 hover:bg-red-500 text-white" : "bg-yellow-500 hover:bg-yellow-400 text-black"}`}
                   >
-                    {refillPlayerMut.isPending ? "Adding Funds..." : `Add ${formatCurrency(parseFloat(playerRefillAmount) || 0)} to ${selectedPlayer.username}`}
+                    {refillPlayerMut.isPending
+                      ? (balanceMode === "subtract" ? "Subtracting..." : "Adding Funds...")
+                      : balanceMode === "subtract"
+                        ? `Subtract ${formatCurrency(parseFloat(playerRefillAmount) || 0)} from ${selectedPlayer.username}`
+                        : `Add ${formatCurrency(parseFloat(playerRefillAmount) || 0)} to ${selectedPlayer.username}`
+                    }
                   </Button>
                 </div>
               ) : (
