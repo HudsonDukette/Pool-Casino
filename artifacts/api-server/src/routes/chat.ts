@@ -94,15 +94,35 @@ router.get("/chat/rooms/public", async (req, res): Promise<void> => {
   res.json({ rooms });
 });
 
+router.post("/chat/rooms/:id/invite/:targetUserId", async (req, res): Promise<void> => {
+  const userId = requireAuth(req, res);
+  if (!userId) return;
+
+  const roomId = parseInt(req.params.id);
+  const targetId = parseInt(req.params.targetUserId);
+
+  const [membership] = await db.select().from(chatRoomMembersTable)
+    .where(and(eq(chatRoomMembersTable.roomId, roomId), eq(chatRoomMembersTable.userId, userId))).limit(1);
+  if (!membership) { res.status(403).json({ error: "You are not a member of this room" }); return; }
+
+  const [targetUser] = await db.select({ id: usersTable.id, username: usersTable.username })
+    .from(usersTable).where(eq(usersTable.id, targetId)).limit(1);
+  if (!targetUser) { res.status(404).json({ error: "User not found" }); return; }
+
+  await ensureMember(targetId, roomId);
+  res.json({ message: `${targetUser.username} invited to the room` });
+});
+
 router.post("/chat/rooms", async (req, res): Promise<void> => {
   const userId = requireAuth(req, res);
   if (!userId) return;
 
-  const { name } = req.body;
+  const { name, isPrivate } = req.body;
   if (!name?.trim()) { res.status(400).json({ error: "Room name required" }); return; }
   if (name.trim().length > 50) { res.status(400).json({ error: "Room name too long" }); return; }
 
-  const [room] = await db.insert(chatRoomsTable).values({ name: name.trim(), type: "public", createdBy: userId }).returning();
+  const roomType = isPrivate ? "private" : "public";
+  const [room] = await db.insert(chatRoomsTable).values({ name: name.trim(), type: roomType, createdBy: userId }).returning();
   await db.insert(chatRoomMembersTable).values({ roomId: room.id, userId, lastReadAt: new Date() });
 
   res.json({ room });
@@ -114,7 +134,7 @@ router.post("/chat/rooms/:id/join", async (req, res): Promise<void> => {
 
   const roomId = parseInt(req.params.id);
   const [room] = await db.select().from(chatRoomsTable).where(eq(chatRoomsTable.id, roomId)).limit(1);
-  if (!room || room.type === "dm") { res.status(404).json({ error: "Room not found" }); return; }
+  if (!room || room.type === "dm" || room.type === "private") { res.status(403).json({ error: "This room is invite only" }); return; }
 
   await ensureMember(userId, roomId);
   res.json({ message: "Joined" });

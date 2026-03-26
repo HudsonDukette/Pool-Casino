@@ -86,6 +86,8 @@ function ChatPanel({ room, userId }: { room: ChatRoom; userId: number }) {
 
   useEffect(() => { markRead(); }, [room.id]);
 
+  const { toast } = useToast();
+
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = input.trim();
@@ -98,6 +100,7 @@ function ChatPanel({ room, userId }: { room: ChatRoom; userId: number }) {
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch (err: any) {
       setInput(text);
+      toast({ title: "Failed to send", description: err.message ?? "Please try again", variant: "destructive" });
     } finally { setSending(false); }
     inputRef.current?.focus();
   };
@@ -188,6 +191,7 @@ function ChatPanel({ room, userId }: { room: ChatRoom; userId: number }) {
 function RoomList({ rooms, activeRoomId, onSelect, onCreateRoom, onJoinPublic }: any) {
   const [showCreate, setShowCreate] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
+  const [newRoomPrivate, setNewRoomPrivate] = useState(false);
   const [showPublic, setShowPublic] = useState(false);
   const [publicRooms, setPublicRooms] = useState<any[]>([]);
   const { toast } = useToast();
@@ -195,8 +199,8 @@ function RoomList({ rooms, activeRoomId, onSelect, onCreateRoom, onJoinPublic }:
   const createRoom = async () => {
     if (!newRoomName.trim()) return;
     try {
-      await onCreateRoom(newRoomName.trim());
-      setNewRoomName(""); setShowCreate(false);
+      await onCreateRoom(newRoomName.trim(), newRoomPrivate);
+      setNewRoomName(""); setNewRoomPrivate(false); setShowCreate(false);
     } catch (err: any) { toast({ title: "Error", description: err.message, variant: "destructive" }); }
   };
 
@@ -209,6 +213,7 @@ function RoomList({ rooms, activeRoomId, onSelect, onCreateRoom, onJoinPublic }:
   const groups = {
     general: rooms.filter((r: ChatRoom) => r.type === "general"),
     public: rooms.filter((r: ChatRoom) => r.type === "public"),
+    private: rooms.filter((r: ChatRoom) => r.type === "private"),
     group: rooms.filter((r: ChatRoom) => r.type === "group"),
     dm: rooms.filter((r: ChatRoom) => r.type === "dm"),
   };
@@ -219,15 +224,15 @@ function RoomList({ rooms, activeRoomId, onSelect, onCreateRoom, onJoinPublic }:
       {room.type === "dm" ? (
         <Avatar username={room.otherUser?.username} avatarUrl={room.otherUser?.avatarUrl} size={6} />
       ) : (
-        <div className={`w-6 h-6 rounded-md flex items-center justify-center text-xs ${room.type === "general" ? "bg-primary/20 text-primary" : "bg-white/10"}`}>
-          {room.type === "general" ? <Globe className="w-3 h-3" /> : room.type === "group" ? <Users className="w-3 h-3" /> : <Hash className="w-3 h-3" />}
+        <div className={`w-6 h-6 rounded-md flex items-center justify-center text-xs flex-shrink-0 ${room.type === "general" ? "bg-primary/20 text-primary" : room.type === "private" ? "bg-purple-500/20 text-purple-400" : "bg-white/10"}`}>
+          {room.type === "general" ? <Globe className="w-3 h-3" /> : room.type === "private" ? <Lock className="w-3 h-3" /> : room.type === "group" ? <Users className="w-3 h-3" /> : <Hash className="w-3 h-3" />}
         </div>
       )}
       <span className="flex-1 text-sm font-medium truncate">
         {room.type === "dm" ? (room.otherUser?.username ?? "Unknown") : room.name}
       </span>
       {room.unreadCount > 0 && (
-        <span className="bg-primary text-black text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+        <span className="bg-primary text-black text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center flex-shrink-0">
           {room.unreadCount > 99 ? "99+" : room.unreadCount}
         </span>
       )}
@@ -252,9 +257,14 @@ function RoomList({ rooms, activeRoomId, onSelect, onCreateRoom, onJoinPublic }:
         <div className="p-3 border-b border-white/5 space-y-2">
           <Input value={newRoomName} onChange={e => setNewRoomName(e.target.value)} placeholder="Room name..."
             className="bg-white/5 border-white/10 text-sm h-8" onKeyDown={e => e.key === "Enter" && createRoom()} autoFocus />
+          <button onClick={() => setNewRoomPrivate(v => !v)}
+            className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg border text-xs transition-colors ${newRoomPrivate ? "bg-purple-500/10 border-purple-500/40 text-purple-300" : "border-white/10 text-muted-foreground hover:border-white/20"}`}>
+            <Lock className="w-3 h-3" />
+            {newRoomPrivate ? "Invite Only — only you can add people" : "Public — anyone can join"}
+          </button>
           <div className="flex gap-2">
             <Button size="sm" onClick={createRoom} className="flex-1 h-7 text-xs bg-primary text-black">Create</Button>
-            <Button size="sm" variant="ghost" onClick={() => setShowCreate(false)} className="h-7 text-xs">Cancel</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setShowCreate(false); setNewRoomPrivate(false); }} className="h-7 text-xs">Cancel</Button>
           </div>
         </div>
       )}
@@ -290,6 +300,14 @@ function RoomList({ rooms, activeRoomId, onSelect, onCreateRoom, onJoinPublic }:
             {groups.public.map(renderRoom)}
           </div>
         )}
+        {groups.private.length > 0 && (
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest px-2 mb-1 flex items-center gap-1">
+              <Lock className="w-2.5 h-2.5" /> Private Rooms
+            </p>
+            {groups.private.map(renderRoom)}
+          </div>
+        )}
         {groups.group.length > 0 && (
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest px-2 mb-1">Groups</p>
@@ -311,9 +329,12 @@ function FriendsPanel({ userId, onOpenDm }: { userId: number; onOpenDm: (friendU
   const [friends, setFriends] = useState<Friend[]>([]);
   const [incoming, setIncoming] = useState<FriendRequest[]>([]);
   const [outgoing, setOutgoing] = useState<any[]>([]);
-  const [addUsername, setAddUsername] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -327,12 +348,25 @@ function FriendsPanel({ userId, onOpenDm }: { userId: number; onOpenDm: (friendU
 
   useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, [load]);
 
-  const sendRequest = async () => {
-    if (!addUsername.trim()) return;
+  useEffect(() => {
+    if (searchQuery.length < 2) { setSearchResults([]); return; }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const data = await apiFetch(`api/users/search?q=${encodeURIComponent(searchQuery)}`);
+        setSearchResults(data.users ?? []);
+      } catch {} finally { setSearching(false); }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const sendRequest = async (username: string) => {
+    if (!username.trim()) return;
     try {
-      const data = await apiFetch("api/friends/request", { method: "POST", body: JSON.stringify({ username: addUsername.trim() }) });
+      const data = await apiFetch("api/friends/request", { method: "POST", body: JSON.stringify({ username: username.trim() }) });
       toast({ title: "Request Sent!", description: data.message, className: "bg-success text-success-foreground border-none" });
-      setAddUsername("");
+      setSearchQuery("");
+      setSearchResults([]);
       load();
     } catch (err: any) { toast({ title: "Error", description: err.message, variant: "destructive" }); }
   };
@@ -349,15 +383,42 @@ function FriendsPanel({ userId, onOpenDm }: { userId: number; onOpenDm: (friendU
 
   return (
     <div className="flex flex-col h-full overflow-y-auto p-4 space-y-6">
-      {/* Add Friend */}
+      {/* Add Friend — live search */}
       <div className="space-y-2">
         <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Add Friend</h3>
-        <div className="flex gap-2">
-          <Input value={addUsername} onChange={e => setAddUsername(e.target.value)} placeholder="Enter username..."
-            className="bg-white/5 border-white/10 flex-1" onKeyDown={e => e.key === "Enter" && sendRequest()} />
-          <Button onClick={sendRequest} disabled={!addUsername.trim()} size="sm" className="bg-primary text-black gap-1">
-            <UserPlus className="w-3.5 h-3.5" /> Add
-          </Button>
+        <div ref={searchRef} className="relative">
+          <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by username..."
+            className="bg-white/5 border-white/10 w-full pr-8" autoComplete="off" />
+          {searching && <RefreshCw className="w-3.5 h-3.5 animate-spin absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />}
+          {searchResults.length > 0 && (
+            <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-card border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+              {searchResults.map(u => {
+                const isFriend = friends.some(f => f.user?.id === u.id);
+                const isPending = outgoing.some(o => o.to?.id === u.id);
+                return (
+                  <div key={u.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 transition-colors">
+                    <Avatar username={u.username} avatarUrl={u.avatarUrl} size={6} />
+                    <span className="flex-1 text-sm font-medium">{u.username}</span>
+                    {isFriend ? (
+                      <span className="text-[10px] text-primary font-medium px-2 py-0.5 rounded-full bg-primary/10">Friends</span>
+                    ) : isPending ? (
+                      <span className="text-[10px] text-muted-foreground px-2 py-0.5 rounded-full bg-white/5">Pending</span>
+                    ) : (
+                      <button onClick={() => sendRequest(u.username)}
+                        className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/20 text-primary hover:bg-primary/30 transition-colors">
+                        Add
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {searchQuery.length >= 2 && !searching && searchResults.length === 0 && (
+            <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-card border border-white/10 rounded-xl shadow-xl px-3 py-3">
+              <p className="text-xs text-muted-foreground">No users found for "{searchQuery}"</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -390,13 +451,13 @@ function FriendsPanel({ userId, onOpenDm }: { userId: number; onOpenDm: (friendU
         </h3>
         {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
         {!loading && friends.length === 0 && (
-          <p className="text-sm text-muted-foreground">No friends yet. Add someone above!</p>
+          <p className="text-sm text-muted-foreground">No friends yet. Search for someone above!</p>
         )}
         {friends.map(f => (
-          <div key={f.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3 group">
+          <div key={f.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3">
             <Avatar username={f.user?.username} avatarUrl={f.user?.avatarUrl} />
             <span className="flex-1 text-sm font-medium">{f.user?.username ?? "Unknown"}</span>
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex gap-1">
               {f.user && (
                 <button onClick={() => onOpenDm(f.user!.id)} title="Send message" className="p-1.5 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors">
                   <MessageSquare className="w-3.5 h-3.5" />
@@ -436,6 +497,8 @@ export default function Chat() {
   const [activeRoom, setActiveRoom] = useState<ChatRoom | null>(null);
   const [tab, setTab] = useState<"chat" | "friends">("chat");
   const [showMobileRooms, setShowMobileRooms] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [friends, setFriends] = useState<Friend[]>([]);
   const { toast } = useToast();
 
   const loadRooms = useCallback(async () => {
@@ -451,11 +514,23 @@ export default function Chat() {
 
   useEffect(() => { loadRooms(); const t = setInterval(loadRooms, 5000); return () => clearInterval(t); }, [loadRooms]);
 
-  const handleCreateRoom = async (name: string) => {
-    const data = await apiFetch("api/chat/rooms", { method: "POST", body: JSON.stringify({ name }) });
+  useEffect(() => {
+    if (!user) return;
+    apiFetch("api/friends").then(d => setFriends(d.friends ?? [])).catch(() => {});
+  }, [user]);
+
+  const handleCreateRoom = async (name: string, isPrivate: boolean) => {
+    const data = await apiFetch("api/chat/rooms", { method: "POST", body: JSON.stringify({ name, isPrivate }) });
     await loadRooms();
-    const r = rooms.find(x => x.name === name && x.type === "public");
     if (data.room) setActiveRoom({ ...data.room, unreadCount: 0, lastMessage: null, otherUser: null });
+  };
+
+  const handleInvite = async (friendUserId: number, roomId: number) => {
+    try {
+      const data = await apiFetch(`api/chat/rooms/${roomId}/invite/${friendUserId}`, { method: "POST" });
+      toast({ title: "Invited!", description: data.message, className: "bg-success text-success-foreground border-none" });
+      setShowInvite(false);
+    } catch (err: any) { toast({ title: "Error", description: err.message, variant: "destructive" }); }
   };
 
   const handleJoinPublic = async (roomId: number) => {
@@ -500,8 +575,8 @@ export default function Chat() {
   const totalUnread = rooms.reduce((sum, r) => sum + (r.unreadCount ?? 0), 0);
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -my-8" style={{ height: "calc(100dvh - 64px)" }}>
-      <div className="flex h-full border-t border-white/5 bg-black/40">
+    <div className="h-full flex flex-col">
+      <div className="flex flex-1 min-h-0 border-t border-white/5 bg-black/40">
         {/* Sidebar */}
         <div className={`flex flex-col w-64 flex-shrink-0 border-r border-white/5 bg-black/20 ${showMobileRooms ? "block" : "hidden md:flex"}`}>
           {/* Tabs */}
@@ -534,33 +609,63 @@ export default function Chat() {
           {activeRoom ? (
             <>
               {/* Room Header */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-black/20">
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-black/20 relative">
                 <button onClick={() => setShowMobileRooms(!showMobileRooms)} className="md:hidden p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground">
                   <MessageSquare className="w-4 h-4" />
                 </button>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeRoom.type === "general" ? "bg-primary/20" : "bg-white/10"}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${activeRoom.type === "general" ? "bg-primary/20" : activeRoom.type === "private" ? "bg-purple-500/20" : "bg-white/10"}`}>
                   {activeRoom.type === "dm"
                     ? <Avatar username={activeRoom.otherUser?.username} avatarUrl={activeRoom.otherUser?.avatarUrl} size={8} />
                     : activeRoom.type === "general" ? <Globe className="w-4 h-4 text-primary" />
+                    : activeRoom.type === "private" ? <Lock className="w-4 h-4 text-purple-400" />
                     : activeRoom.type === "group" ? <Users className="w-4 h-4 text-muted-foreground" />
                     : <Hash className="w-4 h-4 text-muted-foreground" />
                   }
                 </div>
-                <div>
-                  <p className="text-sm font-semibold">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">
                     {activeRoom.type === "dm" ? (activeRoom.otherUser?.username ?? "DM") : activeRoom.name}
                   </p>
-                  <p className="text-xs text-muted-foreground capitalize">{activeRoom.type === "dm" ? "Direct Message" : activeRoom.type}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{activeRoom.type === "dm" ? "Direct Message" : activeRoom.type === "private" ? "Invite Only" : activeRoom.type}</p>
                 </div>
-                {activeRoom.type !== "general" && (
-                  <button onClick={async () => {
-                    await apiFetch(`api/chat/rooms/${activeRoom.id}/leave`, { method: "POST" });
-                    loadRooms();
-                    setActiveRoom(rooms.find(r => r.type === "general") ?? null);
-                  }} className="ml-auto text-xs text-muted-foreground hover:text-red-400 transition-colors">
-                    Leave
-                  </button>
-                )}
+                <div className="ml-auto flex items-center gap-2">
+                  {(activeRoom.type === "private" || activeRoom.type === "public" || activeRoom.type === "group") && friends.length > 0 && (
+                    <div className="relative">
+                      <button onClick={() => setShowInvite(v => !v)}
+                        className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 hover:bg-purple-500/20 transition-colors">
+                        <UserPlus className="w-3 h-3" /> Invite
+                      </button>
+                      {showInvite && (
+                        <div className="absolute right-0 top-full mt-1 z-50 w-56 bg-card border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+                          <div className="p-2 border-b border-white/5 flex items-center justify-between">
+                            <span className="text-xs font-medium text-muted-foreground px-1">Invite a friend</span>
+                            <button onClick={() => setShowInvite(false)} className="p-0.5 text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
+                          </div>
+                          <div className="max-h-48 overflow-y-auto">
+                            {friends.map(f => f.user && (
+                              <button key={f.id} onClick={() => handleInvite(f.user!.id, activeRoom.id)}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-white/5 transition-colors text-left">
+                                <Avatar username={f.user.username} avatarUrl={f.user.avatarUrl} size={6} />
+                                <span className="text-sm flex-1 truncate">{f.user.username}</span>
+                                <UserPlus className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {activeRoom.type !== "general" && (
+                    <button onClick={async () => {
+                      await apiFetch(`api/chat/rooms/${activeRoom.id}/leave`, { method: "POST" });
+                      loadRooms();
+                      setActiveRoom(rooms.find(r => r.type === "general") ?? null);
+                      setShowInvite(false);
+                    }} className="text-xs text-muted-foreground hover:text-red-400 transition-colors">
+                      Leave
+                    </button>
+                  )}
+                </div>
               </div>
               <ChatPanel key={activeRoom.id} room={activeRoom} userId={user.id} />
             </>

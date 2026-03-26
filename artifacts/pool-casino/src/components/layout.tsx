@@ -100,8 +100,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     ...(user?.isAdmin ? [{ href: "/admin", label: "Admin", icon: <ShieldAlert className="w-4 h-4" /> }] : []),
   ];
 
+  const isChat = location === "/chat";
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col overflow-x-hidden">
+    <div className={`bg-background text-foreground flex flex-col overflow-x-hidden ${isChat ? "h-screen overflow-hidden" : "min-h-screen"}`}>
       {/* Top Navbar */}
       <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -190,11 +192,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       </span>
                     </div>
                     <Link href="/profile">
-                      <Button variant="ghost" size="icon" className="rounded-full bg-white/5 border border-white/10 overflow-hidden p-0">
+                      <Button variant="ghost" size="icon" className="rounded-full bg-white/5 border border-white/10 overflow-hidden p-0 w-8 h-8">
                         {user.avatarUrl ? (
                           <img src={user.avatarUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
                         ) : (
-                          <UserIcon className="w-4 h-4" />
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/80 to-accent/80 flex items-center justify-center text-black text-xs font-bold">
+                            {user.username.charAt(0).toUpperCase()}
+                          </div>
                         )}
                       </Button>
                     </Link>
@@ -371,12 +375,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className={`flex-1 w-full ${isChat ? "" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}`}>
         {children}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 py-8 mt-auto">
+      {/* Footer — hidden on /chat so it never overlaps the input */}
+      {!isChat && <footer className="border-t border-white/5 py-8 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 opacity-50">
             <div className="w-6 h-6 rounded border border-white/20 flex items-center justify-center">
@@ -396,7 +400,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <MessageSquare className="w-3.5 h-3.5" /> Support &amp; Feedback
           </a>
         </div>
-      </footer>
+      </footer>}
     </div>
   );
 }

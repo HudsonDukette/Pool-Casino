@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, friendsTable } from "@workspace/db";
-import { eq, and, or, inArray } from "drizzle-orm";
+import { eq, and, or, inArray, ilike, ne } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -9,6 +9,21 @@ function requireAuth(req: any, res: any): number | null {
   if (!userId) { res.status(401).json({ error: "Not authenticated" }); return null; }
   return userId;
 }
+
+router.get("/users/search", async (req, res): Promise<void> => {
+  const userId = requireAuth(req, res);
+  if (!userId) return;
+
+  const q = ((req.query.q as string) ?? "").trim();
+  if (!q || q.length < 2) { res.json({ users: [] }); return; }
+
+  const results = await db.select({ id: usersTable.id, username: usersTable.username, avatarUrl: usersTable.avatarUrl })
+    .from(usersTable)
+    .where(and(ilike(usersTable.username, `%${q}%`), ne(usersTable.id, userId)))
+    .limit(10);
+
+  res.json({ users: results });
+});
 
 router.get("/friends", async (req, res): Promise<void> => {
   const userId = requireAuth(req, res);
