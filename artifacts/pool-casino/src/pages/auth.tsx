@@ -5,9 +5,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Lock, Mail, AlertCircle, Tag } from "lucide-react";
+import { User, Lock, Mail, AlertCircle, Tag, Gamepad2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { useCrazyGamesAuth } from "@/hooks/use-crazygames-auth";
 
 export function Login() {
   const [username, setUsername] = useState("");
@@ -16,6 +17,7 @@ export function Login() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isAvailable, isLoading: cgLoading, loginWithCrazyGames } = useCrazyGamesAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +36,18 @@ export function Login() {
     );
   };
 
+  const handleCrazyGamesLogin = async () => {
+    try {
+      await loginWithCrazyGames();
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      toast({ title: "Welcome!", description: "Logged in via CrazyGames." });
+      setLocation("/");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "CrazyGames login failed";
+      toast({ title: "Login Failed", description: message, variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl relative overflow-hidden">
@@ -46,6 +60,24 @@ export function Login() {
           <CardDescription>Enter your credentials to access the casino</CardDescription>
         </CardHeader>
         <CardContent className="relative z-10">
+          {isAvailable && (
+            <>
+              <Button
+                type="button"
+                onClick={handleCrazyGamesLogin}
+                disabled={cgLoading}
+                className="w-full h-12 text-base bg-[#00c4ff] hover:bg-[#00b0e6] text-black font-bold shadow-[0_0_20px_rgba(0,196,255,0.3)] hover:shadow-[0_0_30px_rgba(0,196,255,0.5)] transition-all"
+              >
+                <Gamepad2 className="w-5 h-5 mr-2" />
+                {cgLoading ? "Connecting..." : "Login with CrazyGames"}
+              </Button>
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-xs text-muted-foreground uppercase tracking-widest">or</span>
+                <div className="flex-1 h-px bg-white/10" />
+              </div>
+            </>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Input

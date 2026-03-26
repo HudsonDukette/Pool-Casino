@@ -23,6 +23,7 @@ export const usersTable = pgTable("users", {
   lastDailyClaim: timestamp("last_daily_claim", { withTimezone: true }),
   lastBetAt: timestamp("last_bet_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  crazyGamesUserId: text("crazy_games_user_id").unique(),
 });
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({

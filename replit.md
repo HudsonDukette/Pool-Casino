@@ -39,7 +39,7 @@ artifacts-monorepo/
 
 ## Features
 
-1. **Authentication**: Register/login/logout with username + password, sessions via cookies
+1. **Authentication**: Register/login/logout with username + password; CrazyGames SDK v3 auto-login when embedded in CrazyGames platform
 2. **Global Pool Economy**: $1M starting pool shared by all players; wins drain it, losses fill it
 3. **Dynamic Betting Odds**: Win probability scales with bet size relative to pool; no bet limits enforced
 4. **10 Games**: Roulette, Plinko, Blackjack, Crash, Slots, Dice Roll, Coin Flip, Fortune Wheel, Number Guess, Mines
@@ -64,6 +64,7 @@ artifacts-monorepo/
 - `POST /api/auth/login` - login
 - `POST /api/auth/logout` - logout
 - `GET /api/auth/me` - current user
+- `POST /api/auth/crazygames` - login/register via CrazyGames JWT token (RS256, pubkey fetched from CrazyGames CDN)
 - `GET /api/user/stats` - user statistics
 - `POST /api/user/claim-daily` - daily reward
 - `GET /api/pool` - global pool info
