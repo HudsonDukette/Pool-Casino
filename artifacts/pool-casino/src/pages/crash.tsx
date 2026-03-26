@@ -116,8 +116,8 @@ export default function Crash() {
           setDisplayMult(parseFloat(data.cashOutAt.toFixed(2)));
           setResult(data);
           setRunning(false);
-          qc.invalidateQueries({ queryKey: ["getMe"] });
-          qc.invalidateQueries({ queryKey: ["getPool"] });
+          qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          qc.invalidateQueries({ queryKey: ["/api/pool"] });
           toast({
             title: data.won ? `🚀 Cashed out at ${data.cashOutAt}×!` : `💥 Crashed at ${data.crashAt}×`,
             description: data.won ? `Won ${formatCurrency(data.payout)}!` : `Lost ${formatCurrency(bet)}`,

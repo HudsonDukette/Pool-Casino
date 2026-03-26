@@ -151,8 +151,8 @@ export default function Blackjack() {
       setGameState(data);
       if (data.done) {
         setPhase("done");
-        qc.invalidateQueries({ queryKey: ["getMe"] });
-        qc.invalidateQueries({ queryKey: ["getPool"] });
+        qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        qc.invalidateQueries({ queryKey: ["/api/pool"] });
         toast({
           title: OUTCOME_LABELS[data.outcome ?? ""] ?? "Game Over",
           description: data.payout ? `Payout: ${formatCurrency(data.payout)}` : "",
@@ -172,8 +172,8 @@ export default function Blackjack() {
       } else {
         setActionState(data);
         setPhase("done");
-        qc.invalidateQueries({ queryKey: ["getMe"] });
-        qc.invalidateQueries({ queryKey: ["getPool"] });
+        qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        qc.invalidateQueries({ queryKey: ["/api/pool"] });
         toast({
           title: OUTCOME_LABELS[data.outcome ?? ""] ?? "Game Over",
           description: data.payout ? `Payout: ${formatCurrency(data.payout)}` : "",

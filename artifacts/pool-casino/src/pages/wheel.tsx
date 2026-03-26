@@ -120,8 +120,8 @@ export default function Wheel() {
     setTimeout(() => {
       setSpinning(false);
       setResult(data);
-      qc.invalidateQueries({ queryKey: ["getMe"] });
-      qc.invalidateQueries({ queryKey: ["getPool"] });
+      qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      qc.invalidateQueries({ queryKey: ["/api/pool"] });
       toast({
         title: data.multiplier >= 1 ? `${data.segment} — ${data.won ? "Win!" : "Push"}` : `${data.segment}`,
         description: data.won ? `Won ${formatCurrency(data.payout)}!` : `Got back ${formatCurrency(data.payout)}`,

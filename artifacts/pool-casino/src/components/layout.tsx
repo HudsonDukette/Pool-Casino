@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { useGetMe, useLogout } from "@workspace/api-client-react";
+import { useGetMe, useGetPool, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
 import { Coins, LogOut, User as UserIcon, Menu, X, Mail, Dices, Crown, LayoutDashboard, MessageSquare, UserPlus } from "lucide-react";
@@ -10,7 +10,8 @@ import { useGuestSession } from "@/hooks/use-guest-session";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { data: user, isLoading } = useGetMe({ query: { retry: false } });
+  const { data: user, isLoading } = useGetMe({ query: { retry: false, refetchInterval: 3000 } });
+  const { data: pool } = useGetPool({ query: { refetchInterval: 3000 } });
   const logoutMut = useLogout();
   const queryClient = useQueryClient();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -71,6 +72,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 );
               })}
             </nav>
+
+            {/* Live Pool Balance */}
+            {pool && (
+              <div className="hidden md:flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-accent/30 bg-black/40 text-accent">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
+                </span>
+                Pool: {formatCurrency(pool.totalAmount)}
+              </div>
+            )}
 
             {/* Email Button */}
             <a

@@ -147,8 +147,8 @@ export default function Mines() {
     const data = await api.call("mines", { betAmount: bet, minesCount, revealCount: Math.min(revealCount, maxReveal) });
     if (data) {
       setResult(data);
-      qc.invalidateQueries({ queryKey: ["getMe"] });
-      qc.invalidateQueries({ queryKey: ["getPool"] });
+      qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      qc.invalidateQueries({ queryKey: ["/api/pool"] });
       toast({
         title: data.hitMine ? "💥 BOOM! You hit a mine!" : `✅ Safe! ${data.multiplier}×`,
         description: data.hitMine ? `Lost ${formatCurrency(bet)}` : `Won ${formatCurrency(data.payout)}!`,

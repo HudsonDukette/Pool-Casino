@@ -93,8 +93,8 @@ export default function Guess() {
       setRevealing(false);
       if (data) {
         setResult(data);
-        qc.invalidateQueries({ queryKey: ["getMe"] });
-        qc.invalidateQueries({ queryKey: ["getPool"] });
+        qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        qc.invalidateQueries({ queryKey: ["/api/pool"] });
         toast({
           title: data.distance === 0 ? "🎯 EXACT MATCH!" : data.multiplier > 0 ? `Within ${data.distance}!` : `Off by ${data.distance}`,
           description: data.won ? `Won ${formatCurrency(data.payout)}!` : `Lost ${formatCurrency(bet)}`,

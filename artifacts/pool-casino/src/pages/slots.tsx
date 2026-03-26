@@ -123,8 +123,8 @@ export default function Slots() {
         setSpinning(false);
         setTimeout(() => {
           setResult(data);
-          qc.invalidateQueries({ queryKey: ["getMe"] });
-          qc.invalidateQueries({ queryKey: ["getPool"] });
+          qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          qc.invalidateQueries({ queryKey: ["/api/pool"] });
           toast({
             title: data.won ? `${data.reels.map(r => SYMBOLS[r]?.emoji).join("")} Jackpot!` : "No match this time",
             description: data.won ? `${data.multiplier}× — Won ${formatCurrency(data.payout)}!` : "Keep spinning!",

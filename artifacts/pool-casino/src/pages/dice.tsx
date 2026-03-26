@@ -100,8 +100,8 @@ export default function Dice() {
       if (data) {
         setDieValue(data.rolled);
         setResult(data);
-        qc.invalidateQueries({ queryKey: ["getMe"] });
-        qc.invalidateQueries({ queryKey: ["getPool"] });
+        qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        qc.invalidateQueries({ queryKey: ["/api/pool"] });
         toast({
           title: data.won ? `🎲 Rolled ${data.rolled}! You Win!` : `Rolled ${data.rolled}`,
           description: data.won ? `Won ${formatCurrency(data.payout)}!` : "Better luck next time",

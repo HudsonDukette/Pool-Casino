@@ -104,8 +104,8 @@ export default function CoinFlip() {
       if (data) {
         setCoinSide(data.result as "heads" | "tails");
         setResult(data);
-        qc.invalidateQueries({ queryKey: ["getMe"] });
-        qc.invalidateQueries({ queryKey: ["getPool"] });
+        qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        qc.invalidateQueries({ queryKey: ["/api/pool"] });
         toast({
           title: data.won ? `${data.result === "heads" ? "👑" : "⚡"} ${data.result.toUpperCase()}!` : `It's ${data.result}!`,
           description: data.won ? `Won ${formatCurrency(data.payout)}!` : `Lost ${formatCurrency(bet)}`,
