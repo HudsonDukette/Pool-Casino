@@ -23,10 +23,8 @@ export type CGAuthState =
   | { status: "ready"; isLoggedIn: boolean }
   | { status: "error"; message: string };
 
-const BASE_URL = import.meta.env.BASE_URL ?? "/pool-casino/";
-
 async function sendCGTokenToBackend(token: string) {
-  const res = await fetch(`${BASE_URL}api/auth/crazygames`, {
+  const res = await fetch("/api/auth/crazygames", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
