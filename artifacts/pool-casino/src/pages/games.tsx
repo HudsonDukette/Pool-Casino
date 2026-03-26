@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { useGetPool } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -149,6 +150,8 @@ const item = {
 };
 
 export default function Games() {
+  const { data: pool } = useGetPool({ query: { refetchInterval: 5000 } });
+  const disabledGames = pool?.disabledGames ?? [];
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       <motion.div
@@ -171,7 +174,7 @@ export default function Games() {
       >
         {games.map((game) => (
           <motion.div key={game.id} variants={item}>
-            {game.disabled ? (
+            {disabledGames.includes(game.id) ? (
               <Card className="h-full overflow-hidden bg-card/20 border-white/5 relative opacity-50 cursor-not-allowed select-none">
                 <div className="absolute top-3 right-3 z-20">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${game.tagColor}`}>{game.tag}</span>

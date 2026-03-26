@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useGetMe, useGetPool, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
-import { Coins, LogOut, User as UserIcon, Menu, X, Mail, Dices, Crown, LayoutDashboard, MessageSquare, UserPlus } from "lucide-react";
+import { Coins, LogOut, User as UserIcon, Menu, X, Mail, Dices, Crown, LayoutDashboard, MessageSquare, UserPlus, ShieldAlert } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGuestSession } from "@/hooks/use-guest-session";
@@ -44,6 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
     { href: "/games", label: "Games", icon: <Dices className="w-4 h-4" /> },
     { href: "/leaderboard", label: "Leaderboard", icon: <Crown className="w-4 h-4" /> },
+    ...(user?.isAdmin ? [{ href: "/admin", label: "Admin", icon: <ShieldAlert className="w-4 h-4" /> }] : []),
   ];
 
   return (

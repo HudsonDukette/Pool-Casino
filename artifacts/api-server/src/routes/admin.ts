@@ -138,9 +138,11 @@ router.get("/admin/settings", async (req, res): Promise<void> => {
 
   const usernameChangeCost = await getSetting("username_change_cost", 500);
   const avatarChangeCost = await getSetting("avatar_change_cost", 250);
+  const [disabledGamesRow] = await db.select().from(settingsTable).where(eq(settingsTable.key, "disabled_games")).limit(1);
+  const disabledGames: string[] = disabledGamesRow ? JSON.parse(disabledGamesRow.value) : [];
 
   res.json(
-    AdminGetSettingsResponse.parse({ usernameChangeCost, avatarChangeCost }),
+    AdminGetSettingsResponse.parse({ usernameChangeCost, avatarChangeCost, disabledGames }),
   );
 });
 
@@ -154,18 +156,22 @@ router.post("/admin/settings", async (req, res): Promise<void> => {
     return;
   }
 
-  const { usernameChangeCost, avatarChangeCost } = parsed.data;
+  const { usernameChangeCost, avatarChangeCost, disabledGames } = parsed.data;
 
   if (usernameChangeCost != null) await upsertSetting("username_change_cost", usernameChangeCost);
   if (avatarChangeCost != null) await upsertSetting("avatar_change_cost", avatarChangeCost);
+  if (disabledGames != null) await upsertSetting("disabled_games", JSON.stringify(disabledGames));
 
   const finalUsernameCost = await getSetting("username_change_cost", 500);
   const finalAvatarCost = await getSetting("avatar_change_cost", 250);
+  const [disabledGamesRow] = await db.select().from(settingsTable).where(eq(settingsTable.key, "disabled_games")).limit(1);
+  const finalDisabledGames: string[] = disabledGamesRow ? JSON.parse(disabledGamesRow.value) : [];
 
   res.json(
     AdminUpdateSettingsResponse.parse({
       usernameChangeCost: finalUsernameCost,
       avatarChangeCost: finalAvatarCost,
+      disabledGames: finalDisabledGames,
     }),
   );
 });

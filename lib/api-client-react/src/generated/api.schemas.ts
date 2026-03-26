@@ -80,6 +80,7 @@ export interface RecentBet {
 
 export interface PoolInfo {
   forceReloadAt?: number;
+  disabledGames?: string[];
   totalAmount: number;
   biggestWin: number;
   biggestBet: number;
@@ -270,11 +271,13 @@ export interface ProfileChangeCosts {
 export interface AdminSettingsResponse {
   usernameChangeCost: number;
   avatarChangeCost: number;
+  disabledGames?: string[];
 }
 
 export interface AdminUpdateSettingsRequest {
   usernameChangeCost?: number | null;
   avatarChangeCost?: number | null;
+  disabledGames?: string[] | null;
 }
 
 export type GetTransactionsParams = {

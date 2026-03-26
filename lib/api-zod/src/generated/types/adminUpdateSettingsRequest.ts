@@ -9,4 +9,5 @@
 export interface AdminUpdateSettingsRequest {
   usernameChangeCost?: number | null;
   avatarChangeCost?: number | null;
+  disabledGames?: string[] | null;
 }

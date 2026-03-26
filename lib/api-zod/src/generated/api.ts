@@ -125,6 +125,7 @@ export const GetPoolResponse = zod.object({
   biggestBet: zod.number(),
   maxBet: zod.number(),
   forceReloadAt: zod.number().optional(),
+  disabledGames: zod.array(zod.string()).optional(),
   recentBigBets: zod.array(
     zod.object({
       username: zod.string(),
@@ -367,6 +368,7 @@ export const GetProfileChangeCostsResponse = zod.object({
 export const AdminGetSettingsResponse = zod.object({
   usernameChangeCost: zod.number(),
   avatarChangeCost: zod.number(),
+  disabledGames: zod.array(zod.string()).optional(),
 });
 
 /**
@@ -375,11 +377,13 @@ export const AdminGetSettingsResponse = zod.object({
 export const AdminUpdateSettingsBody = zod.object({
   usernameChangeCost: zod.number().nullish(),
   avatarChangeCost: zod.number().nullish(),
+  disabledGames: zod.array(zod.string()).nullish(),
 });
 
 export const AdminUpdateSettingsResponse = zod.object({
   usernameChangeCost: zod.number(),
   avatarChangeCost: zod.number(),
+  disabledGames: zod.array(zod.string()).optional(),
 });
 
 /**

@@ -37,6 +37,13 @@ router.get("/pool", async (req, res): Promise<void> => {
     .limit(1);
   const forceReloadAt = forceReloadRow ? parseFloat(forceReloadRow.value) : 0;
 
+  const [disabledGamesRow] = await db
+    .select()
+    .from(settingsTable)
+    .where(eq(settingsTable.key, "disabled_games"))
+    .limit(1);
+  const disabledGames: string[] = disabledGamesRow ? JSON.parse(disabledGamesRow.value) : [];
+
   res.json(
     GetPoolResponse.parse({
       totalAmount,
@@ -44,6 +51,7 @@ router.get("/pool", async (req, res): Promise<void> => {
       biggestBet: parseFloat(pool.biggestBet),
       maxBet,
       forceReloadAt,
+      disabledGames,
       recentBigBets: recentBigBets.map((b) => ({
         username: b.username,
         betAmount: parseFloat(b.betAmount),

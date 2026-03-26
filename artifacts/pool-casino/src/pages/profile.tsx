@@ -748,8 +748,8 @@ export default function Profile() {
         </Card>
       )}
 
-      {/* Admin Panel */}
-      {user?.isAdmin && (
+      {/* Admin Panel removed — use /admin page */}
+      {false && (
         <Card className="bg-yellow-950/20 border-yellow-500/20">
           <CardHeader className="border-b border-yellow-500/10">
             <CardTitle className="flex items-center gap-2 text-xl text-yellow-400">
