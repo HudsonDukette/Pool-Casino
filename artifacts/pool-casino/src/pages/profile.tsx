@@ -8,6 +8,8 @@ import {
   useAdminRefillPlayer,
   useAdminListPlayers,
   useAdminResetAllBalances,
+  useAdminSeize,
+  useTransfer,
   useChangeUsername,
   useChangeAvatar,
   useGetProfileChangeCosts,
@@ -54,9 +56,19 @@ export default function Profile() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [forceReloadPending, setForceReloadPending] = useState(false);
 
+  const [transferToUsername, setTransferToUsername] = useState("");
+  const [transferAmount, setTransferAmount] = useState("100");
+
+  const [seizePlayers, setSeizePlayers] = useState<{ id: number; username: string } | null>(null);
+  const [seizeAmount, setSeizeAmount] = useState("10000");
+  const [seizeDestination, setSeizeDestination] = useState<"pool" | "user">("pool");
+  const [seizeToUserId, setSeizeToUserId] = useState<number | null>(null);
+
   const refillPoolMut = useAdminRefillPool();
   const refillPlayerMut = useAdminRefillPlayer();
   const resetAllBalancesMut = useAdminResetAllBalances();
+  const transferMut = useTransfer();
+  const seizesMut = useAdminSeize();
   const { data: playersData, isLoading: playersLoading, refetch: refetchPlayers } = useAdminListPlayers({
     query: { enabled: !!user?.isAdmin },
   });
@@ -306,6 +318,63 @@ export default function Profile() {
         onError: (err: any) => {
           toast({ title: "Error", description: err.error?.error || "Failed to reset balances", variant: "destructive" });
           setConfirmReset(false);
+        },
+      }
+    );
+  };
+
+  const handleTransfer = () => {
+    const amount = parseFloat(transferAmount);
+    if (!transferToUsername.trim()) {
+      toast({ title: "Enter a username", variant: "destructive" });
+      return;
+    }
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: "Enter a valid amount", variant: "destructive" });
+      return;
+    }
+    transferMut.mutate(
+      { data: { toUsername: transferToUsername.trim(), amount } },
+      {
+        onSuccess: (data) => {
+          toast({ title: "Money Sent!", description: data.message, className: "bg-success text-success-foreground border-none" });
+          setTransferToUsername("");
+          setTransferAmount("100");
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        },
+        onError: (err: any) => {
+          toast({ title: "Transfer Failed", description: err.error?.error || "Something went wrong", variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  const handleSeize = () => {
+    if (!seizePlayers) {
+      toast({ title: "Select a player to seize from", variant: "destructive" });
+      return;
+    }
+    const amount = parseFloat(seizeAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: "Enter a valid amount", variant: "destructive" });
+      return;
+    }
+    if (seizeDestination === "user" && !seizeToUserId) {
+      toast({ title: "Select a destination user", variant: "destructive" });
+      return;
+    }
+    seizesMut.mutate(
+      { data: { fromUserId: seizePlayers.id, amount, destination: seizeDestination, toUserId: seizeToUserId ?? undefined } },
+      {
+        onSuccess: (data) => {
+          toast({ title: "Assets Seized!", description: data.message, className: "bg-success text-success-foreground border-none" });
+          setSeizePlayers(null);
+          setSeizeAmount("10000");
+          queryClient.invalidateQueries({ queryKey: ["/api/pool"] });
+          refetchPlayers();
+        },
+        onError: (err: any) => {
+          toast({ title: "Seize Failed", description: err.error?.error || "Something went wrong", variant: "destructive" });
         },
       }
     );
@@ -617,6 +686,68 @@ export default function Profile() {
         </Card>
       )}
 
+      {/* Send Money to Another Player */}
+      {user && !user.isGuest && (
+        <Card className="bg-card border-white/5">
+          <CardHeader className="border-b border-white/5">
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <ArrowUpRight className="w-5 h-5 text-primary" /> Send Money
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            <p className="text-sm text-muted-foreground">Transfer funds directly to another player's account.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground uppercase tracking-wider">Recipient username</label>
+                <Input
+                  value={transferToUsername}
+                  onChange={(e) => setTransferToUsername(e.target.value)}
+                  placeholder="e.g. highroller99"
+                  className="bg-black/40 border-white/10"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground uppercase tracking-wider">Amount</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold">$</span>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={transferAmount}
+                    onChange={(e) => setTransferAmount(e.target.value)}
+                    className="pl-7 bg-black/40 border-white/10 font-mono"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {[100, 1000, 10000, 50000].map((amt) => (
+                <button
+                  key={amt}
+                  onClick={() => setTransferAmount(amt.toString())}
+                  className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                    transferAmount === amt.toString()
+                      ? "bg-primary/20 border-primary/60 text-primary"
+                      : "border-white/10 text-muted-foreground hover:bg-white/5"
+                  }`}
+                >
+                  ${amt.toLocaleString()}
+                </button>
+              ))}
+            </div>
+            <Button
+              onClick={handleTransfer}
+              disabled={transferMut.isPending || !transferToUsername.trim() || !parseFloat(transferAmount)}
+              className="bg-primary hover:bg-primary/80 text-black font-bold gap-2"
+            >
+              <ArrowUpRight className="w-4 h-4" />
+              {transferMut.isPending ? "Sending..." : `Send ${formatCurrency(parseFloat(transferAmount) || 0)} to ${transferToUsername || "..."}`}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Admin Panel */}
       {user?.isAdmin && (
         <Card className="bg-yellow-950/20 border-yellow-500/20">
@@ -725,6 +856,82 @@ export default function Profile() {
               >
                 <RefreshCw className={`w-4 h-4 ${forceReloadPending ? "animate-spin" : ""}`} />
                 {forceReloadPending ? "Sending Signal..." : "Reload Everyone's Browser"}
+              </Button>
+            </div>
+
+            {/* Seize Assets */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-purple-400 uppercase tracking-widest flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4" /> Seize Player Assets
+              </h3>
+              <p className="text-xs text-muted-foreground">Take money from a player and send it to the pool or another account.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground uppercase tracking-wider">Seize from</label>
+                  <select
+                    value={seizePlayers?.id ?? ""}
+                    onChange={(e) => {
+                      const p = playersData?.players.find((pl) => pl.id === parseInt(e.target.value));
+                      setSeizePlayers(p ? { id: p.id, username: p.username } : null);
+                    }}
+                    className="w-full bg-black/40 border border-purple-500/20 rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-purple-500/50"
+                  >
+                    <option value="">— Select player —</option>
+                    {playersData?.players.filter((p) => !p.isAdmin).map((p) => (
+                      <option key={p.id} value={p.id}>{p.username} ({formatCurrency(p.balance)})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground uppercase tracking-wider">Amount to seize</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400">$</span>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={seizeAmount}
+                      onChange={(e) => setSeizeAmount(e.target.value)}
+                      className="pl-7 bg-black/40 border-purple-500/20 font-mono focus:border-purple-500/50"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground uppercase tracking-wider">Send seized funds to</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSeizeDestination("pool")}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${seizeDestination === "pool" ? "bg-purple-500/20 border-purple-500/60 text-purple-300" : "border-white/10 text-muted-foreground hover:bg-white/5"}`}
+                  >
+                    The Pool
+                  </button>
+                  <button
+                    onClick={() => setSeizeDestination("user")}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${seizeDestination === "user" ? "bg-purple-500/20 border-purple-500/60 text-purple-300" : "border-white/10 text-muted-foreground hover:bg-white/5"}`}
+                  >
+                    Another Player
+                  </button>
+                </div>
+                {seizeDestination === "user" && (
+                  <select
+                    value={seizeToUserId ?? ""}
+                    onChange={(e) => setSeizeToUserId(e.target.value ? parseInt(e.target.value) : null)}
+                    className="w-full bg-black/40 border border-purple-500/20 rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-purple-500/50"
+                  >
+                    <option value="">— Select destination player —</option>
+                    {playersData?.players.filter((p) => p.id !== seizePlayers?.id).map((p) => (
+                      <option key={p.id} value={p.id}>{p.username}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <Button
+                onClick={handleSeize}
+                disabled={seizesMut.isPending || !seizePlayers || !parseFloat(seizeAmount)}
+                className="bg-purple-600 hover:bg-purple-500 text-white font-bold gap-2"
+              >
+                <ShieldAlert className="w-4 h-4" />
+                {seizesMut.isPending ? "Seizing..." : seizePlayers ? `Seize ${formatCurrency(parseFloat(seizeAmount) || 0)} from ${seizePlayers.username}` : "Seize Assets"}
               </Button>
             </div>
 

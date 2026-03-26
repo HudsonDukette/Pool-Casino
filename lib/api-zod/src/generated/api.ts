@@ -289,6 +289,29 @@ export const AdminRefillPlayerResponse = zod.object({
 /**
  * @summary Reset all players' balances to a default amount (admin only)
  */
+export const TransferBody = zod.object({
+  toUsername: zod.string().min(1),
+  amount: zod.number().positive(),
+});
+
+export const TransferResponse = zod.object({
+  message: zod.string(),
+  newBalance: zod.number(),
+});
+
+export const AdminSeizeBody = zod.object({
+  fromUserId: zod.number().int(),
+  amount: zod.number().positive(),
+  destination: zod.enum(["pool", "user"]),
+  toUserId: zod.number().int().optional(),
+});
+
+export const AdminSeizeResponse = zod.object({
+  message: zod.string(),
+  amountSeized: zod.number(),
+  newVictimBalance: zod.number(),
+});
+
 export const AdminResetAllBalancesBody = zod.object({
   newBalance: zod.number().optional(),
 });

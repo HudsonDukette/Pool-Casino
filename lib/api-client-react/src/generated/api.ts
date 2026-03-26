@@ -24,6 +24,8 @@ import type {
   AdminRefillPoolResponse,
   AdminSettingsResponse,
   AdminUpdateSettingsRequest,
+  AdminSeizeRequest,
+  AdminSeizeResponse,
   AuthResponse,
   ChangeAvatarRequest,
   ChangeProfileResponse,
@@ -44,6 +46,8 @@ import type {
   RouletteRequest,
   RouletteResult,
   TransactionList,
+  TransferRequest,
+  TransferResponse,
   User,
   UserStats,
 } from "./api.schemas";
@@ -1487,6 +1491,80 @@ export const useAdminResetAllBalances = <
   TContext
 > => {
   return useMutation(getAdminResetAllBalancesMutationOptions(options));
+};
+
+export const getTransferUrl = () => `/api/transfer`;
+
+export const transfer = async (
+  transferRequest: BodyType<TransferRequest>,
+  options?: RequestInit,
+): Promise<TransferResponse> => {
+  return customFetch<TransferResponse>(getTransferUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(transferRequest),
+  });
+};
+
+export const useTransfer = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof transfer>>,
+    TError,
+    { data: BodyType<TransferRequest> },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof transfer>>,
+  TError,
+  { data: BodyType<TransferRequest> },
+  TContext
+> => {
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof transfer>>,
+    { data: BodyType<TransferRequest> }
+  > = ({ data }) => transfer(data);
+  return useMutation({ mutationFn, ...options?.mutation });
+};
+
+export const getAdminSeizeUrl = () => `/api/admin/seize`;
+
+export const adminSeize = async (
+  adminSeizeRequest: BodyType<AdminSeizeRequest>,
+  options?: RequestInit,
+): Promise<AdminSeizeResponse> => {
+  return customFetch<AdminSeizeResponse>(getAdminSeizeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminSeizeRequest),
+  });
+};
+
+export const useAdminSeize = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminSeize>>,
+    TError,
+    { data: BodyType<AdminSeizeRequest> },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminSeize>>,
+  TError,
+  { data: BodyType<AdminSeizeRequest> },
+  TContext
+> => {
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminSeize>>,
+    { data: BodyType<AdminSeizeRequest> }
+  > = ({ data }) => adminSeize(data);
+  return useMutation({ mutationFn, ...options?.mutation });
 };
 
 /**

@@ -76,11 +76,13 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
 
   const resultColor = spinResult.color;
   const payoutMultiplier = isGreen ? 50 : 2;
-  const payout = won ? betAmount * payoutMultiplier : 0;
+  const uncappedPayout = won ? betAmount * payoutMultiplier : 0;
+  // Cap payout at current pool balance — pool can never go negative
+  const payout = uncappedPayout > betAmount ? Math.min(uncappedPayout, poolAmount) : uncappedPayout;
 
   const newBalance = currentBalance - betAmount + payout;
   const profit = payout - betAmount;
-  const newPoolAmount = poolAmount + (won ? -profit : betAmount);
+  const newPoolAmount = poolAmount + betAmount - payout;
 
   const newBiggestWin = won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin);
   const newBiggestBet = betAmount > parseFloat(pool.biggestBet) ? betAmount : parseFloat(pool.biggestBet);
@@ -110,7 +112,7 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
       lastBetAt: new Date(),
     }).where(eq(usersTable.id, userId)),
     db.update(poolTable).set({
-      totalAmount: Math.max(100, newPoolAmount).toFixed(2),
+      totalAmount: Math.max(0, newPoolAmount).toFixed(2),
       biggestWin: newBiggestWin.toFixed(2),
       biggestBet: newBiggestBet.toFixed(2),
     }).where(eq(poolTable.id, pool.id)),
@@ -165,13 +167,14 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
   const winChance = calculateWinChance(betAmount, poolAmount);
   const { path, slot, multiplier } = simulatePlinko(risk, winChance);
 
-  const payout = betAmount * multiplier;
-  const won = payout > betAmount;             // actual win (profit)
-  const breakEven = payout === betAmount;     // 1x — return bet, no profit/loss
+  const uncappedPayout = betAmount * multiplier;
+  // Cap payout at pool balance — pool can never go negative
+  const payout = uncappedPayout > betAmount ? Math.min(uncappedPayout, poolAmount) : uncappedPayout;
+  const won = uncappedPayout > betAmount;     // game-decided win (for stats)
+  const breakEven = Math.abs(uncappedPayout - betAmount) < 0.001;
   const profit = payout - betAmount;
   const newBalance = currentBalance - betAmount + payout;
-  // Pool only moves on real wins/losses; break-even is neutral for the pool
-  const newPoolAmount = poolAmount + (won ? -profit : breakEven ? 0 : betAmount - payout);
+  const newPoolAmount = poolAmount + betAmount - payout;
 
   const newBiggestWin = won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin);
   const newBiggestBet = betAmount > parseFloat(pool.biggestBet) ? betAmount : parseFloat(pool.biggestBet);
@@ -201,7 +204,7 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
       lastBetAt: new Date(),
     }).where(eq(usersTable.id, userId)),
     db.update(poolTable).set({
-      totalAmount: Math.max(100, newPoolAmount).toFixed(2),
+      totalAmount: Math.max(0, newPoolAmount).toFixed(2),
       biggestWin: newBiggestWin.toFixed(2),
       biggestBet: newBiggestBet.toFixed(2),
     }).where(eq(poolTable.id, pool.id)),

@@ -198,6 +198,29 @@ export interface AdminRefillPlayerResponse {
   newBalance: number;
 }
 
+export interface TransferRequest {
+  toUsername: string;
+  amount: number;
+}
+
+export interface TransferResponse {
+  message: string;
+  newBalance: number;
+}
+
+export interface AdminSeizeRequest {
+  fromUserId: number;
+  amount: number;
+  destination: "pool" | "user";
+  toUserId?: number;
+}
+
+export interface AdminSeizeResponse {
+  message: string;
+  amountSeized: number;
+  newVictimBalance: number;
+}
+
 export interface AdminResetAllBalancesRequest {
   newBalance?: number;
 }

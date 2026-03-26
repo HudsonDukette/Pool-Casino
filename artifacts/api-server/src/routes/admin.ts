@@ -12,6 +12,8 @@ import {
   AdminUpdateSettingsResponse,
   AdminResetAllBalancesBody,
   AdminResetAllBalancesResponse,
+  AdminSeizeBody,
+  AdminSeizeResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -197,6 +199,70 @@ router.post("/admin/reset-all-balances", async (req, res): Promise<void> => {
     AdminResetAllBalancesResponse.parse({
       message: `Reset ${nonAdminUsers.length} player balance(s) to ${formatCurrency(resetBalance)}`,
       usersReset: nonAdminUsers.length,
+    }),
+  );
+});
+
+router.post("/admin/seize", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+
+  const parsed = AdminSeizeBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { fromUserId, amount, destination, toUserId } = parsed.data;
+
+  const [victim] = await db.select().from(usersTable).where(eq(usersTable.id, fromUserId)).limit(1);
+  if (!victim) {
+    res.status(404).json({ error: "Player not found" });
+    return;
+  }
+
+  const victimBalance = parseFloat(victim.balance);
+  const actualAmount = Math.min(amount, victimBalance);
+
+  if (actualAmount <= 0) {
+    res.status(400).json({ error: "Player has no balance to seize" });
+    return;
+  }
+
+  const newVictimBalance = victimBalance - actualAmount;
+
+  await db.update(usersTable)
+    .set({ balance: newVictimBalance.toFixed(2) })
+    .where(eq(usersTable.id, fromUserId));
+
+  let targetDescription = "the pool";
+
+  if (destination === "user" && toUserId) {
+    const [targetUser] = await db.select().from(usersTable).where(eq(usersTable.id, toUserId)).limit(1);
+    if (!targetUser) {
+      res.status(404).json({ error: "Target user not found" });
+      return;
+    }
+    const newTargetBalance = parseFloat(targetUser.balance) + actualAmount;
+    await db.update(usersTable)
+      .set({ balance: newTargetBalance.toFixed(2) })
+      .where(eq(usersTable.id, toUserId));
+    targetDescription = `@${targetUser.username}`;
+  } else {
+    const [pool] = await db.select().from(poolTable).limit(1);
+    if (pool) {
+      const newPoolAmount = parseFloat(pool.totalAmount) + actualAmount;
+      await db.update(poolTable)
+        .set({ totalAmount: newPoolAmount.toFixed(2) })
+        .where(eq(poolTable.id, pool.id));
+    }
+  }
+
+  res.json(
+    AdminSeizeResponse.parse({
+      message: `Seized ${formatCurrency(actualAmount)} from ${victim.username} → ${targetDescription}`,
+      amountSeized: actualAmount,
+      newVictimBalance: newVictimBalance,
     }),
   );
 });

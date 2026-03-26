@@ -66,13 +66,15 @@ async function settleGame(
 ) {
   const currentBalance = parseFloat(user.balance);
   const poolAmount = parseFloat(pool.totalAmount);
-  const payout = betAmount * multiplier;
-  const won = payout > betAmount;
-  const breakEven = Math.abs(payout - betAmount) < 0.001;
+  const uncappedPayout = betAmount * multiplier;
+  // Cap payout at pool balance — pool can never go negative
+  const payout = uncappedPayout > betAmount ? Math.min(uncappedPayout, poolAmount) : uncappedPayout;
+  const won = uncappedPayout > betAmount; // game-decided win (for stats/streaks)
+  const breakEven = Math.abs(uncappedPayout - betAmount) < 0.001;
   const profit = payout - betAmount;
 
   const newBalance = currentBalance - betAmount + payout;
-  const newPool = poolAmount + (won ? -profit : breakEven ? 0 : betAmount - payout);
+  const newPool = poolAmount + betAmount - payout;
 
   const newBiggestWin = won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin);
   const newBiggestBet = betAmount > parseFloat(pool.biggestBet) ? betAmount : parseFloat(pool.biggestBet);
@@ -99,7 +101,7 @@ async function settleGame(
       lastBetAt: new Date(),
     }).where(eq(usersTable.id, userId)),
     db.update(poolTable).set({
-      totalAmount: Math.max(100, newPool).toFixed(2),
+      totalAmount: Math.max(0, newPool).toFixed(2),
       biggestWin: newBiggestWin.toFixed(2),
       biggestBet: newBiggestBet.toFixed(2),
     }).where(eq(poolTable.id, pool.id)),
