@@ -3,9 +3,10 @@ import { Link, useLocation } from "wouter";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
-import { Coins, LogOut, User as UserIcon, Menu, X, Mail, Dices, Crown, LayoutDashboard, MessageSquare } from "lucide-react";
+import { Coins, LogOut, User as UserIcon, Menu, X, Mail, Dices, Crown, LayoutDashboard, MessageSquare, UserPlus } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { useGuestSession } from "@/hooks/use-guest-session";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -13,6 +14,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const logoutMut = useLogout();
   const queryClient = useQueryClient();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
+  const isGuest = user?.isGuest === true;
+  useGuestSession(!!user && !isGuest, isLoading);
 
   const handleLogout = () => {
     logoutMut.mutate(undefined, {
@@ -80,7 +84,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* User Area */}
             <div className="flex items-center gap-4">
-              {!isLoading && user ? (
+              {!isLoading && user && !isGuest ? (
                 <div className="flex items-center gap-3">
                   <div className="hidden sm:flex items-center gap-2 bg-black/40 border border-white/10 rounded-full px-3 py-1.5 shadow-inner">
                     <Coins className="w-4 h-4 text-primary" />
@@ -100,6 +104,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Button variant="ghost" size="icon" onClick={handleLogout} className="hidden sm:inline-flex text-muted-foreground hover:text-destructive">
                     <LogOut className="w-4 h-4" />
                   </Button>
+                </div>
+              ) : !isLoading && user && isGuest ? (
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-2 bg-black/40 border border-white/10 rounded-full px-3 py-1.5 shadow-inner">
+                    <Coins className="w-4 h-4 text-yellow-400" />
+                    <span className="font-mono font-semibold text-yellow-400 tracking-tight">
+                      {formatCurrency(user.balance)}
+                    </span>
+                  </div>
+                  <span className="hidden sm:inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400">
+                    Guest
+                  </span>
+                  <Link href="/register">
+                    <Button variant="default" size="sm" className="shadow-[0_0_15px_rgba(0,255,170,0.3)] gap-1.5">
+                      <UserPlus className="w-3.5 h-3.5" /> Create Account
+                    </Button>
+                  </Link>
+                  <Link href="/login">
+                    <Button variant="ghost" size="sm" className="hidden sm:inline-flex">Log in</Button>
+                  </Link>
                 </div>
               ) : !isLoading ? (
                 <div className="flex items-center gap-2">
@@ -156,17 +180,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </div>
                 </Link>
               ))}
-              {!user && !isLoading && (
-                <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-white/5">
-                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full">Log in</Button>
-                  </Link>
-                  <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full">Sign up</Button>
-                  </Link>
+              {!isLoading && (!user || isGuest) && (
+                <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
+                  {isGuest && (
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                      <span className="text-sm text-yellow-400 font-medium">Playing as Guest</span>
+                      <span className="text-xs text-yellow-400/70">Progress saves on account</span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="outline" className="w-full">Log in</Button>
+                    </Link>
+                    <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
+                      <Button className="w-full">Sign up</Button>
+                    </Link>
+                  </div>
                 </div>
               )}
-              {user && (
+              {user && !isGuest && (
                 <Button
                   variant="ghost"
                   className="w-full mt-2 justify-start text-destructive"

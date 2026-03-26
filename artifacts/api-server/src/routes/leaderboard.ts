@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, betsTable } from "@workspace/db";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 import {
   GetRichestPlayersResponse,
   GetBiggestWinnersResponse,
@@ -17,6 +17,7 @@ router.get("/leaderboard/richest", async (_req, res): Promise<void> => {
       balance: usersTable.balance,
     })
     .from(usersTable)
+    .where(eq(usersTable.isGuest, false))
     .orderBy(desc(usersTable.balance))
     .limit(20);
 
@@ -39,6 +40,7 @@ router.get("/leaderboard/biggest-winners", async (_req, res): Promise<void> => {
       biggestWin: usersTable.biggestWin,
     })
     .from(usersTable)
+    .where(eq(usersTable.isGuest, false))
     .orderBy(desc(usersTable.biggestWin))
     .limit(20);
 
@@ -61,6 +63,7 @@ router.get("/leaderboard/biggest-bettors", async (_req, res): Promise<void> => {
       biggestBet: usersTable.biggestBet,
     })
     .from(usersTable)
+    .where(eq(usersTable.isGuest, false))
     .orderBy(desc(usersTable.biggestBet))
     .limit(20);
 
@@ -88,7 +91,7 @@ router.get("/leaderboard/recent-big-wins", async (_req, res): Promise<void> => {
     })
     .from(betsTable)
     .innerJoin(usersTable, eq(betsTable.userId, usersTable.id))
-    .where(eq(betsTable.result, "win"))
+    .where(and(eq(betsTable.result, "win"), eq(usersTable.isGuest, false)))
     .orderBy(desc(betsTable.payout))
     .limit(15);
 

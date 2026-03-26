@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { randomUUID } from "crypto";
 import { RegisterBody, LoginBody, RegisterResponse, LoginResponse, GetMeResponse, LogoutResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -32,10 +33,38 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     email: user.email ?? null,
     balance: parseFloat(user.balance),
     isAdmin: user.isAdmin,
+    isGuest: user.isGuest,
     referralCode: user.referralCode ?? null,
     avatarUrl: user.avatarUrl ?? null,
     createdAt: user.createdAt.toISOString(),
   };
+}
+
+async function mergeGuestIntoUser(guestId: number, userId: number): Promise<void> {
+  const [guest] = await db.select().from(usersTable).where(eq(usersTable.id, guestId)).limit(1);
+  if (!guest || !guest.isGuest) return;
+  const earned = Math.max(0, parseFloat(guest.balance) - 10000);
+  if (earned > 0 || parseInt(guest.gamesPlayed) > 0) {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user) return;
+    const newBalance = parseFloat(user.balance) + earned;
+    const newGamesPlayed = parseInt(user.gamesPlayed) + parseInt(guest.gamesPlayed);
+    const newTotalWins = parseInt(user.totalWins) + parseInt(guest.totalWins);
+    const newTotalLosses = parseInt(user.totalLosses) + parseInt(guest.totalLosses);
+    const newTotalProfit = parseFloat(user.totalProfit) + parseFloat(guest.totalProfit);
+    const newBiggestWin = Math.max(parseFloat(user.biggestWin), parseFloat(guest.biggestWin));
+    const newBiggestBet = Math.max(parseFloat(user.biggestBet), parseFloat(guest.biggestBet));
+    await db.update(usersTable).set({
+      balance: newBalance.toFixed(2),
+      gamesPlayed: newGamesPlayed.toString(),
+      totalWins: newTotalWins.toString(),
+      totalLosses: newTotalLosses.toString(),
+      totalProfit: newTotalProfit.toFixed(2),
+      biggestWin: newBiggestWin.toFixed(2),
+      biggestBet: newBiggestBet.toFixed(2),
+    }).where(eq(usersTable.id, userId));
+  }
+  await db.delete(usersTable).where(eq(usersTable.id, guestId));
 }
 
 router.post("/auth/register", async (req, res): Promise<void> => {
@@ -81,10 +110,16 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     })
     .returning();
 
+  const prevGuestId = req.session.userId;
   req.session.userId = user.id;
+  if (prevGuestId && prevGuestId !== user.id) {
+    await mergeGuestIntoUser(prevGuestId, user.id).catch(() => {});
+  }
+
+  const [merged] = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).limit(1);
 
   const response = RegisterResponse.parse({
-    user: formatUser(user),
+    user: formatUser(merged ?? user),
     message: referrerId
       ? `Registration successful! You received a $20,000 referral bonus!`
       : "Registration successful",
@@ -115,10 +150,16 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
+  const prevGuestId = req.session.userId;
   req.session.userId = user.id;
+  if (prevGuestId && prevGuestId !== user.id) {
+    await mergeGuestIntoUser(prevGuestId, user.id).catch(() => {});
+  }
+
+  const [merged] = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).limit(1);
 
   const response = LoginResponse.parse({
-    user: formatUser(user),
+    user: formatUser(merged ?? user),
     message: "Login successful",
   });
 
@@ -201,8 +242,52 @@ router.post("/auth/crazygames", async (req, res): Promise<void> => {
     user.avatarUrl = profilePictureUrl;
   }
 
+  const prevGuestId = req.session.userId;
   req.session.userId = user.id;
-  res.json({ user: formatUser(user), message: "Logged in via CrazyGames" });
+  if (prevGuestId && prevGuestId !== user.id) {
+    await mergeGuestIntoUser(prevGuestId, user.id).catch(() => {});
+  }
+
+  const [merged] = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).limit(1);
+  res.json({ user: formatUser(merged ?? user), message: "Logged in via CrazyGames" });
+});
+
+router.post("/auth/guest/init", async (req, res): Promise<void> => {
+  const { deviceId } = req.body as { deviceId?: string };
+  if (!deviceId || typeof deviceId !== "string" || deviceId.length < 8) {
+    res.status(400).json({ error: "Invalid deviceId" });
+    return;
+  }
+
+  if (req.session.userId) {
+    const [existing] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId)).limit(1);
+    if (existing && !existing.isGuest) {
+      res.json({ user: formatUser(existing), isGuest: false });
+      return;
+    }
+  }
+
+  let [guest] = await db.select().from(usersTable).where(eq(usersTable.deviceId, deviceId)).limit(1);
+
+  if (!guest) {
+    const guestNum = Math.floor(Math.random() * 100000);
+    const guestUsername = `Guest_${guestNum}`;
+    const dummyHash = await bcrypt.hash(`guest-${deviceId}-${Date.now()}`, 8);
+
+    [guest] = await db
+      .insert(usersTable)
+      .values({
+        username: guestUsername,
+        passwordHash: dummyHash,
+        deviceId,
+        isGuest: true,
+        balance: "10000.00",
+      })
+      .returning();
+  }
+
+  req.session.userId = guest.id;
+  res.json({ user: formatUser(guest), isGuest: true });
 });
 
 router.get("/auth/me", async (req, res): Promise<void> => {
