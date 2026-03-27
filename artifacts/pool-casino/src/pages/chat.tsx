@@ -240,8 +240,8 @@ function RoomList({ rooms, activeRoomId, onSelect, onCreateRoom, onJoinPublic }:
   );
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-white/5 flex items-center justify-between">
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex-shrink-0 p-3 border-b border-white/5 flex items-center justify-between">
         <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Chats</span>
         <div className="flex gap-1">
           <button onClick={loadPublic} title="Browse public rooms" className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors">
@@ -254,7 +254,7 @@ function RoomList({ rooms, activeRoomId, onSelect, onCreateRoom, onJoinPublic }:
       </div>
 
       {showCreate && (
-        <div className="p-3 border-b border-white/5 space-y-2">
+        <div className="flex-shrink-0 p-3 border-b border-white/5 space-y-2">
           <Input value={newRoomName} onChange={e => setNewRoomName(e.target.value)} placeholder="Room name..."
             className="bg-white/5 border-white/10 text-sm h-8" onKeyDown={e => e.key === "Enter" && createRoom()} autoFocus />
           <button onClick={() => setNewRoomPrivate(v => !v)}
@@ -270,7 +270,7 @@ function RoomList({ rooms, activeRoomId, onSelect, onCreateRoom, onJoinPublic }:
       )}
 
       {showPublic && (
-        <div className="p-3 border-b border-white/5 space-y-1">
+        <div className="flex-shrink-0 p-3 border-b border-white/5 space-y-1">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-muted-foreground font-medium">Public Rooms</span>
             <button onClick={() => setShowPublic(false)} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
@@ -287,7 +287,7 @@ function RoomList({ rooms, activeRoomId, onSelect, onCreateRoom, onJoinPublic }:
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-3">
         {groups.general.length > 0 && (
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest px-2 mb-1">General</p>

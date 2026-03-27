@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
 import {
-  ShieldAlert, RefreshCw, Users, X, Plus, ArrowRight,
+  ShieldAlert, ShieldCheck, RefreshCw, Users, X, Plus, ArrowRight,
   Settings, Gamepad2, Power, PowerOff, Megaphone,
   CheckCircle2, XCircle, Clock, BanknoteIcon, ChevronDown,
   Flag, Trash2, UserX, UserCheck, Edit2, AlertTriangle, Eye, Link2,
@@ -791,13 +791,18 @@ export default function Admin() {
                     { key: "ban", label: "Temp Ban", icon: <UserX className="w-3.5 h-3.5" /> },
                     { key: "perma", label: "Perma-Ban", icon: <AlertTriangle className="w-3.5 h-3.5" /> },
                     { key: "unban", label: "Lift Ban", icon: <UserCheck className="w-3.5 h-3.5" /> },
+                    { key: "promote", label: "Promote to Admin", icon: <ShieldCheck className="w-3.5 h-3.5" /> },
                     { key: "delete", label: "Delete Account", icon: <Trash2 className="w-3.5 h-3.5" /> },
                   ].map(action => (
                     <button key={action.key} onClick={() => { setManagedAction(managedAction === action.key ? null : action.key); setConfirmDelete(false); }}
                       className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
                         managedAction === action.key
-                          ? action.key === "delete" || action.key === "perma" ? "bg-red-500/30 border-red-500/60 text-red-200" : "bg-yellow-500/20 border-yellow-500/50 text-yellow-300"
-                          : action.key === "delete" || action.key === "perma" ? "border-red-500/20 text-red-400 hover:bg-red-500/10" : "border-white/10 text-muted-foreground hover:text-white hover:bg-white/5"
+                          ? action.key === "delete" || action.key === "perma" ? "bg-red-500/30 border-red-500/60 text-red-200"
+                            : action.key === "promote" ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                            : "bg-yellow-500/20 border-yellow-500/50 text-yellow-300"
+                          : action.key === "delete" || action.key === "perma" ? "border-red-500/20 text-red-400 hover:bg-red-500/10"
+                            : action.key === "promote" ? "border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10"
+                            : "border-white/10 text-muted-foreground hover:text-white hover:bg-white/5"
                       }`}>
                       {action.icon} {action.label}
                     </button>
@@ -884,6 +889,18 @@ export default function Admin() {
                     <Button onClick={() => adminAction(`/admin/user/${managedPlayer.id}/unban`, "POST")} disabled={actionLoading}
                       className="bg-green-600 hover:bg-green-500 text-white font-bold">
                       {actionLoading ? "Lifting..." : `Lift All Bans from ${managedPlayer.username}`}
+                    </Button>
+                  </div>
+                )}
+                {managedAction === "promote" && (
+                  <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-4 space-y-3">
+                    <p className="text-sm text-emerald-300 font-semibold flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4" /> Promote {managedPlayer.username} to Admin?
+                    </p>
+                    <p className="text-xs text-muted-foreground">This grants full admin privileges: game controls, player management, economy tools, and broadcast. This cannot be undone from the panel once confirmed.</p>
+                    <Button onClick={() => adminAction(`/admin/user/${managedPlayer.id}/promote`, "POST")} disabled={actionLoading}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+                      {actionLoading ? "Promoting..." : `Yes, Promote ${managedPlayer.username} to Admin`}
                     </Button>
                   </div>
                 )}

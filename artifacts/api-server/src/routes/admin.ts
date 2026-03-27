@@ -476,6 +476,23 @@ router.post("/admin/appeals/:id/status", async (req, res): Promise<void> => {
   res.json({ ok: true, appeal });
 });
 
+router.post("/admin/user/:id/promote", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const targetId = parseInt(req.params.id);
+  const [target] = await db.select({ id: usersTable.id, isAdmin: usersTable.isAdmin, username: usersTable.username })
+    .from(usersTable).where(eq(usersTable.id, targetId)).limit(1);
+  if (!target) { res.status(404).json({ error: "User not found" }); return; }
+  if (target.isAdmin) { res.status(400).json({ error: "User is already an admin" }); return; }
+  await db.update(usersTable).set({ isAdmin: true }).where(eq(usersTable.id, targetId));
+  await sendPushToUser(targetId, {
+    title: "You've been promoted!",
+    body: "You now have admin privileges on PoolCasino.",
+    tag: "account-promote",
+  });
+  res.json({ ok: true, message: `${target.username} has been promoted to admin` });
+});
+
 router.delete("/admin/user/:id", async (req, res): Promise<void> => {
   const isAdmin = await requireAdmin(req, res);
   if (!isAdmin) return;
