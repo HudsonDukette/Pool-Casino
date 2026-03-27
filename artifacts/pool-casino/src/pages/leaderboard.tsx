@@ -203,13 +203,30 @@ export default function Leaderboard() {
                            <span className="font-mono text-muted-foreground font-bold text-lg w-6 text-center">{entry.rank}</span>}
                         </div>
                         <div className="flex-1 flex items-center gap-3 min-w-0">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${idx === 0 ? 'bg-yellow-400/20 text-yellow-400' : 'bg-white/10 text-white'}`}>
-                            {entry.username.charAt(0).toUpperCase()}
+                          {entry.avatarUrl ? (
+                            <img src={entry.avatarUrl} alt={entry.username}
+                              className={`w-8 h-8 rounded-full object-cover flex-shrink-0 border ${idx === 0 ? 'border-yellow-400/40' : 'border-white/10'}`} />
+                          ) : (
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${idx === 0 ? 'bg-yellow-400/20 text-yellow-400' : 'bg-white/10 text-white'}`}>
+                              {entry.username.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Link href={`/player/${encodeURIComponent(entry.username)}`}
+                              className={`font-bold text-lg hover:underline cursor-pointer truncate ${idx < 3 ? 'text-white' : 'text-muted-foreground hover:text-white'}`}>
+                              {entry.username}
+                            </Link>
+                            {entry.isBanned && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 font-medium flex-shrink-0">
+                                {entry.permanentlyBanned ? "Perm Ban" : "Banned"}
+                              </span>
+                            )}
+                            {!entry.isBanned && entry.isSuspended && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 font-medium flex-shrink-0">
+                                Suspended
+                              </span>
+                            )}
                           </div>
-                          <Link href={`/player/${encodeURIComponent(entry.username)}`}
-                            className={`font-bold text-lg hover:underline cursor-pointer truncate ${idx < 3 ? 'text-white' : 'text-muted-foreground hover:text-white'}`}>
-                            {entry.username}
-                          </Link>
                           {me && me.username !== entry.username && (
                             <button
                               onClick={() => setReportTarget(entry.username)}

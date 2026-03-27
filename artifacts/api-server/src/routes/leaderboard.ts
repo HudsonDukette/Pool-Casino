@@ -10,73 +10,65 @@ import {
 
 const router: IRouter = Router();
 
+const selectLeaderboardUser = {
+  username: usersTable.username,
+  avatarUrl: usersTable.avatarUrl,
+  suspendedUntil: usersTable.suspendedUntil,
+  bannedUntil: usersTable.bannedUntil,
+  permanentlyBanned: usersTable.permanentlyBanned,
+};
+
+function mapLeaderboardUser(u: any, rank: number, value: number, label: string) {
+  const now = new Date();
+  return {
+    rank,
+    username: u.username,
+    value,
+    label,
+    avatarUrl: u.avatarUrl ?? null,
+    isSuspended: !!(u.suspendedUntil && u.suspendedUntil > now),
+    isBanned: !!(u.permanentlyBanned || (u.bannedUntil && u.bannedUntil > now)),
+    permanentlyBanned: !!u.permanentlyBanned,
+  };
+}
+
 router.get("/leaderboard/richest", async (_req, res): Promise<void> => {
   const users = await db
-    .select({
-      username: usersTable.username,
-      balance: usersTable.balance,
-    })
+    .select({ ...selectLeaderboardUser, balance: usersTable.balance })
     .from(usersTable)
     .where(eq(usersTable.isGuest, false))
     .orderBy(desc(usersTable.balance))
     .limit(20);
 
-  res.json(
-    GetRichestPlayersResponse.parse({
-      entries: users.map((u, i) => ({
-        rank: i + 1,
-        username: u.username,
-        value: parseFloat(u.balance),
-        label: `$${parseFloat(u.balance).toFixed(2)}`,
-      })),
-    }),
-  );
+  res.json({
+    entries: users.map((u, i) => mapLeaderboardUser(u, i + 1, parseFloat(u.balance), `$${parseFloat(u.balance).toFixed(2)}`)),
+  });
 });
 
 router.get("/leaderboard/biggest-winners", async (_req, res): Promise<void> => {
   const users = await db
-    .select({
-      username: usersTable.username,
-      biggestWin: usersTable.biggestWin,
-    })
+    .select({ ...selectLeaderboardUser, biggestWin: usersTable.biggestWin })
     .from(usersTable)
     .where(eq(usersTable.isGuest, false))
     .orderBy(desc(usersTable.biggestWin))
     .limit(20);
 
-  res.json(
-    GetBiggestWinnersResponse.parse({
-      entries: users.map((u, i) => ({
-        rank: i + 1,
-        username: u.username,
-        value: parseFloat(u.biggestWin),
-        label: `$${parseFloat(u.biggestWin).toFixed(2)}`,
-      })),
-    }),
-  );
+  res.json({
+    entries: users.map((u, i) => mapLeaderboardUser(u, i + 1, parseFloat(u.biggestWin), `$${parseFloat(u.biggestWin).toFixed(2)}`)),
+  });
 });
 
 router.get("/leaderboard/biggest-bettors", async (_req, res): Promise<void> => {
   const users = await db
-    .select({
-      username: usersTable.username,
-      biggestBet: usersTable.biggestBet,
-    })
+    .select({ ...selectLeaderboardUser, biggestBet: usersTable.biggestBet })
     .from(usersTable)
     .where(eq(usersTable.isGuest, false))
     .orderBy(desc(usersTable.biggestBet))
     .limit(20);
 
-  res.json(
-    GetBiggestBettorsResponse.parse({
-      entries: users.map((u, i) => ({
-        rank: i + 1,
-        username: u.username,
-        value: parseFloat(u.biggestBet),
-        label: `$${parseFloat(u.biggestBet).toFixed(2)}`,
-      })),
-    }),
-  );
+  res.json({
+    entries: users.map((u, i) => mapLeaderboardUser(u, i + 1, parseFloat(u.biggestBet), `$${parseFloat(u.biggestBet).toFixed(2)}`)),
+  });
 });
 
 router.get("/leaderboard/recent-big-wins", async (_req, res): Promise<void> => {

@@ -1,13 +1,15 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { Link } from "wouter";
 import { usePlayPlinko, useGetPool, useGetMe } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
-import { Coins, Info, StopCircle } from "lucide-react";
+import { Coins, Info, StopCircle, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import plinkoImg from "@/assets/game-plinko.png";
 
 const RISK_LEVELS = {
   low:    { name: "Low",    color: "bg-blue-500",    textColor: "text-blue-400",   mults: [0.5, 1, 1.5, 2, 2.5, 2, 1.5, 1, 0.5] },
@@ -200,7 +202,23 @@ export default function Plinko() {
   const boardHeight = ROWS * ROW_HEIGHT + ROW_HEIGHT * 1.8;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
+      <div className="flex items-center gap-3">
+        <Link href="/games">
+          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-white">
+            <ArrowLeft className="w-4 h-4" />
+            All Games
+          </Button>
+        </Link>
+      </div>
+      <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-white/10">
+        <img src={plinkoImg} alt="Drop Plinko" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-5">
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-secondary">Drop Plinko</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Drop the ball through the pegs. Control your risk for massive multipliers.</p>
+        </div>
+      </div>
       <div className="flex flex-col md:flex-row gap-8">
 
         {/* Game Board */}

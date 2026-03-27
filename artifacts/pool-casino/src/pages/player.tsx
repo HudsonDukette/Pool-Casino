@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
-import { ShieldAlert, Trophy, Gamepad2, Target, Calendar, Flag, X, ChevronDown } from "lucide-react";
+import { ShieldAlert, Trophy, Gamepad2, Target, Calendar, Flag, X, ChevronDown, Ban, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -111,11 +111,31 @@ export default function PlayerProfile() {
                     <ShieldAlert className="w-3 h-3 mr-1" /> Admin
                   </Badge>
                 )}
+                {profile.isBanned && (
+                  <Badge className="bg-red-500/20 text-red-400 border-red-500/30 border">
+                    <Ban className="w-3 h-3 mr-1" /> {profile.permanentlyBanned ? "Permanently Banned" : "Banned"}
+                  </Badge>
+                )}
+                {!profile.isBanned && profile.isSuspended && (
+                  <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 border">
+                    <AlertTriangle className="w-3 h-3 mr-1" /> Suspended
+                  </Badge>
+                )}
               </div>
               <p className="text-muted-foreground flex items-center gap-2 mt-1 text-sm">
                 <Calendar className="w-3.5 h-3.5" />
                 Joined {format(new Date(profile.createdAt), "MMMM yyyy")}
               </p>
+              {profile.isBanned && profile.bannedUntil && !profile.permanentlyBanned && (
+                <p className="text-xs text-red-400/70 mt-1">
+                  Ban expires {format(new Date(profile.bannedUntil), "MMM d, yyyy 'at' h:mm a")}
+                </p>
+              )}
+              {!profile.isBanned && profile.isSuspended && profile.suspendedUntil && (
+                <p className="text-xs text-orange-400/70 mt-1">
+                  Suspension expires {format(new Date(profile.suspendedUntil), "MMM d, yyyy 'at' h:mm a")}
+                </p>
+              )}
             </div>
             {me && me.id !== profile.id && (
               <button

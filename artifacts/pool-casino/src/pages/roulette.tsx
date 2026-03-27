@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Link } from "wouter";
 import { usePlayRoulette, useGetPool, useGetMe } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
-import { Coins, AlertCircle } from "lucide-react";
+import { Coins, AlertCircle, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import rouletteImg from "@/assets/game-roulette.png";
@@ -161,7 +162,23 @@ export default function Roulette() {
     "rgba(100,100,100,0.5)";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
+      <div className="flex items-center gap-3">
+        <Link href="/games">
+          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-white">
+            <ArrowLeft className="w-4 h-4" />
+            All Games
+          </Button>
+        </Link>
+      </div>
+      <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-white/10">
+        <img src={rouletteImg} alt="Neon Roulette" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-5">
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-primary">Neon Roulette</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Classic red or black with dynamic odds based on the global pool.</p>
+        </div>
+      </div>
       <div className="flex flex-col md:flex-row gap-8">
         {/* Game Area */}
         <div className="flex-1 space-y-6">

@@ -216,12 +216,19 @@ router.get("/user/public/:username", async (req, res): Promise<void> => {
       totalLosses: usersTable.totalLosses,
       biggestWin: usersTable.biggestWin,
       createdAt: usersTable.createdAt,
+      suspendedUntil: usersTable.suspendedUntil,
+      bannedUntil: usersTable.bannedUntil,
+      permanentlyBanned: usersTable.permanentlyBanned,
     })
     .from(usersTable)
     .where(eq(usersTable.username, username))
     .limit(1);
 
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+  const now = new Date();
+  const isSuspended = !!(user.suspendedUntil && user.suspendedUntil > now);
+  const isBanned = !!(user.permanentlyBanned || (user.bannedUntil && user.bannedUntil > now));
 
   res.json({
     id: user.id,
@@ -233,6 +240,11 @@ router.get("/user/public/:username", async (req, res): Promise<void> => {
     totalLosses: parseInt(user.totalLosses),
     biggestWin: parseFloat(user.biggestWin),
     createdAt: user.createdAt,
+    isSuspended,
+    isBanned,
+    permanentlyBanned: user.permanentlyBanned,
+    suspendedUntil: user.suspendedUntil?.toISOString() ?? null,
+    bannedUntil: user.bannedUntil?.toISOString() ?? null,
   });
 });
 
