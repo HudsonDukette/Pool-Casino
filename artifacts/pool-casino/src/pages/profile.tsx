@@ -26,11 +26,10 @@ import { formatCurrency, formatNumber } from "@/lib/utils";
 import {
   Trophy, Gift, ArrowUpRight, Coins, History, Calendar, Target, Flame,
   ShieldAlert, RefreshCw, Users, X, ArrowRight, Plus, Copy, Check,
-  Edit2, Image, Tag, Settings, Gamepad2, Link2, CheckCircle2
+  Edit2, Image, Tag, Settings
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { useCrazyGamesAuth } from "@/hooks/use-crazygames-auth";
 
 export default function Profile() {
   const { data: user, isLoading: userLoading } = useGetMe({ query: { retry: false } });
@@ -45,9 +44,6 @@ export default function Profile() {
   const claimMut = useClaimDailyReward();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { isCrazyGames, isAvailable: cgAvailable, isLoading: cgLoading, linkCrazyGamesAccount } = useCrazyGamesAuth();
-  const [cgLinking, setCgLinking] = useState(false);
-
   const [poolRefillAmount, setPoolRefillAmount] = useState("1000000");
   const [selectedPlayer, setSelectedPlayer] = useState<AdminPlayer | null>(null);
   const [playerRefillAmount, setPlayerRefillAmount] = useState("10000");
@@ -237,20 +233,6 @@ export default function Profile() {
         },
       }
     );
-  };
-
-  const handleLinkCrazyGames = async () => {
-    setCgLinking(true);
-    try {
-      await linkCrazyGamesAccount();
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      toast({ title: "CrazyGames Linked!", description: "Your CrazyGames account is now linked.", className: "bg-success text-success-foreground border-none" });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Linking failed";
-      toast({ title: "Link Failed", description: message, variant: "destructive" });
-    } finally {
-      setCgLinking(false);
-    }
   };
 
   const handleRefillPool = () => {
@@ -635,52 +617,6 @@ export default function Profile() {
             )}
             {costs && user && user.balance < costs.avatarChangeCost && (
               <p className="text-xs text-destructive">Insufficient balance. You need {formatCurrency(costs.avatarChangeCost)} to change your avatar.</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* CrazyGames Link Card — shown only when not a guest and CG is available */}
-      {user && !user.isGuest && (isCrazyGames || cgAvailable) && (
-        <Card className="bg-black/60 border-[#00c4ff]/20">
-          <CardHeader className="border-b border-[#00c4ff]/10 pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg text-[#00c4ff]">
-              <Gamepad2 className="w-5 h-5" /> CrazyGames Account
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            {user.isCrazyGamesLinked ? (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#00c4ff]/10 border border-[#00c4ff]/30 flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-[#00c4ff]" />
-                </div>
-                <div>
-                  <p className="font-semibold text-[#00c4ff]">CrazyGames Linked</p>
-                  <p className="text-sm text-muted-foreground">Your CrazyGames account is connected to this profile.</p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#00c4ff]/10 border border-[#00c4ff]/30 flex items-center justify-center shrink-0">
-                    <Link2 className="w-5 h-5 text-[#00c4ff]" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Link CrazyGames Account</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      Connect your CrazyGames account so you can log in with it anywhere you play on the platform.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleLinkCrazyGames}
-                  disabled={cgLinking || cgLoading || !cgAvailable}
-                  className="bg-[#00c4ff] hover:bg-[#00b0e6] text-black font-bold shadow-[0_0_20px_rgba(0,196,255,0.2)] gap-2"
-                >
-                  <Gamepad2 className="w-4 h-4" />
-                  {cgLinking ? "Linking..." : "Link CrazyGames Account"}
-                </Button>
-              </div>
             )}
           </CardContent>
         </Card>
