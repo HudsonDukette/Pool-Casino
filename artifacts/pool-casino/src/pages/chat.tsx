@@ -127,7 +127,7 @@ function ChatPanel({ room, userId }: { room: ChatRoom; userId: number }) {
   }, []);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex-1 flex flex-col min-h-0">
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {grouped.map(group => (
           <div key={group.date}>
