@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, settingsTable } from "@workspace/db";
+import { db, usersTable, settingsTable, banAppealsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import {
   GetUserStatsResponse,
@@ -234,6 +234,20 @@ router.get("/user/public/:username", async (req, res): Promise<void> => {
     biggestWin: parseFloat(user.biggestWin),
     createdAt: user.createdAt,
   });
+});
+
+router.post("/user/appeal", async (req, res): Promise<void> => {
+  const userId = req.session.userId;
+  if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const message = (req.body.message ?? "").trim();
+  if (!message || message.length < 10) { res.status(400).json({ error: "Please provide a detailed appeal message (at least 10 characters)." }); return; }
+  if (message.length > 2000) { res.status(400).json({ error: "Appeal message too long (max 2000 characters)." }); return; }
+  const [user] = await db.select({ permanentlyBanned: usersTable.permanentlyBanned, bannedUntil: usersTable.bannedUntil })
+    .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  const isBanned = user?.permanentlyBanned || (user?.bannedUntil && user.bannedUntil > new Date());
+  if (!isBanned) { res.status(400).json({ error: "Your account is not currently banned." }); return; }
+  const [appeal] = await db.insert(banAppealsTable).values({ userId, message }).returning();
+  res.json({ ok: true, appeal });
 });
 
 export default router;

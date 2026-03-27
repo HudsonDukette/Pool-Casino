@@ -23,10 +23,24 @@ import {
   Settings, Gamepad2, Power, PowerOff, Megaphone,
   CheckCircle2, XCircle, Clock, BanknoteIcon, ChevronDown,
   Flag, Trash2, UserX, UserCheck, Edit2, AlertTriangle, Eye, Link2,
+  Ban, MicOff, MessageCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const BASE = import.meta.env.BASE_URL;
+
+function PlayerStatusIcons({ player }: { player: any }) {
+  const now = new Date();
+  const isBanned = player.permanentlyBanned || (player.bannedUntil && new Date(player.bannedUntil) > now);
+  const isSuspended = !isBanned && player.suspendedUntil && new Date(player.suspendedUntil) > now;
+  if (!isBanned && !isSuspended) return null;
+  return (
+    <span className="flex items-center gap-1 ml-1">
+      {isBanned && <span title={player.permanentlyBanned ? "Permanently Banned" : `Banned until ${new Date(player.bannedUntil).toLocaleDateString()}`}><Ban className="w-3 h-3 text-red-400" /></span>}
+      {isSuspended && <span title={`Chat suspended until ${new Date(player.suspendedUntil).toLocaleDateString()}`}><MicOff className="w-3 h-3 text-yellow-400" /></span>}
+    </span>
+  );
+}
 
 function MoneyRequestRow({ req, onFulfill, onDismiss, loading }: { req: any; onFulfill: (id: number, amt: string) => void; onDismiss: (id: number) => void; loading: boolean }) {
   const [fulfillAmt, setFulfillAmt] = useState(req.amount?.toString() ?? "10000");
@@ -154,6 +168,8 @@ export default function Admin() {
   const [reportsLoading, setReportsLoading] = useState(false);
   const [viewingChats, setViewingChats] = useState<{ userId: number; username: string; messages: any[] } | null>(null);
   const [chatsLoading, setChatsLoading] = useState(false);
+  const [appeals, setAppeals] = useState<any[]>([]);
+  const [appealsLoading, setAppealsLoading] = useState(false);
 
   const loadMoneyRequests = React.useCallback(async () => {
     if (!user?.isAdmin) return;
@@ -172,6 +188,16 @@ export default function Admin() {
       const data = await r.json();
       setReports(data.reports ?? []);
     } catch {} finally { setReportsLoading(false); }
+  }, [user?.isAdmin]);
+
+  const loadAppeals = React.useCallback(async () => {
+    if (!user?.isAdmin) return;
+    setAppealsLoading(true);
+    try {
+      const r = await fetch(`${BASE}api/admin/appeals`, { credentials: "include" });
+      const data = await r.json();
+      setAppeals(data.appeals ?? []);
+    } catch {} finally { setAppealsLoading(false); }
   }, [user?.isAdmin]);
 
   useEffect(() => { loadMoneyRequests(); }, [loadMoneyRequests]);
@@ -386,8 +412,20 @@ export default function Admin() {
     } catch {} finally { setChatsLoading(false); }
   };
 
+  const updateAppealStatus = async (id: number, status: "approved" | "denied") => {
+    try {
+      await fetch(`${BASE}api/admin/appeals/${id}/status`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      setAppeals(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    } catch {}
+  };
+
   const pendingReports = reports.filter(r => r.status === "pending").length;
   const pendingMr = moneyRequests.filter(r => r.status === "pending").length;
+  const pendingAppeals = appeals.filter(a => a.status === "pending").length;
 
   return (
     <div className="max-w-5xl mx-auto space-y-4 pb-16">
@@ -691,7 +729,12 @@ export default function Admin() {
                         <tr key={player.id} onClick={() => setSelectedPlayer(isSelected ? null : player)}
                           className={`transition-colors cursor-pointer ${isSelected ? "bg-yellow-950/40 border-l-2 border-yellow-500" : "hover:bg-yellow-950/20"}`}>
                           <td className="px-4 py-3 font-mono text-muted-foreground">{player.id}</td>
-                          <td className="px-4 py-3 font-medium">{player.username}</td>
+                          <td className="px-4 py-3 font-medium">
+                            <span className="flex items-center gap-1">
+                              {player.username}
+                              <PlayerStatusIcons player={player} />
+                            </span>
+                          </td>
                           <td className="px-4 py-3 font-mono text-primary">{formatCurrency(player.balance)}</td>
                           <td className="px-4 py-3 text-muted-foreground">{player.gamesPlayed}</td>
                           <td className="px-4 py-3 text-muted-foreground">{player.totalWins}W / {player.totalLosses}L</td>
@@ -891,7 +934,10 @@ export default function Admin() {
                       <tr key={player.id} className={`transition-colors ${isManaged ? "bg-red-950/30" : "hover:bg-red-950/10"}`}>
                         <td className="px-4 py-3 font-mono text-muted-foreground text-xs">{player.id}</td>
                         <td className="px-4 py-3 font-medium">
-                          <Link href={`/player/${encodeURIComponent(player.username)}`} className="hover:text-primary hover:underline">{player.username}</Link>
+                          <span className="flex items-center gap-1">
+                            <Link href={`/player/${encodeURIComponent(player.username)}`} className="hover:text-primary hover:underline">{player.username}</Link>
+                            <PlayerStatusIcons player={player} />
+                          </span>
                         </td>
                         <td className="px-4 py-3 font-mono text-primary text-xs">{formatCurrency(player.balance)}</td>
                         <td className="px-4 py-3">
@@ -1021,6 +1067,74 @@ export default function Admin() {
                 {broadcastPending ? "Sending..." : "Send"}
               </Button>
             </div>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* ── Ban Appeals ────────────────────────────────────────────────────────── */}
+      <Card className="bg-purple-950/20 border-purple-500/20 overflow-hidden">
+        <SectionHeader
+          title="Ban Appeals"
+          icon={<AlertTriangle className="w-5 h-5" />}
+          badge={pendingAppeals > 0 ? <Badge className="bg-purple-500 text-white font-bold ml-1">{pendingAppeals} pending</Badge> : undefined}
+          accent="text-purple-300"
+          isOpen={isOpen("appeals")}
+          onToggle={() => { const wasOpen = isOpen("appeals"); toggle("appeals"); if (!wasOpen) loadAppeals(); }}
+        />
+        {isOpen("appeals") && (
+          <CardContent className="p-0 border-t border-purple-500/10">
+            <div className="flex justify-end px-4 py-2">
+              <Button variant="ghost" size="sm" onClick={loadAppeals} disabled={appealsLoading} className="text-purple-400 hover:text-purple-300">
+                <RefreshCw className={`w-3 h-3 mr-1 ${appealsLoading ? "animate-spin" : ""}`} /> Refresh
+              </Button>
+            </div>
+            {appealsLoading ? (
+              <div className="p-8 text-center text-muted-foreground text-sm">Loading appeals...</div>
+            ) : appeals.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">
+                <AlertTriangle className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                <p className="text-sm">No ban appeals yet.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-purple-500/10">
+                {appeals.map(appeal => (
+                  <div key={appeal.id} className={`p-4 space-y-3 ${appeal.status === "pending" ? "bg-purple-950/20" : ""}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Link href={`/player/${encodeURIComponent(appeal.username ?? "")}`} className="font-semibold text-sm hover:text-primary hover:underline">
+                          {appeal.username ?? "Unknown"}
+                        </Link>
+                        {appeal.permanentlyBanned && <Badge className="bg-red-500/20 text-red-400 border-red-500/30 border text-[10px]">Perma-Banned</Badge>}
+                        {!appeal.permanentlyBanned && appeal.bannedUntil && <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 border text-[10px]">Temp Banned</Badge>}
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
+                          appeal.status === "pending" ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400" :
+                          appeal.status === "approved" ? "bg-green-500/10 border-green-500/30 text-green-400" :
+                          "bg-white/5 border-white/10 text-muted-foreground"
+                        }`}>
+                          {appeal.status === "pending" ? "Pending Review" : appeal.status === "approved" ? "Approved" : "Denied"}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">{new Date(appeal.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <div className="bg-black/30 rounded-lg px-3 py-2 border border-white/5 text-sm text-muted-foreground italic">
+                      "{appeal.message}"
+                    </div>
+                    {appeal.status === "pending" && (
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => updateAppealStatus(appeal.id, "approved")}
+                          className="text-green-400 hover:text-green-300 hover:bg-green-500/10 gap-1.5">
+                          <UserCheck className="w-3.5 h-3.5" /> Approve &amp; Unban
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => updateAppealStatus(appeal.id, "denied")}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 gap-1.5">
+                          <XCircle className="w-3.5 h-3.5" /> Deny
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         )}
       </Card>

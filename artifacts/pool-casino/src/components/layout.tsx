@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useGetMe, useGetPool, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
-import { Coins, LogOut, User as UserIcon, Menu, X, Dices, Crown, LayoutDashboard, MessageSquare, UserPlus, ShieldAlert, Bell, Banknote } from "lucide-react";
+import { Coins, LogOut, User as UserIcon, Menu, X, Dices, Crown, LayoutDashboard, MessageSquare, UserPlus, ShieldAlert, Bell, Banknote, Ban, MicOff, AlertTriangle } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGuestSession } from "@/hooks/use-guest-session";
@@ -32,7 +32,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [pendingFriends, setPendingFriends] = React.useState(0);
+  const [pendingAdminCount, setPendingAdminCount] = React.useState(0);
   const [showMoneyModal, setShowMoneyModal] = React.useState(false);
+  const [showAppealModal, setShowAppealModal] = React.useState(false);
+  const [appealMsg, setAppealMsg] = React.useState("");
+  const [appealPending, setAppealPending] = React.useState(false);
   const [moneyAmount, setMoneyAmount] = React.useState("10000");
   const [moneyMsg, setMoneyMsg] = React.useState("");
   const [moneyPending, setMoneyPending] = React.useState(false);
@@ -65,6 +69,32 @@ export function Layout({ children }: { children: React.ReactNode }) {
     return () => clearInterval(t);
   }, [user?.id]);
 
+  React.useEffect(() => {
+    if (!(user as any)?.isAdmin) return;
+    const fetchCount = async () => {
+      try {
+        const r = await fetch(`${BASE}api/admin/pending-count`, { credentials: "include" });
+        if (r.ok) { const d = await r.json(); setPendingAdminCount(d.count ?? 0); }
+      } catch {}
+    };
+    fetchCount();
+    const t = setInterval(fetchCount, 30000);
+    return () => clearInterval(t);
+  }, [(user as any)?.isAdmin, (user as any)?.id]);
+
+  const handleAppeal = async () => {
+    if (!appealMsg.trim()) return;
+    setAppealPending(true);
+    try {
+      await apiFetch("api/user/appeal", { method: "POST", body: JSON.stringify({ message: appealMsg }) });
+      toast({ title: "Appeal Submitted", description: "An admin will review your appeal soon.", className: "bg-success text-success-foreground border-none" });
+      setShowAppealModal(false);
+      setAppealMsg("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setAppealPending(false); }
+  };
+
   const isGuest = user?.isGuest === true;
   useGuestSession(!!user && !isGuest, isLoading);
 
@@ -94,12 +124,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const totalNotifs = unreadCount + pendingFriends;
 
+  const u = user as any;
+  const isBanned = u && (u.permanentlyBanned || (u.bannedUntil && new Date(u.bannedUntil) > new Date()));
+  const isSuspended = u && !isBanned && u.suspendedUntil && new Date(u.suspendedUntil) > new Date();
+
   const navLinks = [
     { href: "/", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
     { href: "/games", label: "Games", icon: <Dices className="w-4 h-4" /> },
     { href: "/chat", label: "", icon: <MessageSquare className="w-4 h-4" />, title: "Chat" },
     { href: "/leaderboard", label: "Leaderboard", icon: <Crown className="w-4 h-4" /> },
-    ...(user?.isAdmin ? [{ href: "/admin", label: "Admin", icon: <ShieldAlert className="w-4 h-4" /> }] : []),
+    ...(u?.isAdmin ? [{ href: "/admin", label: "Admin", icon: <ShieldAlert className="w-4 h-4" />, badge: pendingAdminCount || null }] : []),
   ];
 
   const isChat = location === "/chat";
@@ -140,6 +174,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     {link.href === "/chat" && totalNotifs > 0 && (
                       <span className="bg-primary text-black text-[10px] font-bold rounded-full px-1.5 py-px min-w-[18px] text-center leading-none">
                         {totalNotifs > 99 ? "99+" : totalNotifs}
+                      </span>
+                    )}
+                    {(link as any).badge && (
+                      <span className="bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-px min-w-[18px] text-center leading-none">
+                        {(link as any).badge > 99 ? "99+" : (link as any).badge}
                       </span>
                     )}
                   </Link>
@@ -377,7 +416,74 @@ export function Layout({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
+      {/* Appeal Ban Modal */}
+      <AnimatePresence>
+        {showAppealModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowAppealModal(false)} />
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="relative z-10 bg-card border border-red-800/40 rounded-2xl p-6 w-full max-w-sm space-y-5 shadow-2xl">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-red-400 flex items-center gap-2"><AlertTriangle className="w-5 h-5" /> Appeal Ban</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Explain why you believe this action was unjust. An admin will review your appeal.</p>
+                </div>
+                <button onClick={() => setShowAppealModal(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground uppercase tracking-wider">Your Appeal</label>
+                <textarea
+                  value={appealMsg}
+                  onChange={e => setAppealMsg(e.target.value)}
+                  placeholder="Explain your situation in detail..."
+                  rows={5}
+                  maxLength={2000}
+                  className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 focus:border-red-500/50 outline-none text-sm resize-none"
+                />
+                <p className="text-xs text-muted-foreground text-right">{appealMsg.length}/2000</p>
+              </div>
+              <Button onClick={handleAppeal} disabled={appealPending || appealMsg.trim().length < 10} className="w-full bg-red-800 hover:bg-red-700 text-white font-bold gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                {appealPending ? "Submitting..." : "Submit Appeal"}
+              </Button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Ban/Suspend Status Banners */}
+      {isBanned && (
+        <div className="bg-red-950/80 border-b border-red-800/60 px-4 py-3">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-red-300">
+              <Ban className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm font-medium">
+                {u.permanentlyBanned ? "Your account has been permanently banned from playing games." : `Your account is banned from playing games until ${new Date(u.bannedUntil).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.`}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowAppealModal(true)}
+              className="text-xs px-3 py-1.5 rounded-full bg-red-800/50 border border-red-700/50 text-red-300 hover:bg-red-700/50 transition-colors flex-shrink-0"
+            >
+              Appeal Ban
+            </button>
+          </div>
+        </div>
+      )}
+      {isSuspended && (
+        <div className="bg-yellow-950/80 border-b border-yellow-800/60 px-4 py-3">
+          <div className="max-w-7xl mx-auto flex items-center gap-2 text-yellow-300">
+            <MicOff className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm font-medium">
+              Your chat privileges are suspended until {new Date(u.suspendedUntil).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.
+            </span>
+          </div>
+        </div>
+      )}
+
       <main className={`flex-1 w-full ${isChat ? "" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}`}>
         {children}
       </main>

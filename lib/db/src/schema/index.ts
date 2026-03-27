@@ -7,3 +7,4 @@ export * from "./chat";
 export * from "./money-requests";
 export * from "./push";
 export * from "./reports";
+export * from "./ban-appeals";

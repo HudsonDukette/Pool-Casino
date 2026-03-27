@@ -13,6 +13,15 @@ const router: IRouter = Router();
 const MIN_BET = 0.01;
 const BET_COOLDOWN_MS = 1000;
 
+function getBanError(user: { permanentlyBanned: boolean; bannedUntil: Date | null }): string | null {
+  if (user.permanentlyBanned) return "Your account has been permanently banned from playing games.";
+  if (user.bannedUntil && user.bannedUntil > new Date()) {
+    const until = user.bannedUntil.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return `You are banned from playing games until ${until}.`;
+  }
+  return null;
+}
+
 async function getOrCreatePool() {
   let [pool] = await db.select().from(poolTable).limit(1);
   if (!pool) {
@@ -41,6 +50,9 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
+
+  const banErr = getBanError(user);
+  if (banErr) { res.status(403).json({ error: "banned", message: banErr }); return; }
 
   if (user.lastBetAt) {
     const msSinceLastBet = Date.now() - user.lastBetAt.getTime();
@@ -159,6 +171,9 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
+
+  const banErr2 = getBanError(user);
+  if (banErr2) { res.status(403).json({ error: "banned", message: banErr2 }); return; }
 
   const pool = await getOrCreatePool();
   const poolAmount = parseFloat(pool.totalAmount);

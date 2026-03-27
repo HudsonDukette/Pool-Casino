@@ -202,6 +202,14 @@ router.post("/chat/rooms/:id/messages", async (req, res): Promise<void> => {
     .where(and(eq(chatRoomMembersTable.roomId, roomId), eq(chatRoomMembersTable.userId, userId))).limit(1);
   if (!membership) { res.status(403).json({ error: "Not a member" }); return; }
 
+  const [sender] = await db.select({ suspendedUntil: usersTable.suspendedUntil })
+    .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (sender?.suspendedUntil && sender.suspendedUntil > new Date()) {
+    const until = sender.suspendedUntil.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    res.status(403).json({ error: "suspended", message: `You are suspended from chat until ${until}.` });
+    return;
+  }
+
   const [msg] = await db.insert(chatMessagesTable).values({ roomId, userId, content }).returning();
 
   await db.update(chatRoomMembersTable)

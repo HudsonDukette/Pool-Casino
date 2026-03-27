@@ -38,6 +38,9 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     referralCode: user.referralCode ?? null,
     avatarUrl: user.avatarUrl ?? null,
     createdAt: user.createdAt.toISOString(),
+    suspendedUntil: user.suspendedUntil?.toISOString() ?? null,
+    bannedUntil: user.bannedUntil?.toISOString() ?? null,
+    permanentlyBanned: user.permanentlyBanned,
   };
 }
 

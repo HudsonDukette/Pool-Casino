@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, poolTable, settingsTable, chatMessagesTable, moneyRequestsTable } from "@workspace/db";
+import { db, usersTable, poolTable, settingsTable, chatMessagesTable, moneyRequestsTable, reportsTable, banAppealsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
+import { sendPushToUser } from "../lib/push";
 import {
   AdminRefillPoolBody,
   AdminRefillPoolResponse,
@@ -117,19 +118,21 @@ router.get("/admin/players", async (req, res): Promise<void> => {
 
   const players = await db.select().from(usersTable).orderBy(usersTable.id);
 
-  res.json(
-    AdminListPlayersResponse.parse({
-      players: players.map((p) => ({
-        id: p.id,
-        username: p.username,
-        balance: parseFloat(p.balance),
-        isAdmin: p.isAdmin,
-        gamesPlayed: parseInt(p.gamesPlayed),
-        totalWins: parseInt(p.totalWins),
-        totalLosses: parseInt(p.totalLosses),
-      })),
-    }),
-  );
+  res.json({
+    players: players.map((p) => ({
+      id: p.id,
+      username: p.username,
+      balance: parseFloat(p.balance),
+      isAdmin: p.isAdmin,
+      gamesPlayed: parseInt(p.gamesPlayed),
+      totalWins: parseInt(p.totalWins),
+      totalLosses: parseInt(p.totalLosses),
+      avatarUrl: p.avatarUrl ?? null,
+      suspendedUntil: p.suspendedUntil?.toISOString() ?? null,
+      bannedUntil: p.bannedUntil?.toISOString() ?? null,
+      permanentlyBanned: p.permanentlyBanned,
+    })),
+  });
 });
 
 router.get("/admin/settings", async (req, res): Promise<void> => {
@@ -353,6 +356,12 @@ router.post("/admin/user/:id/suspend", async (req, res): Promise<void> => {
   if (isNaN(hours) || hours <= 0) { res.status(400).json({ error: "hours must be positive" }); return; }
   const until = new Date(Date.now() + hours * 3600 * 1000);
   await db.update(usersTable).set({ suspendedUntil: until }).where(eq(usersTable.id, targetId));
+  sendPushToUser(targetId, {
+    title: "Account Notice",
+    body: `Your chat privileges have been suspended for ${hours} hour(s).`,
+    url: "/profile",
+    tag: "account-suspension",
+  }).catch(() => {});
   res.json({ ok: true, message: `User suspended for ${hours}h (until ${until.toISOString()})` });
 });
 
@@ -364,6 +373,12 @@ router.post("/admin/user/:id/ban", async (req, res): Promise<void> => {
   if (isNaN(hours) || hours <= 0) { res.status(400).json({ error: "hours must be positive" }); return; }
   const until = new Date(Date.now() + hours * 3600 * 1000);
   await db.update(usersTable).set({ bannedUntil: until }).where(eq(usersTable.id, targetId));
+  sendPushToUser(targetId, {
+    title: "Account Notice",
+    body: `Your account has been banned from playing games for ${hours} hour(s). You may appeal this decision.`,
+    url: "/profile",
+    tag: "account-ban",
+  }).catch(() => {});
   res.json({ ok: true, message: `User banned for ${hours}h (until ${until.toISOString()})` });
 });
 
@@ -372,6 +387,12 @@ router.post("/admin/user/:id/perma-ban", async (req, res): Promise<void> => {
   if (!isAdmin) return;
   const targetId = parseInt(req.params.id);
   await db.update(usersTable).set({ permanentlyBanned: true }).where(eq(usersTable.id, targetId));
+  sendPushToUser(targetId, {
+    title: "Account Notice",
+    body: "Your account has been permanently banned. You may submit a ban appeal.",
+    url: "/profile",
+    tag: "account-ban",
+  }).catch(() => {});
   res.json({ ok: true, message: "User permanently banned" });
 });
 
@@ -380,7 +401,79 @@ router.post("/admin/user/:id/unban", async (req, res): Promise<void> => {
   if (!isAdmin) return;
   const targetId = parseInt(req.params.id);
   await db.update(usersTable).set({ suspendedUntil: null, bannedUntil: null, permanentlyBanned: false }).where(eq(usersTable.id, targetId));
+  sendPushToUser(targetId, {
+    title: "Account Notice",
+    body: "Your account restrictions have been lifted. You can chat and play again.",
+    url: "/",
+    tag: "account-unban",
+  }).catch(() => {});
   res.json({ ok: true, message: "User suspension/ban lifted" });
+});
+
+router.get("/admin/pending-count", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const [mrCount, reportCount, appealCount] = await Promise.all([
+    db.select({ count: sql<string>`count(*)` }).from(moneyRequestsTable).where(eq(moneyRequestsTable.status, "pending")),
+    db.select({ count: sql<string>`count(*)` }).from(reportsTable).where(eq(reportsTable.status, "pending")),
+    db.select({ count: sql<string>`count(*)` }).from(banAppealsTable).where(eq(banAppealsTable.status, "pending")),
+  ]);
+  const count = parseInt(mrCount[0]?.count ?? "0") + parseInt(reportCount[0]?.count ?? "0") + parseInt(appealCount[0]?.count ?? "0");
+  res.json({ count });
+});
+
+router.get("/admin/appeals", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const appeals = await db
+    .select({
+      id: banAppealsTable.id,
+      userId: banAppealsTable.userId,
+      message: banAppealsTable.message,
+      status: banAppealsTable.status,
+      createdAt: banAppealsTable.createdAt,
+      reviewedAt: banAppealsTable.reviewedAt,
+      username: usersTable.username,
+      avatarUrl: usersTable.avatarUrl,
+      bannedUntil: usersTable.bannedUntil,
+      permanentlyBanned: usersTable.permanentlyBanned,
+    })
+    .from(banAppealsTable)
+    .leftJoin(usersTable, eq(banAppealsTable.userId, usersTable.id))
+    .orderBy(banAppealsTable.createdAt);
+  res.json({ appeals });
+});
+
+router.post("/admin/appeals/:id/status", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const appealId = parseInt(req.params.id);
+  const { status } = req.body;
+  if (!["approved", "denied"].includes(status)) { res.status(400).json({ error: "status must be approved or denied" }); return; }
+  const adminId = req.session.userId;
+  const [appeal] = await db.update(banAppealsTable)
+    .set({ status, reviewedAt: new Date(), reviewedBy: adminId })
+    .where(eq(banAppealsTable.id, appealId))
+    .returning();
+  if (!appeal) { res.status(404).json({ error: "Appeal not found" }); return; }
+  if (status === "approved") {
+    await db.update(usersTable).set({ suspendedUntil: null, bannedUntil: null, permanentlyBanned: false })
+      .where(eq(usersTable.id, appeal.userId));
+    sendPushToUser(appeal.userId, {
+      title: "Appeal Approved",
+      body: "Your ban appeal has been approved. Your account restrictions have been lifted.",
+      url: "/",
+      tag: "appeal-approved",
+    }).catch(() => {});
+  } else {
+    sendPushToUser(appeal.userId, {
+      title: "Appeal Denied",
+      body: "Your ban appeal has been reviewed and denied. Contact support if you have questions.",
+      url: "/profile",
+      tag: "appeal-denied",
+    }).catch(() => {});
+  }
+  res.json({ ok: true, appeal });
 });
 
 router.delete("/admin/user/:id", async (req, res): Promise<void> => {

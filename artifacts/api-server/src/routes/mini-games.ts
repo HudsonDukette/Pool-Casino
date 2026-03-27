@@ -56,6 +56,15 @@ async function loadContext(userId: number) {
   return { user: user!, pool };
 }
 
+function getBanError(user: { permanentlyBanned: boolean; bannedUntil: Date | null }): string | null {
+  if (user.permanentlyBanned) return "Your account has been permanently banned from playing games.";
+  if (user.bannedUntil && user.bannedUntil > new Date()) {
+    const until = user.bannedUntil.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return `You are banned from playing games until ${until}.`;
+  }
+  return null;
+}
+
 async function settleGame(
   userId: number,
   gameType: string,
@@ -129,6 +138,20 @@ function parseBet(req: any, res: any): number | null {
   if (isNaN(bet) || bet < 0.01) { res.status(400).json({ error: "Invalid bet amount (min $0.01)" }); return null; }
   return bet;
 }
+
+// ─── Ban enforcement middleware ───────────────────────────────────────────────
+router.use("/games", async (req: any, res: any, next: any) => {
+  if (req.method !== "POST") return next();
+  const userId = req.session?.userId;
+  if (!userId) return next();
+  const [u] = await db.select({ bannedUntil: usersTable.bannedUntil, permanentlyBanned: usersTable.permanentlyBanned })
+    .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (u) {
+    const err = getBanError(u);
+    if (err) { res.status(403).json({ error: "banned", message: err }); return; }
+  }
+  next();
+});
 
 // ─── 1. Dice Roll ────────────────────────────────────────────────────────────
 router.post("/games/dice", async (req, res): Promise<void> => {
