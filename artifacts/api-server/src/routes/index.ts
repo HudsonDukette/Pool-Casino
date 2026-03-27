@@ -14,6 +14,7 @@ import friendsRouter from "./friends";
 import moneyRequestsRouter from "./money-requests";
 import pushRouter from "./push";
 import reportsRouter from "./reports";
+import newGamesRouter from "./new-games";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(friendsRouter);
 router.use(moneyRequestsRouter);
 router.use(pushRouter);
 router.use(reportsRouter);
+router.use(newGamesRouter);
 
 export default router;

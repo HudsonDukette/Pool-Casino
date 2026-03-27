@@ -42,7 +42,7 @@ artifacts-monorepo/
 1. **Authentication**: Register/login/logout with username + password; CrazyGames SDK v3 platform-aware login; guest mode with per-device tracking + merge on login
 2. **Global Pool Economy**: $1M starting pool shared by all players; wins drain it, losses fill it
 3. **Dynamic Betting Odds**: Win probability scales with bet size relative to pool
-4. **10 Games**: Roulette, Plinko (multi-ball), Blackjack, Crash, Slots, Dice Roll, Coin Flip, Fortune Wheel, Number Guess, Mines
+4. **20 Games**: Roulette, Plinko (multi-ball), Blackjack, Crash, Slots, Dice Roll, Coin Flip, Fortune Wheel, Number Guess, Mines + High-Low Card, Double Dice, Risk Ladder, War, Target Multiplier, Ice Break, Advanced Wheel, Range Bet, Pyramid Pick, Lightning Round
 5. **Referral Codes**: Unique 8-char codes; new users +$20K, referrers +$10K
 6. **Profile Customization**: Avatar URL + username change (both cost coins, admin-configurable)
 7. **Player Stats**: Profit/loss, biggest win/bet, win streak, games played, transactions
@@ -90,6 +90,16 @@ artifacts-monorepo/
 - `POST /api/games/mines` - minesweeper grid (multiplier by reveals)
 - `POST /api/games/blackjack/deal` - start blackjack hand
 - `POST /api/games/blackjack/action` - hit or stand
+- `GET /api/games/highlow/card` + `POST /api/games/highlow` - high-low card guess (1.85×)
+- `POST /api/games/doubledice` - two dice: even/odd (1.9×) or exact sum (up to 18×)
+- `POST /api/games/ladder/start|step|cashout|abandon` - stateful risk ladder (up to 30×)
+- `POST /api/games/war` - card war: higher card wins 2×, tie pushes
+- `POST /api/games/target` - target multiplier (1.5×–50×) at inverse probability
+- `POST /api/games/icebreak` - ice break grid: avoid 4 danger tiles (up to ~10×)
+- `POST /api/games/advwheel` - advanced wheel with 9 segments up to 50×
+- `POST /api/games/range` - number range bet (narrow 4.75×, medium/wide 1.9×)
+- `POST /api/games/pyramid` - pyramid pick: 5 levels at 50/50, up to 23×
+- `POST /api/games/lightning` - lightning round: 3/5/10 rapid 50/50 flips at 1.9×
 - `GET /api/transactions` - bet history
 - `GET /api/leaderboard/richest` - richest players
 - `GET /api/leaderboard/biggest-winners` - biggest single wins

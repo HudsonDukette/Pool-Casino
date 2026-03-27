@@ -27,6 +27,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [gamesDropdownOpen, setGamesDropdownOpen] = React.useState(false);
+  const gamesDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (gamesDropdownRef.current && !gamesDropdownRef.current.contains(e.target as Node)) {
+        setGamesDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
   const initialForceReloadAt = React.useRef<number | null>(null);
   usePushNotifications((user as any)?.id);
 
@@ -130,11 +142,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { href: "/", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
-    { href: "/games", label: "Games", icon: <Dices className="w-4 h-4" /> },
     { href: "/chat", label: "", icon: <MessageSquare className="w-4 h-4" />, title: "Chat" },
     { href: "/leaderboard", label: "Leaderboard", icon: <Crown className="w-4 h-4" /> },
     ...(u?.isAdmin ? [{ href: "/admin", label: "Admin", icon: <ShieldAlert className="w-4 h-4" />, badge: pendingAdminCount || null }] : []),
   ];
+
+  const isGamesActive = location.startsWith("/games") || location === "/multiplayer" || location === "/casinos";
 
   const isChat = location === "/chat";
 
@@ -157,18 +170,64 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex space-x-1">
-              {navLinks.map((link) => {
+            <nav className="hidden md:flex space-x-1 items-center">
+              {/* Dashboard — first link */}
+              {navLinks.slice(0, 1).map((link) => {
+                const isActive = location === link.href;
+                return (
+                  <Link key={link.href} href={link.href} title={(link as any).title}
+                    className={`px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200 cursor-pointer ${isActive ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white hover:bg-white/5"}`}>
+                    {link.icon}{link.label}
+                  </Link>
+                );
+              })}
+
+              {/* Games dropdown */}
+              <div ref={gamesDropdownRef} className="relative">
+                <button
+                  onClick={() => setGamesDropdownOpen(o => !o)}
+                  className={`px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200 cursor-pointer ${
+                    isGamesActive ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <Dices className="w-4 h-4" />
+                  Games
+                  <span className={`text-xs transition-transform duration-200 ${gamesDropdownOpen ? "rotate-180" : ""}`}>▾</span>
+                </button>
+                <AnimatePresence>
+                  {gamesDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full left-0 mt-1 w-52 rounded-xl bg-card/95 border border-white/10 shadow-2xl backdrop-blur-xl overflow-hidden z-50"
+                    >
+                      {[
+                        { href: "/games",      label: "All Games",             icon: <Dices className="w-3.5 h-3.5" />,          sub: "20 games available" },
+                        { href: "/multiplayer",label: "Multiplayer",            icon: <span className="text-sm">👥</span>,         sub: "Coming soon" },
+                        { href: "/casinos",    label: "Player-Owned Casinos",   icon: <span className="text-sm">🏦</span>,         sub: "Coming soon" },
+                      ].map(item => (
+                        <Link key={item.href} href={item.href} onClick={() => setGamesDropdownOpen(false)}
+                          className={`flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors ${location === item.href || (item.href !== "/games" && location.startsWith(item.href)) ? "bg-white/5" : ""}`}>
+                          <span className="mt-0.5 text-primary">{item.icon}</span>
+                          <div>
+                            <p className="text-sm font-medium text-white leading-none">{item.label}</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">{item.sub}</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Remaining nav links */}
+              {navLinks.slice(1).map((link) => {
                 const isActive = location === link.href || (link.href !== "/" && location.startsWith(link.href));
                 return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    title={(link as any).title}
-                    className={`px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200 cursor-pointer ${
-                      isActive ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white hover:bg-white/5"
-                    }`}
-                  >
+                  <Link key={link.href} href={link.href} title={(link as any).title}
+                    className={`px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200 cursor-pointer ${isActive ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white hover:bg-white/5"}`}>
                     {link.icon}
                     {link.label}
                     {link.href === "/chat" && totalNotifs > 0 && (
@@ -309,15 +368,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <span className="font-mono font-bold text-primary">{formatCurrency(user.balance)}</span>
                 </div>
               )}
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-3 py-3 rounded-xl text-base font-medium ${
-                    location === link.href ? "bg-white/10 text-white" : "text-muted-foreground"
-                  }`}
-                >
+              {/* Dashboard */}
+              {navLinks.slice(0, 1).map((link) => (
+                <Link key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-3 py-3 rounded-xl text-base font-medium ${location === link.href ? "bg-white/10 text-white" : "text-muted-foreground"}`}>
+                  <div className="flex items-center gap-3">{link.icon}{link.label}</div>
+                </Link>
+              ))}
+              {/* Games section */}
+              <div className="pl-3 py-2 text-xs text-muted-foreground uppercase tracking-wider font-medium">Games</div>
+              {[
+                { href: "/games",       label: "All Games",           icon: <Dices className="w-4 h-4" /> },
+                { href: "/multiplayer", label: "Multiplayer",          icon: <span>👥</span> },
+                { href: "/casinos",     label: "Player-Owned Casinos", icon: <span>🏦</span> },
+              ].map(link => (
+                <Link key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-3 py-3 rounded-xl text-sm font-medium ${location === link.href ? "bg-white/10 text-white" : "text-muted-foreground"}`}>
+                  <div className="flex items-center gap-3 pl-2">{link.icon}{link.label}</div>
+                </Link>
+              ))}
+              {/* Remaining nav links */}
+              {navLinks.slice(1).map((link) => (
+                <Link key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-3 py-3 rounded-xl text-base font-medium ${location === link.href ? "bg-white/10 text-white" : "text-muted-foreground"}`}>
                   <div className="flex items-center gap-3">
                     {link.icon}
                     {link.label}

@@ -16,6 +16,18 @@ import Wheel from "@/pages/wheel";
 import Guess from "@/pages/guess";
 import Mines from "@/pages/mines";
 import Blackjack from "@/pages/blackjack";
+import HighLow from "@/pages/highlow";
+import DoubleDice from "@/pages/doubledice";
+import Ladder from "@/pages/ladder";
+import War from "@/pages/war";
+import Target from "@/pages/target";
+import IceBreak from "@/pages/icebreak";
+import AdvWheel from "@/pages/advwheel";
+import RangeBet from "@/pages/range";
+import Pyramid from "@/pages/pyramid";
+import Lightning from "@/pages/lightning";
+import Multiplayer from "@/pages/multiplayer";
+import Casinos from "@/pages/casinos";
 import Profile from "@/pages/profile";
 import PlayerProfile from "@/pages/player";
 import Admin from "@/pages/admin";
@@ -51,6 +63,18 @@ function Router() {
         <Route path="/games/guess" component={Guess} />
         <Route path="/games/mines" component={Mines} />
         <Route path="/games/blackjack" component={Blackjack} />
+        <Route path="/games/highlow" component={HighLow} />
+        <Route path="/games/doubledice" component={DoubleDice} />
+        <Route path="/games/ladder" component={Ladder} />
+        <Route path="/games/war" component={War} />
+        <Route path="/games/target" component={Target} />
+        <Route path="/games/icebreak" component={IceBreak} />
+        <Route path="/games/advwheel" component={AdvWheel} />
+        <Route path="/games/range" component={RangeBet} />
+        <Route path="/games/pyramid" component={Pyramid} />
+        <Route path="/games/lightning" component={Lightning} />
+        <Route path="/multiplayer" component={Multiplayer} />
+        <Route path="/casinos" component={Casinos} />
         <Route path="/profile" component={Profile} />
         <Route path="/player/:username" component={PlayerProfile} />
         <Route path="/admin" component={Admin} />
