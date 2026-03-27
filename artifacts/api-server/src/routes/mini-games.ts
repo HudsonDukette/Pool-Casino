@@ -449,6 +449,56 @@ router.post("/games/mines/start", async (req, res): Promise<void> => {
   res.json({ started: true, minesCount, totalTiles: 25, newBalance });
 });
 
+// Check current game state (used on page load to recover mid-game)
+router.get("/games/mines/status", (req, res): void => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const game = minesGames.get(userId);
+  if (!game) { res.json({ active: false }); return; }
+  const multiplier = minesMultiplier(game.minesCount, game.revealedSafe.length);
+  const potentialPayout = parseFloat((game.betAmount * multiplier).toFixed(2));
+  res.json({
+    active: true,
+    betAmount: game.betAmount,
+    minesCount: game.minesCount,
+    revealedSafe: game.revealedSafe,
+    currentMultiplier: multiplier,
+    potentialPayout,
+  });
+});
+
+// Abandon a stuck game — forfeits the bet (no refund, already deducted on start)
+router.post("/games/mines/abandon", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const game = minesGames.get(userId);
+  if (!game) { res.status(400).json({ error: "No active mines game to abandon." }); return; }
+
+  minesGames.delete(userId);
+
+  // Record as a loss in stats
+  const [[user], [pool]] = await Promise.all([
+    db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
+    db.select().from(poolTable).limit(1),
+  ]);
+  await Promise.all([
+    db.update(usersTable).set({
+      gamesPlayed: sql`(${usersTable.gamesPlayed}::integer + 1)::text`,
+      totalLosses: sql`(${usersTable.totalLosses}::integer + 1)::text`,
+      currentStreak: sql`'0'`,
+      lastBetAt: new Date(),
+    }).where(eq(usersTable.id, userId)),
+    db.insert(betsTable).values({
+      userId,
+      gameType: "mines",
+      betAmount: game.betAmount.toFixed(2),
+      result: "loss",
+      payout: "0.00",
+      multiplier: "0.0000",
+    }),
+  ]);
+
+  res.json({ abandoned: true, lostAmount: game.betAmount, minePositions: [...game.minePositions] });
+});
+
 // Reveal a tile
 router.post("/games/mines/reveal", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +27,13 @@ async function apiPost(path: string, body: Record<string, unknown>) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+async function apiGet(path: string) {
+  const res = await fetch(`${BASE}api/games/${path}`, { credentials: "include" });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Request failed");
   return data;
@@ -125,6 +132,53 @@ export default function Mines() {
 
   const bet = parseFloat(betAmount) || 0;
   const isPlaying = phase === "playing";
+
+  // On mount: check if the server already has an active game for this user
+  // (happens when they navigated away mid-game without cashing out or hitting a mine)
+  useEffect(() => {
+    apiGet("mines/status").then((data) => {
+      if (!data.active) return;
+      // Restore the in-progress game
+      setActiveMinesCount(data.minesCount);
+      setBetAmount(String(data.betAmount));
+      setRevealedCount(data.revealedSafe.length);
+      setCurrentMultiplier(data.currentMultiplier);
+      setPotentialPayout(data.potentialPayout);
+      setTiles((prev) => {
+        const next = [...prev];
+        (data.revealedSafe as number[]).forEach((i) => {
+          next[i] = { revealed: true, isGem: true, isMine: false, isExplosion: false };
+        });
+        return next;
+      });
+      setPhase("playing");
+    }).catch(() => { /* not logged in or server error — ignore */ });
+  }, []);
+
+  async function handleAbandon() {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const data = await apiPost("mines/abandon", {});
+      // Show all mine positions
+      setTiles((prev) => {
+        const next = [...prev];
+        (data.minePositions as number[]).forEach((mi) => {
+          next[mi] = { revealed: true, isMine: true, isGem: false, isExplosion: false };
+        });
+        return next;
+      });
+      setPhase("exploded");
+      setFinalResult({ payout: 0, multiplier: 0, won: false });
+      toast({ title: "Game abandoned", description: `Lost ${formatCurrency(data.lostAmount)}. The bet was already deducted.`, variant: "destructive" });
+      qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      qc.invalidateQueries({ queryKey: ["/api/pool"] });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to abandon", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function resetGame() {
     setPhase("idle");
@@ -333,6 +387,15 @@ export default function Mines() {
                   onClick={handleCashout}
                 >
                   {loading ? "Processing…" : revealedCount === 0 ? "Reveal a tile first" : `💰 Cash Out ${formatCurrency(potentialPayout)}`}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full text-red-400/70 hover:text-red-400 hover:bg-red-500/10 text-xs"
+                  size="sm"
+                  disabled={loading}
+                  onClick={handleAbandon}
+                >
+                  Abandon game (forfeit bet)
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
                   {activeMinesCount} mines hidden · click tiles to reveal
