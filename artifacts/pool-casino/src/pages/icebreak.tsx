@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
+import heroImg from "@/assets/game-icebreak.png";
 import { formatCurrency } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL;
@@ -66,7 +67,7 @@ export default function IceBreak() {
   const PICK_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10, 12];
 
   return (
-    <GameShell title="Ice Break" description="A 4×4 grid hides 4 danger tiles. Choose how many to flip — all safe and you win big." accentColor="text-cyan-400">
+    <GameShell heroImage={heroImg} title="Ice Break" description="A 4×4 grid hides 4 danger tiles. Choose how many to flip — all safe and you win big." accentColor="text-cyan-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

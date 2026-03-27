@@ -11,10 +11,11 @@ interface GameShellProps {
   title: string;
   description: string;
   accentColor?: string;
+  heroImage?: string;
   children: React.ReactNode;
 }
 
-export function GameShell({ title, description, accentColor = "text-primary", children }: GameShellProps) {
+export function GameShell({ title, description, accentColor = "text-primary", heroImage, children }: GameShellProps) {
   return (
     <div className="max-w-3xl mx-auto space-y-6 pt-4">
       <div className="flex items-center gap-3">
@@ -25,10 +26,22 @@ export function GameShell({ title, description, accentColor = "text-primary", ch
           </Button>
         </Link>
       </div>
-      <div className="space-y-1">
-        <h1 className={`text-3xl md:text-4xl font-display font-bold ${accentColor}`}>{title}</h1>
-        <p className="text-muted-foreground">{description}</p>
-      </div>
+      {heroImage && (
+        <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-white/10">
+          <img src={heroImage} alt={title} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-5">
+            <h1 className={`text-3xl md:text-4xl font-display font-bold ${accentColor}`}>{title}</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">{description}</p>
+          </div>
+        </div>
+      )}
+      {!heroImage && (
+        <div className="space-y-1">
+          <h1 className={`text-3xl md:text-4xl font-display font-bold ${accentColor}`}>{title}</h1>
+          <p className="text-muted-foreground">{description}</p>
+        </div>
+      )}
       {children}
     </div>
   );

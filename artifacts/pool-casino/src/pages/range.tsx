@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
+import heroImg from "@/assets/game-range.png";
 import { formatCurrency } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL;
@@ -52,7 +53,7 @@ export default function RangeBet() {
   }
 
   return (
-    <GameShell title="Number Range Bet" description="Pick a number range. A number 1–100 is drawn. Hit your range to win." accentColor="text-cyan-400">
+    <GameShell heroImage={heroImg} title="Number Range Bet" description="Pick a number range. A number 1–100 is drawn. Hit your range to win." accentColor="text-cyan-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

@@ -108,7 +108,7 @@ router.post("/games/highlow", async (req, res): Promise<void> => {
   const { user, pool } = await loadCtx(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   const banErr = checkBan(user); if (banErr) { res.status(403).json({ error: banErr }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   const card2 = Math.floor(Math.random() * 13) + 1;
   let won: boolean;
@@ -156,7 +156,7 @@ router.post("/games/doubledice", async (req, res): Promise<void> => {
   const { user, pool } = await loadCtx(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   const banErr = checkBan(user); if (banErr) { res.status(403).json({ error: banErr }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   const die1 = Math.floor(Math.random() * 6) + 1;
   const die2 = Math.floor(Math.random() * 6) + 1;
@@ -194,7 +194,7 @@ router.post("/games/ladder/start", async (req, res): Promise<void> => {
   const { user, pool } = await loadCtx(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   const banErr = checkBan(user); if (banErr) { res.status(403).json({ error: banErr }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   await Promise.all([
     db.update(usersTable).set({ balance: (parseFloat(user.balance) - betAmount).toFixed(2) }).where(eq(usersTable.id, userId)),
@@ -288,7 +288,7 @@ router.post("/games/war", async (req, res): Promise<void> => {
   const { user, pool } = await loadCtx(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   const banErr = checkBan(user); if (banErr) { res.status(403).json({ error: banErr }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   const playerCard = Math.floor(Math.random() * 13) + 1;
   const dealerCard = Math.floor(Math.random() * 13) + 1;
@@ -319,7 +319,7 @@ router.post("/games/target", async (req, res): Promise<void> => {
   const { user, pool } = await loadCtx(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   const banErr = checkBan(user); if (banErr) { res.status(403).json({ error: banErr }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   const winProb = (1 / target) * 0.96;
   const won = Math.random() < winProb;
@@ -363,7 +363,7 @@ router.post("/games/icebreak", async (req, res): Promise<void> => {
   const { user, pool } = await loadCtx(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   const banErr = checkBan(user); if (banErr) { res.status(403).json({ error: banErr }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   // Place 4 danger tiles randomly
   const allTiles = Array.from({ length: ICE_TOTAL }, (_, i) => i);
@@ -404,7 +404,7 @@ router.post("/games/advwheel", async (req, res): Promise<void> => {
   const { user, pool } = await loadCtx(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   const banErr = checkBan(user); if (banErr) { res.status(403).json({ error: banErr }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
@@ -433,7 +433,7 @@ router.post("/games/range", async (req, res): Promise<void> => {
   const { user, pool } = await loadCtx(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   const banErr = checkBan(user); if (banErr) { res.status(403).json({ error: banErr }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   const number = Math.floor(Math.random() * 100) + 1;
   const cfg = RANGE_CONFIG[range];
@@ -458,7 +458,7 @@ router.post("/games/pyramid", async (req, res): Promise<void> => {
   const { user, pool } = await loadCtx(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   const banErr = checkBan(user); if (banErr) { res.status(403).json({ error: banErr }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   // Simulate each level (50% each)
   const levelResults: boolean[] = [];

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
+import heroImg from "@/assets/game-pyramid.png";
 import { formatCurrency } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL;
@@ -47,7 +48,7 @@ export default function Pyramid() {
   }
 
   return (
-    <GameShell title="Pyramid Pick" description="Climb through up to 5 levels, each with 50/50 odds. Survive them all to collect your multiplier." accentColor="text-amber-400">
+    <GameShell heroImage={heroImg} title="Pyramid Pick" description="Climb through up to 5 levels, each with 50/50 odds. Survive them all to collect your multiplier." accentColor="text-amber-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

@@ -15,6 +15,16 @@ import coinflipImg from "@/assets/game-coinflip.png";
 import wheelImg from "@/assets/game-wheel.png";
 import guessImg from "@/assets/game-guess.png";
 import minesImg from "@/assets/game-mines.png";
+import highlowImg from "@/assets/game-highlow.png";
+import doublediceImg from "@/assets/game-doubledice.png";
+import ladderImg from "@/assets/game-ladder.png";
+import warImg from "@/assets/game-war.png";
+import targetImg from "@/assets/game-target.png";
+import icebreakImg from "@/assets/game-icebreak.png";
+import advwheelImg from "@/assets/game-advwheel.png";
+import rangeImg from "@/assets/game-range.png";
+import pyramidImg from "@/assets/game-pyramid.png";
+import lightningImg from "@/assets/game-lightning.png";
 
 const games = [
   {
@@ -132,8 +142,7 @@ const games = [
     id: "highlow",
     name: "High-Low",
     description: "Draw a card, then guess if the next is higher or lower. Correct pays 1.85×. Ties push.",
-    emoji: "🃏",
-    emojiGradient: "from-yellow-900/60 to-yellow-700/20",
+    image: highlowImg,
     href: "/games/highlow",
     accentClass: "group-hover:border-yellow-500/50 group-hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]",
     titleClass: "group-hover:text-yellow-400",
@@ -144,8 +153,7 @@ const games = [
     id: "doubledice",
     name: "Double Dice",
     description: "Roll two dice. Bet even/odd (1.9×) or nail the exact sum for up to 18× payout.",
-    emoji: "🎲",
-    emojiGradient: "from-orange-900/60 to-orange-700/20",
+    image: doublediceImg,
     href: "/games/doubledice",
     accentClass: "group-hover:border-orange-500/50 group-hover:shadow-[0_0_30px_rgba(249,115,22,0.2)]",
     titleClass: "group-hover:text-orange-400",
@@ -156,8 +164,7 @@ const games = [
     id: "ladder",
     name: "Risk Ladder",
     description: "Climb 10 rungs with escalating multipliers up to 30×. Cash out anytime — or risk it all.",
-    emoji: "🪜",
-    emojiGradient: "from-lime-900/60 to-lime-700/20",
+    image: ladderImg,
     href: "/games/ladder",
     accentClass: "group-hover:border-lime-500/50 group-hover:shadow-[0_0_30px_rgba(132,204,22,0.2)]",
     titleClass: "group-hover:text-lime-400",
@@ -168,8 +175,7 @@ const games = [
     id: "war",
     name: "War",
     description: "Draw a card against the dealer. Higher card wins 2×. Tie returns your bet.",
-    emoji: "⚔️",
-    emojiGradient: "from-red-900/60 to-red-700/20",
+    image: warImg,
     href: "/games/war",
     accentClass: "group-hover:border-red-500/50 group-hover:shadow-[0_0_30px_rgba(239,68,68,0.2)]",
     titleClass: "group-hover:text-red-400",
@@ -180,8 +186,7 @@ const games = [
     id: "target",
     name: "Target Multiplier",
     description: "Pick your target (1.5× to 50×). Higher targets are harder to hit — but reward more.",
-    emoji: "🎯",
-    emojiGradient: "from-blue-900/60 to-blue-700/20",
+    image: targetImg,
     href: "/games/target",
     accentClass: "group-hover:border-blue-500/50 group-hover:shadow-[0_0_30px_rgba(59,130,246,0.2)]",
     titleClass: "group-hover:text-blue-400",
@@ -192,8 +197,7 @@ const games = [
     id: "icebreak",
     name: "Ice Break",
     description: "16 tiles hide 4 danger spots. Flip tiles — miss all dangers to win up to 10×.",
-    emoji: "❄️",
-    emojiGradient: "from-cyan-900/60 to-cyan-700/20",
+    image: icebreakImg,
     href: "/games/icebreak",
     accentClass: "group-hover:border-cyan-500/50 group-hover:shadow-[0_0_30px_rgba(6,182,212,0.2)]",
     titleClass: "group-hover:text-cyan-400",
@@ -204,8 +208,7 @@ const games = [
     id: "advwheel",
     name: "Advanced Wheel",
     description: "9-segment wheel with payouts up to 50×. Bigger jackpots than Fortune Wheel.",
-    emoji: "🎡",
-    emojiGradient: "from-purple-900/60 to-purple-700/20",
+    image: advwheelImg,
     href: "/games/advwheel",
     accentClass: "group-hover:border-purple-500/50 group-hover:shadow-[0_0_30px_rgba(139,92,246,0.2)]",
     titleClass: "group-hover:text-purple-400",
@@ -216,8 +219,7 @@ const games = [
     id: "range",
     name: "Range Bet",
     description: "A number 1–100 is drawn. Pick your range: narrow (4.75×) or wide (1.9×).",
-    emoji: "📊",
-    emojiGradient: "from-teal-900/60 to-teal-700/20",
+    image: rangeImg,
     href: "/games/range",
     accentClass: "group-hover:border-teal-500/50 group-hover:shadow-[0_0_30px_rgba(20,184,166,0.2)]",
     titleClass: "group-hover:text-teal-400",
@@ -228,8 +230,7 @@ const games = [
     id: "pyramid",
     name: "Pyramid Pick",
     description: "Climb pyramid levels (50/50 each). Survive 5 levels to win 23×.",
-    emoji: "🔺",
-    emojiGradient: "from-amber-900/60 to-amber-700/20",
+    image: pyramidImg,
     href: "/games/pyramid",
     accentClass: "group-hover:border-amber-500/50 group-hover:shadow-[0_0_30px_rgba(245,158,11,0.2)]",
     titleClass: "group-hover:text-amber-400",
@@ -240,8 +241,7 @@ const games = [
     id: "lightning",
     name: "Lightning Round",
     description: "3, 5, or 10 rapid 50/50 flips at 1.9× each. Win as many rounds as you can.",
-    emoji: "⚡",
-    emojiGradient: "from-yellow-900/60 to-yellow-600/20",
+    image: lightningImg,
     href: "/games/lightning",
     accentClass: "group-hover:border-yellow-400/50 group-hover:shadow-[0_0_30px_rgba(234,179,8,0.3)]",
     titleClass: "group-hover:text-yellow-300",

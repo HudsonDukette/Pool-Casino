@@ -85,16 +85,26 @@ function MoneyRequestRow({ req, onFulfill, onDismiss, loading }: { req: any; onF
 }
 
 const ALL_GAMES = [
-  { id: "roulette",  name: "Neon Roulette",   emoji: "🎡" },
-  { id: "plinko",    name: "Drop Plinko",      emoji: "🔮" },
-  { id: "blackjack", name: "Blackjack",        emoji: "🃏" },
-  { id: "crash",     name: "Crash",            emoji: "📈" },
-  { id: "slots",     name: "Neon Slots",       emoji: "🎰" },
-  { id: "dice",      name: "Dice Roll",        emoji: "🎲" },
-  { id: "coinflip",  name: "Coin Flip",        emoji: "🪙" },
-  { id: "wheel",     name: "Fortune Wheel",    emoji: "🎡" },
-  { id: "guess",     name: "Number Guess",     emoji: "🔢" },
-  { id: "mines",     name: "Mines",            emoji: "💣" },
+  { id: "roulette",   name: "Neon Roulette",      emoji: "🎡" },
+  { id: "plinko",     name: "Drop Plinko",         emoji: "🔮" },
+  { id: "blackjack",  name: "Blackjack",           emoji: "🃏" },
+  { id: "crash",      name: "Crash",               emoji: "📈" },
+  { id: "slots",      name: "Neon Slots",          emoji: "🎰" },
+  { id: "dice",       name: "Dice Roll",           emoji: "🎲" },
+  { id: "coinflip",   name: "Coin Flip",           emoji: "🪙" },
+  { id: "wheel",      name: "Fortune Wheel",       emoji: "🎡" },
+  { id: "guess",      name: "Number Guess",        emoji: "🔢" },
+  { id: "mines",      name: "Mines",               emoji: "💣" },
+  { id: "highlow",    name: "High-Low",            emoji: "🃏" },
+  { id: "doubledice", name: "Double Dice",         emoji: "🎲" },
+  { id: "ladder",     name: "Risk Ladder",         emoji: "🪜" },
+  { id: "war",        name: "War",                 emoji: "⚔️" },
+  { id: "target",     name: "Target Multiplier",   emoji: "🎯" },
+  { id: "icebreak",   name: "Ice Break",           emoji: "❄️" },
+  { id: "advwheel",   name: "Advanced Wheel",      emoji: "🎡" },
+  { id: "range",      name: "Range Bet",           emoji: "📊" },
+  { id: "pyramid",    name: "Pyramid Pick",        emoji: "🔺" },
+  { id: "lightning",  name: "Lightning Round",     emoji: "⚡" },
 ];
 
 function SectionHeader({

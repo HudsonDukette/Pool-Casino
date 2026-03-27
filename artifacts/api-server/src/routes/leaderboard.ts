@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, betsTable } from "@workspace/db";
-import { desc, eq, and } from "drizzle-orm";
+import { desc, eq, and, sql } from "drizzle-orm";
 import {
   GetRichestPlayersResponse,
   GetBiggestWinnersResponse,
@@ -107,6 +107,30 @@ router.get("/leaderboard/recent-big-wins", async (_req, res): Promise<void> => {
       })),
     }),
   );
+});
+
+router.get("/leaderboard/top-games", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select({
+      gameType: betsTable.gameType,
+      totalWagered: sql<string>`COALESCE(SUM(${betsTable.betAmount}), 0)`,
+      totalBets: sql<string>`COUNT(*)`,
+      houseProfit: sql<string>`COALESCE(SUM(${betsTable.betAmount}) - SUM(${betsTable.payout}), 0)`,
+    })
+    .from(betsTable)
+    .groupBy(betsTable.gameType)
+    .orderBy(desc(sql`SUM(${betsTable.betAmount})`))
+    .limit(20);
+
+  res.json({
+    games: rows.map((r, i) => ({
+      rank: i + 1,
+      gameType: r.gameType,
+      totalWagered: parseFloat(r.totalWagered),
+      totalBets: parseInt(String(r.totalBets)),
+      houseProfit: parseFloat(r.houseProfit),
+    })),
+  });
 });
 
 export default router;

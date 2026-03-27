@@ -143,7 +143,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navLinks = [
     { href: "/", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
     { href: "/chat", label: "", icon: <MessageSquare className="w-4 h-4" />, title: "Chat" },
-    { href: "/leaderboard", label: "Leaderboard", icon: <Crown className="w-4 h-4" /> },
+    { href: "/leaderboard", label: "Leaderboards", icon: <Crown className="w-4 h-4" /> },
     ...(u?.isAdmin ? [{ href: "/admin", label: "Admin", icon: <ShieldAlert className="w-4 h-4" />, badge: pendingAdminCount || null }] : []),
   ];
 

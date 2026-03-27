@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
+import heroImg from "@/assets/game-ladder.png";
 import { formatCurrency } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL;
@@ -132,7 +133,7 @@ export default function Ladder() {
   const MULTS = [0, 1.4, 2.0, 2.8, 4.0, 5.5, 7.5, 10, 14, 20, 30];
 
   return (
-    <GameShell title="Risk Ladder" description="Climb 10 rungs for escalating multipliers. Stop and cash out anytime — or push your luck." accentColor="text-lime-400">
+    <GameShell heroImage={heroImg} title="Risk Ladder" description="Climb 10 rungs for escalating multipliers. Stop and cash out anytime — or push your luck." accentColor="text-lime-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         {/* Ladder visual */}
         <Card className="bg-black/70 border-white/10">

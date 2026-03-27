@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
+import heroImg from "@/assets/game-doubledice.png";
 import { formatCurrency } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL;
@@ -80,7 +81,7 @@ export default function DoubleDice() {
   }
 
   return (
-    <GameShell title="Double Dice" description="Roll two dice. Bet on even/odd or pick an exact sum for bigger payouts." accentColor="text-yellow-400">
+    <GameShell heroImage={heroImg} title="Double Dice" description="Roll two dice. Bet on even/odd or pick an exact sum for bigger payouts." accentColor="text-yellow-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

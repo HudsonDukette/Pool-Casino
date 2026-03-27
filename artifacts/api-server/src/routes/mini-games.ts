@@ -168,7 +168,7 @@ router.post("/games/dice", async (req, res): Promise<void> => {
 
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
@@ -213,7 +213,7 @@ router.post("/games/coinflip", async (req, res): Promise<void> => {
 
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
@@ -236,7 +236,7 @@ router.post("/games/crash", async (req, res): Promise<void> => {
 
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
@@ -287,7 +287,7 @@ router.post("/games/slots", async (req, res): Promise<void> => {
 
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
@@ -325,7 +325,7 @@ router.post("/games/wheel", async (req, res): Promise<void> => {
 
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
@@ -348,7 +348,7 @@ router.post("/games/guess", async (req, res): Promise<void> => {
 
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
@@ -647,7 +647,7 @@ router.post("/games/blackjack/deal", async (req, res): Promise<void> => {
 
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
-  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
   // Clear any previous game
   bjGames.delete(userId);

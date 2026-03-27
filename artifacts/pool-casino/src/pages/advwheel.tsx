@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
+import heroImg from "@/assets/game-advwheel.png";
 import { formatCurrency } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL;
@@ -94,7 +95,7 @@ export default function AdvWheel() {
   }
 
   return (
-    <GameShell title="Advanced Wheel" description="9 segments with payouts up to 50×. Higher-risk spin, bigger potential jackpots." accentColor="text-purple-400">
+    <GameShell heroImage={heroImg} title="Advanced Wheel" description="9 segments with payouts up to 50×. Higher-risk spin, bigger potential jackpots." accentColor="text-purple-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">
