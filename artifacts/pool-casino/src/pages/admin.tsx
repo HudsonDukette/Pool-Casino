@@ -154,6 +154,8 @@ export default function Admin() {
   const [mrLoading, setMrLoading] = useState(false);
   const [broadcastMsg, setBroadcastMsg] = useState("");
   const [broadcastPending, setBroadcastPending] = useState(false);
+  const [removeGuestsPending, setRemoveGuestsPending] = useState(false);
+  const [confirmRemoveGuests, setConfirmRemoveGuests] = useState(false);
 
   const [managedPlayer, setManagedPlayer] = useState<AdminPlayer | null>(null);
   const [managedAction, setManagedAction] = useState<string | null>(null);
@@ -341,6 +343,22 @@ export default function Admin() {
     finally { setForceReloadPending(false); }
   };
 
+  const handleRemoveGuests = async () => {
+    setRemoveGuestsPending(true);
+    try {
+      const res = await fetch(`${BASE}api/admin/guests`, { method: "DELETE", credentials: "include" });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: "Guests Removed!", description: data.message, className: "bg-success text-success-foreground border-none" });
+        setConfirmRemoveGuests(false);
+        refetchPlayers();
+      } else {
+        toast({ title: "Error", description: data.error || "Failed", variant: "destructive" });
+      }
+    } catch { toast({ title: "Error", description: "Network error", variant: "destructive" }); }
+    finally { setRemoveGuestsPending(false); }
+  };
+
   const handleUpdateSettings = () => {
     const usernameChangeCost = parseFloat(adminUsernameCost);
     const avatarChangeCost = parseFloat(adminAvatarCost);
@@ -513,6 +531,35 @@ export default function Admin() {
                 <RefreshCw className={`w-4 h-4 ${forceReloadPending ? "animate-spin" : ""}`} />
                 {forceReloadPending ? "Sending Signal..." : "Reload Everyone's Browser"}
               </Button>
+            </div>
+            {/* Remove Guests */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-yellow-400 uppercase tracking-widest">Remove Guest Accounts</h3>
+              <p className="text-xs text-muted-foreground">
+                Immediately deletes all guest accounts. Guest accounts with no activity for 7 days are also removed automatically every 24 hours.
+              </p>
+              {!confirmRemoveGuests ? (
+                <Button onClick={() => setConfirmRemoveGuests(true)} variant="outline"
+                  className="border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/10 hover:text-yellow-300 gap-2">
+                  <Trash2 className="w-4 h-4" />
+                  Remove All Guests
+                </Button>
+              ) : (
+                <div className="space-y-2 p-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5">
+                  <p className="text-xs text-yellow-300 font-medium">Are you sure? All guest accounts will be permanently deleted.</p>
+                  <div className="flex gap-2">
+                    <Button onClick={handleRemoveGuests} disabled={removeGuestsPending}
+                      className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold gap-2 flex-1">
+                      <Trash2 className="w-3.5 h-3.5" />
+                      {removeGuestsPending ? "Removing..." : "Yes, Remove All"}
+                    </Button>
+                    <Button onClick={() => setConfirmRemoveGuests(false)} variant="outline"
+                      className="border-white/20 text-muted-foreground flex-1">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
             {/* Seize Assets */}
             <div className="space-y-3">

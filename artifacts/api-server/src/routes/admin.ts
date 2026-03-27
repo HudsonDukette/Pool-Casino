@@ -505,6 +505,14 @@ router.delete("/admin/user/:id", async (req, res): Promise<void> => {
   res.json({ ok: true, message: `User ${target.username} deleted` });
 });
 
+router.delete("/admin/guests", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const deleted = await db.delete(usersTable).where(eq(usersTable.isGuest, true)).returning({ id: usersTable.id });
+  const count = deleted.length;
+  res.json({ ok: true, count, message: `Deleted ${count} guest account${count !== 1 ? "s" : ""}` });
+});
+
 function formatCurrency(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
