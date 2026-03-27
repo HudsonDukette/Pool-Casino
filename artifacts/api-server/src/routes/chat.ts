@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { db, usersTable, chatRoomsTable, chatMessagesTable, chatRoomMembersTable, friendsTable } from "@workspace/db";
 import { eq, and, or, desc, gt, inArray, sql, ne } from "drizzle-orm";
 import { sendPushToUser } from "../lib/push";
+import { profanityFilter } from "../middlewares/profanityFilter";
+import { censorText } from "../lib/profanity";
 
 const router: IRouter = Router();
 
@@ -189,12 +191,15 @@ router.get("/chat/rooms/:id/messages", async (req, res): Promise<void> => {
   res.json({ messages: msgs.reverse() });
 });
 
-router.post("/chat/rooms/:id/messages", async (req, res): Promise<void> => {
+router.post("/chat/rooms/:id/messages", profanityFilter, async (req, res): Promise<void> => {
   const userId = requireAuth(req, res);
   if (!userId) return;
 
   const roomId = parseInt(req.params.id);
-  const content = (req.body.content ?? "").trim();
+  // If the profanity filter ran and found medium severity, store a censored version
+  const raw = (req.body.content ?? "").trim();
+  const profanityResult = (req as any).profanityResult;
+  const content = profanityResult?.severity === "medium" ? censorText(raw) : raw;
   if (!content) { res.status(400).json({ error: "Message cannot be empty" }); return; }
   if (content.length > MAX_MESSAGE_LENGTH) { res.status(400).json({ error: "Message too long" }); return; }
 
