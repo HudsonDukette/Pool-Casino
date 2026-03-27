@@ -57,8 +57,20 @@ function ChatPanel({ room, userId }: { room: ChatRoom; userId: number }) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const prevRoomId = useRef<number | null>(null);
+  const isNearBottom = useRef(true);
+
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    bottomRef.current?.scrollIntoView({ behavior });
+  };
+
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    isNearBottom.current = scrollHeight - scrollTop - clientHeight < 120;
+  };
 
   const loadMessages = useCallback(async () => {
     try {
@@ -70,14 +82,15 @@ function ChatPanel({ room, userId }: { room: ChatRoom; userId: number }) {
   useEffect(() => {
     const changed = prevRoomId.current !== room.id;
     prevRoomId.current = room.id;
+    if (changed) isNearBottom.current = true;
     loadMessages();
     const t = setInterval(loadMessages, 3000);
-    if (changed) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "instant" }), 100);
+    if (changed) setTimeout(() => scrollToBottom("instant"), 100);
     return () => clearInterval(t);
   }, [loadMessages, room.id]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isNearBottom.current) scrollToBottom("smooth");
   }, [messages.length]);
 
   const markRead = useCallback(async () => {
@@ -97,7 +110,8 @@ function ChatPanel({ room, userId }: { room: ChatRoom; userId: number }) {
     try {
       const data = await apiFetch(`api/chat/rooms/${room.id}/messages`, { method: "POST", body: JSON.stringify({ content: text }) });
       setMessages(prev => [...prev, data.message]);
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      isNearBottom.current = true;
+      setTimeout(() => scrollToBottom("smooth"), 50);
     } catch (err: any) {
       setInput(text);
       toast({ title: "Failed to send", description: err.message ?? "Please try again", variant: "destructive" });
@@ -114,7 +128,7 @@ function ChatPanel({ room, userId }: { room: ChatRoom; userId: number }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {grouped.map(group => (
           <div key={group.date}>
             <div className="flex items-center gap-3 my-3">
