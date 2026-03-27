@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, poolTable, settingsTable, chatMessagesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, usersTable, poolTable, settingsTable, chatMessagesTable, moneyRequestsTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
 import {
   AdminRefillPoolBody,
   AdminRefillPoolResponse,
@@ -301,6 +301,98 @@ router.post("/admin/broadcast", async (req, res): Promise<void> => {
   });
 
   res.json({ message: "Broadcast sent to General chat" });
+});
+
+router.get("/admin/money-requests", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const reqs = await db
+    .select({
+      id: moneyRequestsTable.id,
+      userId: moneyRequestsTable.userId,
+      amount: moneyRequestsTable.amount,
+      message: moneyRequestsTable.message,
+      status: moneyRequestsTable.status,
+      createdAt: moneyRequestsTable.createdAt,
+      username: usersTable.username,
+    })
+    .from(moneyRequestsTable)
+    .leftJoin(usersTable, eq(usersTable.id, moneyRequestsTable.userId))
+    .orderBy(moneyRequestsTable.createdAt);
+  res.json({ requests: reqs });
+});
+
+router.post("/admin/user/:id/change-username", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const targetId = parseInt(req.params.id);
+  const { newUsername } = req.body;
+  if (!newUsername?.trim()) { res.status(400).json({ error: "newUsername required" }); return; }
+
+  const existing = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.username, newUsername.trim())).limit(1);
+  if (existing.length > 0 && existing[0].id !== targetId) { res.status(400).json({ error: "Username already taken" }); return; }
+
+  await db.update(usersTable).set({ username: newUsername.trim() }).where(eq(usersTable.id, targetId));
+  res.json({ ok: true, message: `Username changed to "${newUsername.trim()}"` });
+});
+
+router.post("/admin/user/:id/change-avatar", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const targetId = parseInt(req.params.id);
+  const { avatarUrl } = req.body;
+  await db.update(usersTable).set({ avatarUrl: avatarUrl ?? null }).where(eq(usersTable.id, targetId));
+  res.json({ ok: true, message: avatarUrl ? "Avatar updated" : "Avatar removed" });
+});
+
+router.post("/admin/user/:id/suspend", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const targetId = parseInt(req.params.id);
+  const hours = parseFloat(req.body.hours ?? 24);
+  if (isNaN(hours) || hours <= 0) { res.status(400).json({ error: "hours must be positive" }); return; }
+  const until = new Date(Date.now() + hours * 3600 * 1000);
+  await db.update(usersTable).set({ suspendedUntil: until }).where(eq(usersTable.id, targetId));
+  res.json({ ok: true, message: `User suspended for ${hours}h (until ${until.toISOString()})` });
+});
+
+router.post("/admin/user/:id/ban", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const targetId = parseInt(req.params.id);
+  const hours = parseFloat(req.body.hours ?? 168);
+  if (isNaN(hours) || hours <= 0) { res.status(400).json({ error: "hours must be positive" }); return; }
+  const until = new Date(Date.now() + hours * 3600 * 1000);
+  await db.update(usersTable).set({ bannedUntil: until }).where(eq(usersTable.id, targetId));
+  res.json({ ok: true, message: `User banned for ${hours}h (until ${until.toISOString()})` });
+});
+
+router.post("/admin/user/:id/perma-ban", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const targetId = parseInt(req.params.id);
+  await db.update(usersTable).set({ permanentlyBanned: true }).where(eq(usersTable.id, targetId));
+  res.json({ ok: true, message: "User permanently banned" });
+});
+
+router.post("/admin/user/:id/unban", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const targetId = parseInt(req.params.id);
+  await db.update(usersTable).set({ suspendedUntil: null, bannedUntil: null, permanentlyBanned: false }).where(eq(usersTable.id, targetId));
+  res.json({ ok: true, message: "User suspension/ban lifted" });
+});
+
+router.delete("/admin/user/:id", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const targetId = parseInt(req.params.id);
+  const [target] = await db.select({ id: usersTable.id, isAdmin: usersTable.isAdmin, username: usersTable.username })
+    .from(usersTable).where(eq(usersTable.id, targetId)).limit(1);
+  if (!target) { res.status(404).json({ error: "User not found" }); return; }
+  if (target.isAdmin) { res.status(403).json({ error: "Cannot delete admin accounts" }); return; }
+  await db.delete(usersTable).where(eq(usersTable.id, targetId));
+  res.json({ ok: true, message: `User ${target.username} deleted` });
 });
 
 function formatCurrency(n: number) {

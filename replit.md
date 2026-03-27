@@ -39,24 +39,35 @@ artifacts-monorepo/
 
 ## Features
 
-1. **Authentication**: Register/login/logout with username + password; CrazyGames SDK v3 platform-aware login (CG-only UI when on platform, normal UI off-platform); account linking from profile; guest mode with per-device tracking + merge on login/register
+1. **Authentication**: Register/login/logout with username + password; CrazyGames SDK v3 platform-aware login; guest mode with per-device tracking + merge on login
 2. **Global Pool Economy**: $1M starting pool shared by all players; wins drain it, losses fill it
-3. **Dynamic Betting Odds**: Win probability scales with bet size relative to pool; no bet limits enforced
-4. **10 Games**: Roulette, Plinko, Blackjack, Crash, Slots, Dice Roll, Coin Flip, Fortune Wheel, Number Guess, Mines
-5. **Referral Codes**: Every user gets a unique 8-char referral code; new users get +$20K, referrers get +$10K
-6. **Profile Picture**: Users can set avatar via URL (costs coins, admin-configurable price)
-7. **Username Change**: Users can change username (costs coins, admin-configurable price)
-8. **Player Stats**: Profit/loss, biggest win/bet, win streak, games played
-9. **Transaction History**: Full bet history with game filters
-10. **Leaderboards**: Richest players, biggest winners, biggest bettors
-11. **Daily Rewards**: $500 daily claim, balance refill option
-12. **Adaptive Pool Widget**: Font size scales dynamically for arbitrarily large pool amounts
+3. **Dynamic Betting Odds**: Win probability scales with bet size relative to pool
+4. **10 Games**: Roulette, Plinko (multi-ball), Blackjack, Crash, Slots, Dice Roll, Coin Flip, Fortune Wheel, Number Guess, Mines
+5. **Referral Codes**: Unique 8-char codes; new users +$20K, referrers +$10K
+6. **Profile Customization**: Avatar URL + username change (both cost coins, admin-configurable)
+7. **Player Stats**: Profit/loss, biggest win/bet, win streak, games played, transactions
+8. **Leaderboards**: Richest players, biggest winners, high rollers — each row has a flag/report button; usernames link to player profiles
+9. **Player Profiles**: Public profile pages at `/player/:username` showing stats + report button
+10. **Daily Rewards**: $500 daily claim, balance refill option
+11. **Real-time Chat**: Rooms (general, game-specific, DMs) with admin broadcast messages as golden banners
+12. **Friends System**: Send/accept/remove friends with push notifications
+13. **Money Request Inbox**: Players request funds from admin; admin reviews in panel
+14. **Notifications**: In-app bell + browser push notifications (VAPID)
+15. **Report System**: Players can report others from leaderboard or profile page; admins review with chat history viewer
+16. **Admin Panel** (collapsable sections): Game controls, Economy (refill/seize/reset), Balance adjustment, User Management (change username/avatar, suspend/ban/perma-ban/unban/delete), Reports inbox, Broadcast, Money requests, Settings
 
 ## Database Tables
 
-- `users` - accounts with balance, stats, last_daily_claim
+- `users` - accounts with balance, stats, last_daily_claim, suspendedUntil, bannedUntil, permanentlyBanned
 - `pool` - single-row global pool with biggest win/bet tracking
 - `bets` - full bet transaction history
+- `chat_rooms` - general + game rooms + DM rooms
+- `chat_messages` - all messages with room association
+- `friends` - friend relationships
+- `money_requests` - player money requests for admin
+- `settings` - admin-configurable settings (username/avatar costs, disabled games)
+- `push_subscriptions` - web push subscriptions per user
+- `reports` - player reports (reporter, reported, reason, details, status)
 
 ## API Routes
 
@@ -84,6 +95,22 @@ artifacts-monorepo/
 - `GET /api/leaderboard/biggest-winners` - biggest single wins
 - `GET /api/leaderboard/biggest-bettors` - total bet leaderboard
 - `GET /api/leaderboard/recent-big-wins` - recent large wins
+- `GET /api/user/public/:username` - public player profile
+- `POST /api/reports` - submit a player report (by userId or username)
+- `GET /api/admin/reports` - list all reports (admin)
+- `POST /api/admin/reports/:id/status` - mark report reviewed/dismissed (admin)
+- `GET /api/admin/user/:id/chats` - view user's chat history (admin)
+- `POST /api/admin/user/:id/change-username` - force username change (admin)
+- `POST /api/admin/user/:id/change-avatar` - force avatar change/remove (admin)
+- `POST /api/admin/user/:id/suspend` - suspend user for N hours (admin)
+- `POST /api/admin/user/:id/ban` - ban user for N hours (admin)
+- `POST /api/admin/user/:id/perma-ban` - permanently ban (admin)
+- `POST /api/admin/user/:id/unban` - lift all bans (admin)
+- `DELETE /api/admin/user/:id` - delete account (admin)
+- `GET /api/admin/money-requests` - list money requests (admin)
+- `POST /api/vapid-key` - get VAPID public key
+- `POST /api/push/subscribe` - subscribe to push notifications
+- `POST /api/push/unsubscribe` - unsubscribe from push notifications
 
 ## Gambling Logic
 

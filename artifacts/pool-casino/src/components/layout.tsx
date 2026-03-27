@@ -97,7 +97,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navLinks = [
     { href: "/", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
     { href: "/games", label: "Games", icon: <Dices className="w-4 h-4" /> },
-    { href: "/chat", label: "Chat", icon: <MessageSquare className="w-4 h-4" /> },
+    { href: "/chat", label: "", icon: <MessageSquare className="w-4 h-4" />, title: "Chat" },
     { href: "/leaderboard", label: "Leaderboard", icon: <Crown className="w-4 h-4" /> },
     ...(user?.isAdmin ? [{ href: "/admin", label: "Admin", icon: <ShieldAlert className="w-4 h-4" /> }] : []),
   ];
@@ -130,6 +130,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Link
                     key={link.href}
                     href={link.href}
+                    title={(link as any).title}
                     className={`px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200 cursor-pointer ${
                       isActive ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white hover:bg-white/5"
                     }`}
@@ -165,7 +166,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   onClick={() => setShowMoneyModal(true)}
                   className="hidden md:flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-all"
                 >
-                  <Banknote className="w-3.5 h-3.5" /> Need more money?
+                  <Banknote className="w-3.5 h-3.5" /> Need money?
                 </button>
               )}
 
@@ -291,7 +292,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <button onClick={() => { setShowMoneyModal(true); setMobileMenuOpen(false); }}
                   className="block w-full text-left px-3 py-3 rounded-xl text-base font-medium text-primary">
                   <div className="flex items-center gap-3">
-                    <Banknote className="w-4 h-4" /> Need more money?
+                    <Banknote className="w-4 h-4" /> Need money?
                   </div>
                 </button>
               )}

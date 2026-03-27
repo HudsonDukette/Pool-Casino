@@ -27,6 +27,9 @@ export const usersTable = pgTable("users", {
   isCrazyGamesLinked: boolean("is_crazy_games_linked").notNull().default(false),
   deviceId: text("device_id").unique(),
   isGuest: boolean("is_guest").notNull().default(false),
+  suspendedUntil: timestamp("suspended_until", { withTimezone: true }),
+  bannedUntil: timestamp("banned_until", { withTimezone: true }),
+  permanentlyBanned: boolean("permanently_banned").notNull().default(false),
 });
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({

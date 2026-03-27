@@ -13,6 +13,7 @@ import chatRouter from "./chat";
 import friendsRouter from "./friends";
 import moneyRequestsRouter from "./money-requests";
 import pushRouter from "./push";
+import reportsRouter from "./reports";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(chatRouter);
 router.use(friendsRouter);
 router.use(moneyRequestsRouter);
 router.use(pushRouter);
+router.use(reportsRouter);
 
 export default router;

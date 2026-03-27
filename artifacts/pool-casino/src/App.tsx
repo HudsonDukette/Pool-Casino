@@ -17,6 +17,7 @@ import Guess from "@/pages/guess";
 import Mines from "@/pages/mines";
 import Blackjack from "@/pages/blackjack";
 import Profile from "@/pages/profile";
+import PlayerProfile from "@/pages/player";
 import Admin from "@/pages/admin";
 import Chat from "@/pages/chat";
 import Notifications from "@/pages/notifications";
@@ -51,6 +52,7 @@ function Router() {
         <Route path="/games/mines" component={Mines} />
         <Route path="/games/blackjack" component={Blackjack} />
         <Route path="/profile" component={Profile} />
+        <Route path="/player/:username" component={PlayerProfile} />
         <Route path="/admin" component={Admin} />
         <Route path="/chat" component={Chat} />
         <Route path="/notifications" component={Notifications} />

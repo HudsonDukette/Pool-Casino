@@ -203,4 +203,37 @@ router.post("/user/change-avatar", async (req, res): Promise<void> => {
   );
 });
 
+router.get("/user/public/:username", async (req, res): Promise<void> => {
+  const { username } = req.params;
+  const [user] = await db
+    .select({
+      id: usersTable.id,
+      username: usersTable.username,
+      avatarUrl: usersTable.avatarUrl,
+      isAdmin: usersTable.isAdmin,
+      gamesPlayed: usersTable.gamesPlayed,
+      totalWins: usersTable.totalWins,
+      totalLosses: usersTable.totalLosses,
+      biggestWin: usersTable.biggestWin,
+      createdAt: usersTable.createdAt,
+    })
+    .from(usersTable)
+    .where(eq(usersTable.username, username))
+    .limit(1);
+
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+  res.json({
+    id: user.id,
+    username: user.username,
+    avatarUrl: user.avatarUrl,
+    isAdmin: user.isAdmin,
+    gamesPlayed: parseInt(user.gamesPlayed),
+    totalWins: parseInt(user.totalWins),
+    totalLosses: parseInt(user.totalLosses),
+    biggestWin: parseFloat(user.biggestWin),
+    createdAt: user.createdAt,
+  });
+});
+
 export default router;
