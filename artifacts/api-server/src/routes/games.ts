@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, poolTable, betsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { PlayRouletteBody, PlayRouletteResponse, PlayPlinkoBody, PlayPlinkoResponse } from "@workspace/api-zod";
 import {
   calculateWinChance,
@@ -191,37 +191,27 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
   const newBalance = currentBalance - betAmount + payout;
   const newPoolAmount = poolAmount + betAmount - payout;
 
-  const newBiggestWin = won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin);
-  const newBiggestBet = betAmount > parseFloat(pool.biggestBet) ? betAmount : parseFloat(pool.biggestBet);
-
-  const newUserBiggestWin =
-    won && payout > parseFloat(user.biggestWin) ? payout : parseFloat(user.biggestWin);
-  const newUserBiggestBet =
-    betAmount > parseFloat(user.biggestBet) ? betAmount : parseFloat(user.biggestBet);
-  const newGamesPlayed = parseInt(user.gamesPlayed) + 1;
-  const newTotalWins = won ? parseInt(user.totalWins) + 1 : parseInt(user.totalWins);
-  const newTotalLosses = !won ? parseInt(user.totalLosses) + 1 : parseInt(user.totalLosses);
-  const newCurrentStreak = won ? parseInt(user.currentStreak) + 1 : 0;
-  const newWinStreak = Math.max(parseInt(user.winStreak), newCurrentStreak);
-  const newTotalProfit = parseFloat(user.totalProfit) + profit;
+  // Use atomic SQL expressions so concurrent multi-ball bets don't overwrite each other
+  const balanceDelta = payout - betAmount;
+  const poolDelta = betAmount - payout;
 
   await Promise.all([
     db.update(usersTable).set({
-      balance: newBalance.toFixed(2),
-      totalProfit: newTotalProfit.toFixed(2),
-      biggestWin: newUserBiggestWin.toFixed(2),
-      biggestBet: newUserBiggestBet.toFixed(2),
-      gamesPlayed: newGamesPlayed.toString(),
-      winStreak: newWinStreak.toString(),
-      currentStreak: newCurrentStreak.toString(),
-      totalWins: newTotalWins.toString(),
-      totalLosses: newTotalLosses.toString(),
-      lastBetAt: new Date(),
+      balance:      sql`${usersTable.balance} + ${balanceDelta}`,
+      totalProfit:  sql`${usersTable.totalProfit} + ${profit}`,
+      biggestWin:   won ? sql`GREATEST(${usersTable.biggestWin}::numeric, ${payout})` : undefined,
+      biggestBet:   sql`GREATEST(${usersTable.biggestBet}::numeric, ${betAmount})`,
+      gamesPlayed:  sql`(${usersTable.gamesPlayed}::integer + 1)::text`,
+      totalWins:    won  ? sql`(${usersTable.totalWins}::integer + 1)::text`    : undefined,
+      totalLosses:  !won ? sql`(${usersTable.totalLosses}::integer + 1)::text`  : undefined,
+      winStreak:    won  ? sql`GREATEST(${usersTable.winStreak}::integer, ${usersTable.currentStreak}::integer + 1)::text` : undefined,
+      currentStreak: won ? sql`(${usersTable.currentStreak}::integer + 1)::text` : sql`'0'`,
+      lastBetAt:    new Date(),
     }).where(eq(usersTable.id, userId)),
     db.update(poolTable).set({
-      totalAmount: Math.max(0, newPoolAmount).toFixed(2),
-      biggestWin: newBiggestWin.toFixed(2),
-      biggestBet: newBiggestBet.toFixed(2),
+      totalAmount:  sql`GREATEST(0, ${poolTable.totalAmount} + ${poolDelta})`,
+      biggestWin:   won ? sql`GREATEST(${poolTable.biggestWin}::numeric, ${payout})` : undefined,
+      biggestBet:   sql`GREATEST(${poolTable.biggestBet}::numeric, ${betAmount})`,
     }).where(eq(poolTable.id, pool.id)),
     db.insert(betsTable).values({
       userId,

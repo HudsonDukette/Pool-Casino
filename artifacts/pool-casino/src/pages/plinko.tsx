@@ -39,7 +39,8 @@ export default function Plinko() {
   const [betAmount, setBetAmount] = useState<string>("10");
   const [risk, setRisk] = useState<"low" | "medium" | "high">("medium");
   const [balls, setBalls] = useState<BallState[]>([]);
-  const [highlightedSlot, setHighlightedSlot] = useState<number | null>(null);
+  // Map<slotIndex, refCount> so multiple balls can light up slots simultaneously
+  const [highlightedSlots, setHighlightedSlots] = useState<Map<number, number>>(new Map());
   const [inFlightTotal, setInFlightTotal] = useState(0);
   const nextBallId = useRef(0);
   const MAX_BALLS = 100;
@@ -88,7 +89,12 @@ export default function Plinko() {
             const visualMultiplier = RISK_LEVELS[riskLevel].mults[visualSlot] ?? 0;
 
             setInFlightTotal(prev => Math.max(0, prev - betAmt));
-            setHighlightedSlot(visualSlot);
+            // Add this slot to the multi-highlight map (ref-counted)
+            setHighlightedSlots(prev => {
+              const next = new Map(prev);
+              next.set(visualSlot, (next.get(visualSlot) ?? 0) + 1);
+              return next;
+            });
             queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
             queryClient.invalidateQueries({ queryKey: ["/api/pool"] });
 
@@ -107,7 +113,16 @@ export default function Plinko() {
               toast({ title: `${visualMultiplier}x — No luck`, description: `Lost ${formatCurrency(netLoss)}${gotBack}`, variant: "destructive" });
             }
 
-            setTimeout(() => setHighlightedSlot(null), 1200);
+            // Decrement the ref count for this slot after highlight expires
+            setTimeout(() => {
+              setHighlightedSlots(prev => {
+                const next = new Map(prev);
+                const count = (next.get(visualSlot) ?? 1) - 1;
+                if (count <= 0) next.delete(visualSlot);
+                else next.set(visualSlot, count);
+                return next;
+              });
+            }, 1200);
           }, highlightDelay);
 
           const t2 = setTimeout(() => {
@@ -215,7 +230,7 @@ export default function Plinko() {
               </AnimatePresence>
               <div className="absolute w-full flex justify-center gap-1 px-3" style={{ top: `${ROWS * ROW_HEIGHT + ROW_HEIGHT * 0.4}px` }}>
                 {mults.map((m, i) => {
-                  const isHighlighted = highlightedSlot === i;
+                  const isHighlighted = highlightedSlots.has(i);
                   return (
                     <motion.div key={i}
                       animate={isHighlighted ? { scale: 1.15 } : { scale: 1 }}
