@@ -761,4 +761,275 @@ router.post("/games/blackjack/action", async (req, res): Promise<void> => {
   });
 });
 
+// ─── Pyramid Climb (Session-Based) ───────────────────────────────────────────
+const PYRAMID_PAYOUTS = [0, 1.9, 3.8, 7.5, 15, 30, 60, 120, 240, 480, 960];
+
+interface PyramidGameState {
+  betAmount: number;
+  outcomes: boolean[];
+  currentLevel: number;
+  poolId: number;
+}
+const pyramidGames = new Map<number, PyramidGameState>();
+
+router.post("/games/pyramid/start", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const betAmount = parseBet(req, res); if (!betAmount) return;
+  if (pyramidGames.has(userId)) { res.status(400).json({ error: "You already have an active pyramid game. Cash out or finish first." }); return; }
+  const { user, pool } = await loadContext(userId);
+  if (!user) { res.status(401).json({ error: "User not found" }); return; }
+  if (user.permanentlyBanned || (user.bannedUntil && user.bannedUntil > new Date())) { res.status(403).json({ error: "You are banned from playing games." }); return; }
+  const currentBalance = parseFloat(user.balance);
+  if (currentBalance < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  const outcomes = Array.from({ length: 10 }, () => Math.random() >= 0.5);
+  const newBalance = currentBalance - betAmount;
+  const newPool = parseFloat(pool.totalAmount) + betAmount;
+  await Promise.all([
+    db.update(usersTable).set({ balance: newBalance.toFixed(2) }).where(eq(usersTable.id, userId)),
+    db.update(poolTable).set({ totalAmount: newPool.toFixed(2) }).where(eq(poolTable.id, pool.id)),
+  ]);
+  pyramidGames.set(userId, { betAmount, outcomes, currentLevel: 0, poolId: pool.id });
+  res.json({ started: true, newBalance, totalLevels: 10 });
+});
+
+router.get("/games/pyramid/status", (req, res): void => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const game = pyramidGames.get(userId);
+  if (!game) { res.json({ active: false }); return; }
+  const cashOutMultiplier = game.currentLevel > 0 ? PYRAMID_PAYOUTS[game.currentLevel] : 0;
+  res.json({
+    active: true,
+    betAmount: game.betAmount,
+    currentLevel: game.currentLevel,
+    canCashOut: game.currentLevel > 0,
+    cashOutMultiplier,
+    potentialPayout: parseFloat((game.betAmount * cashOutMultiplier).toFixed(2)),
+  });
+});
+
+router.post("/games/pyramid/advance", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const game = pyramidGames.get(userId);
+  if (!game) { res.status(400).json({ error: "No active pyramid game. Start a new game first." }); return; }
+  if (game.currentLevel >= 10) { res.status(400).json({ error: "Already at maximum level." }); return; }
+  const nextLevel = game.currentLevel + 1;
+  const passed = game.outcomes[nextLevel - 1];
+  game.currentLevel = nextLevel;
+
+  if (!passed) {
+    pyramidGames.delete(userId);
+    const [[user], [pool]] = await Promise.all([
+      db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
+      db.select().from(poolTable).limit(1),
+    ]);
+    await Promise.all([
+      db.update(usersTable).set({
+        gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(),
+        totalLosses: (parseInt(user.totalLosses) + 1).toString(),
+        currentStreak: "0",
+        biggestBet: (game.betAmount > parseFloat(user.biggestBet) ? game.betAmount : parseFloat(user.biggestBet)).toFixed(2),
+        lastBetAt: new Date(),
+      }).where(eq(usersTable.id, userId)),
+      db.insert(betsTable).values({ userId, gameType: "pyramid", betAmount: game.betAmount.toFixed(2), result: "loss", payout: "0.00", multiplier: "0.0000" }),
+    ]);
+    res.json({ passed: false, failedAtLevel: nextLevel, newBalance: parseFloat(user.balance) }); return;
+  }
+
+  if (nextLevel === 10) {
+    pyramidGames.delete(userId);
+    const [[user], [pool]] = await Promise.all([
+      db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
+      db.select().from(poolTable).limit(1),
+    ]);
+    const multiplier = PYRAMID_PAYOUTS[10];
+    const payout = Math.min(game.betAmount * multiplier, parseFloat(pool.totalAmount));
+    const newBalance = parseFloat(user.balance) + payout;
+    const newPool = Math.max(0, parseFloat(pool.totalAmount) - payout);
+    const won = payout > game.betAmount;
+    await Promise.all([
+      db.update(usersTable).set({
+        balance: newBalance.toFixed(2),
+        gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(),
+        totalWins: (parseInt(user.totalWins) + (won ? 1 : 0)).toString(),
+        currentStreak: won ? (parseInt(user.currentStreak) + 1).toString() : "0",
+        winStreak: Math.max(parseInt(user.winStreak), won ? parseInt(user.currentStreak) + 1 : 0).toString(),
+        biggestWin: (won && payout > parseFloat(user.biggestWin) ? payout : parseFloat(user.biggestWin)).toFixed(2),
+        biggestBet: (game.betAmount > parseFloat(user.biggestBet) ? game.betAmount : parseFloat(user.biggestBet)).toFixed(2),
+        lastBetAt: new Date(),
+      }).where(eq(usersTable.id, userId)),
+      db.update(poolTable).set({ totalAmount: newPool.toFixed(2) }).where(eq(poolTable.id, pool.id)),
+      db.insert(betsTable).values({ userId, gameType: "pyramid", betAmount: game.betAmount.toFixed(2), result: won ? "win" : "loss", payout: payout.toFixed(2), multiplier: multiplier.toFixed(4) }),
+    ]);
+    res.json({ passed: true, level: nextLevel, reachedTop: true, payout, newBalance, multiplier }); return;
+  }
+
+  const cashOutMultiplier = PYRAMID_PAYOUTS[nextLevel];
+  res.json({ passed: true, level: nextLevel, reachedTop: false, cashOutMultiplier, potentialPayout: parseFloat((game.betAmount * cashOutMultiplier).toFixed(2)) });
+});
+
+router.post("/games/pyramid/cashout", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const game = pyramidGames.get(userId);
+  if (!game) { res.status(400).json({ error: "No active pyramid game." }); return; }
+  if (game.currentLevel === 0) { res.status(400).json({ error: "Advance at least one level before cashing out." }); return; }
+  pyramidGames.delete(userId);
+  const [[user], [pool]] = await Promise.all([
+    db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
+    db.select().from(poolTable).limit(1),
+  ]);
+  const multiplier = PYRAMID_PAYOUTS[game.currentLevel];
+  const payout = Math.min(game.betAmount * multiplier, parseFloat(pool.totalAmount));
+  const newBalance = parseFloat(user.balance) + payout;
+  const newPool = Math.max(0, parseFloat(pool.totalAmount) - payout);
+  const won = payout > game.betAmount;
+  const currentStreak = won ? parseInt(user.currentStreak) + 1 : 0;
+  await Promise.all([
+    db.update(usersTable).set({
+      balance: newBalance.toFixed(2),
+      gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(),
+      totalWins: (parseInt(user.totalWins) + (won ? 1 : 0)).toString(),
+      totalLosses: (parseInt(user.totalLosses) + (!won ? 1 : 0)).toString(),
+      currentStreak: currentStreak.toString(),
+      winStreak: Math.max(parseInt(user.winStreak), currentStreak).toString(),
+      biggestWin: (won && payout > parseFloat(user.biggestWin) ? payout : parseFloat(user.biggestWin)).toFixed(2),
+      biggestBet: (game.betAmount > parseFloat(user.biggestBet) ? game.betAmount : parseFloat(user.biggestBet)).toFixed(2),
+      lastBetAt: new Date(),
+    }).where(eq(usersTable.id, userId)),
+    db.update(poolTable).set({ totalAmount: newPool.toFixed(2), biggestWin: (won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin)).toFixed(2) }).where(eq(poolTable.id, pool.id)),
+    db.insert(betsTable).values({ userId, gameType: "pyramid", betAmount: game.betAmount.toFixed(2), result: won ? "win" : "loss", payout: payout.toFixed(2), multiplier: multiplier.toFixed(4) }),
+  ]);
+  res.json({ payout, multiplier, won, newBalance, level: game.currentLevel });
+});
+
+// ─── IceBreak (Session-Based, like Mines) ────────────────────────────────────
+const ICE_TOTAL = 16;
+const ICE_DANGER = 4;
+const ICE_SAFE = ICE_TOTAL - ICE_DANGER;
+
+function iceMultiplier(safeReveals: number): number {
+  let m = 1;
+  for (let i = 0; i < safeReveals; i++) {
+    m *= ((ICE_TOTAL - i) / (ICE_SAFE - i)) * 0.97;
+  }
+  return parseFloat(m.toFixed(4));
+}
+
+interface IceGameState {
+  betAmount: number;
+  dangerPositions: Set<number>;
+  revealedSafe: number[];
+  poolId: number;
+}
+const iceGames = new Map<number, IceGameState>();
+
+router.post("/games/icebreak/start", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const betAmount = parseBet(req, res); if (!betAmount) return;
+  if (iceGames.has(userId)) { res.status(400).json({ error: "You already have an active ice break game." }); return; }
+  const { user, pool } = await loadContext(userId);
+  if (!user) { res.status(401).json({ error: "User not found" }); return; }
+  if (user.permanentlyBanned || (user.bannedUntil && user.bannedUntil > new Date())) { res.status(403).json({ error: "You are banned from playing games." }); return; }
+  const currentBalance = parseFloat(user.balance);
+  if (currentBalance < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  const shuffled = Array.from({ length: ICE_TOTAL }, (_, i) => i).sort(() => Math.random() - 0.5);
+  const dangerPositions = new Set(shuffled.slice(0, ICE_DANGER));
+  const newBalance = currentBalance - betAmount;
+  const newPool = parseFloat(pool.totalAmount) + betAmount;
+  await Promise.all([
+    db.update(usersTable).set({ balance: newBalance.toFixed(2) }).where(eq(usersTable.id, userId)),
+    db.update(poolTable).set({ totalAmount: newPool.toFixed(2) }).where(eq(poolTable.id, pool.id)),
+  ]);
+  iceGames.set(userId, { betAmount, dangerPositions, revealedSafe: [], poolId: pool.id });
+  res.json({ started: true, totalTiles: ICE_TOTAL, dangerCount: ICE_DANGER, newBalance });
+});
+
+router.get("/games/icebreak/status", (req, res): void => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const game = iceGames.get(userId);
+  if (!game) { res.json({ active: false }); return; }
+  const multiplier = iceMultiplier(game.revealedSafe.length);
+  res.json({ active: true, betAmount: game.betAmount, revealedSafe: game.revealedSafe, currentMultiplier: multiplier, potentialPayout: parseFloat((game.betAmount * multiplier).toFixed(2)) });
+});
+
+router.post("/games/icebreak/reveal", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const tileIndex = parseInt(req.body?.tileIndex);
+  if (isNaN(tileIndex) || tileIndex < 0 || tileIndex >= ICE_TOTAL) { res.status(400).json({ error: `tileIndex must be 0–${ICE_TOTAL - 1}` }); return; }
+  const game = iceGames.get(userId);
+  if (!game) { res.status(400).json({ error: "No active ice break game. Start a new game first." }); return; }
+  if (game.revealedSafe.includes(tileIndex)) { res.status(400).json({ error: "Tile already revealed" }); return; }
+  const hitDanger = game.dangerPositions.has(tileIndex);
+  if (hitDanger) {
+    iceGames.delete(userId);
+    const [[user], [pool]] = await Promise.all([
+      db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
+      db.select().from(poolTable).limit(1),
+    ]);
+    await Promise.all([
+      db.update(usersTable).set({
+        gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(),
+        totalLosses: (parseInt(user.totalLosses) + 1).toString(),
+        currentStreak: "0",
+        biggestBet: (game.betAmount > parseFloat(user.biggestBet) ? game.betAmount : parseFloat(user.biggestBet)).toFixed(2),
+        lastBetAt: new Date(),
+      }).where(eq(usersTable.id, userId)),
+      db.update(poolTable).set({ biggestBet: (game.betAmount > parseFloat(pool.biggestBet) ? game.betAmount : parseFloat(pool.biggestBet)).toFixed(2) }).where(eq(poolTable.id, pool.id)),
+      db.insert(betsTable).values({ userId, gameType: "icebreak", betAmount: game.betAmount.toFixed(2), result: "loss", payout: "0.00", multiplier: "0.0000" }),
+    ]);
+    res.json({ hitDanger: true, dangerPositions: [...game.dangerPositions], newBalance: parseFloat(user.balance) }); return;
+  }
+  game.revealedSafe.push(tileIndex);
+  const currentMultiplier = iceMultiplier(game.revealedSafe.length);
+  const [pool] = await db.select().from(poolTable).limit(1);
+  const potentialPayout = Math.min(game.betAmount * currentMultiplier, parseFloat(pool.totalAmount));
+  res.json({ hitDanger: false, tileIndex, revealedSafe: game.revealedSafe, currentMultiplier, potentialPayout, safeLeft: ICE_SAFE - game.revealedSafe.length });
+});
+
+router.post("/games/icebreak/cashout", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const game = iceGames.get(userId);
+  if (!game) { res.status(400).json({ error: "No active ice break game." }); return; }
+  if (game.revealedSafe.length === 0) { res.status(400).json({ error: "Reveal at least one safe tile before cashing out." }); return; }
+  iceGames.delete(userId);
+  const [[user], [pool]] = await Promise.all([
+    db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
+    db.select().from(poolTable).limit(1),
+  ]);
+  const multiplier = iceMultiplier(game.revealedSafe.length);
+  const payout = Math.min(game.betAmount * multiplier, parseFloat(pool.totalAmount));
+  const newBalance = parseFloat(user.balance) + payout;
+  const newPool = Math.max(0, parseFloat(pool.totalAmount) - payout);
+  const won = payout > game.betAmount;
+  const currentStreak = won ? parseInt(user.currentStreak) + 1 : 0;
+  await Promise.all([
+    db.update(usersTable).set({
+      balance: newBalance.toFixed(2),
+      gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(),
+      totalWins: (parseInt(user.totalWins) + (won ? 1 : 0)).toString(),
+      totalLosses: (parseInt(user.totalLosses) + (!won ? 1 : 0)).toString(),
+      currentStreak: currentStreak.toString(),
+      winStreak: Math.max(parseInt(user.winStreak), currentStreak).toString(),
+      biggestWin: (won && payout > parseFloat(user.biggestWin) ? payout : parseFloat(user.biggestWin)).toFixed(2),
+      biggestBet: (game.betAmount > parseFloat(user.biggestBet) ? game.betAmount : parseFloat(user.biggestBet)).toFixed(2),
+      lastBetAt: new Date(),
+    }).where(eq(usersTable.id, userId)),
+    db.update(poolTable).set({ totalAmount: newPool.toFixed(2), biggestWin: (won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin)).toFixed(2) }).where(eq(poolTable.id, pool.id)),
+    db.insert(betsTable).values({ userId, gameType: "icebreak", betAmount: game.betAmount.toFixed(2), result: won ? "win" : "loss", payout: payout.toFixed(2), multiplier: multiplier.toFixed(4) }),
+  ]);
+  res.json({ payout, multiplier, won, newBalance, revealedCount: game.revealedSafe.length, dangerPositions: [...game.dangerPositions] });
+});
+
+router.post("/games/icebreak/abandon", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const game = iceGames.get(userId);
+  if (!game) { res.status(400).json({ error: "No active ice break game to abandon." }); return; }
+  iceGames.delete(userId);
+  const [[user]] = await Promise.all([db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1)]);
+  await Promise.all([
+    db.update(usersTable).set({ gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(), totalLosses: (parseInt(user.totalLosses) + 1).toString(), currentStreak: "0", lastBetAt: new Date() }).where(eq(usersTable.id, userId)),
+    db.insert(betsTable).values({ userId, gameType: "icebreak", betAmount: game.betAmount.toFixed(2), result: "loss", payout: "0.00", multiplier: "0.0000" }),
+  ]);
+  res.json({ abandoned: true, lostAmount: game.betAmount, dangerPositions: [...game.dangerPositions] });
+});
+
 export default router;

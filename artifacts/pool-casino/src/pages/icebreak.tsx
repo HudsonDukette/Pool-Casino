@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,126 +10,319 @@ import heroImg from "@/assets/game-icebreak.png";
 import { formatCurrency } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL;
-const TOTAL = 16, DANGER = 4;
+const TOTAL_TILES = 16;
 
-function prob(picks: number): number {
-  let p = 1;
-  for (let i = 0; i < picks; i++) p *= (12 - i) / (16 - i);
-  return p;
+type GamePhase = "idle" | "playing" | "cashedOut" | "cracked";
+
+interface TileState {
+  revealed: boolean;
+  isSafe: boolean;
+  isDanger: boolean;
+  isHit: boolean;
 }
 
-function payout(picks: number): number {
-  const p = prob(picks);
-  return p > 0 ? parseFloat((0.95 / p).toFixed(2)) : 0;
+async function apiPost(path: string, body: Record<string, unknown> = {}) {
+  const res = await fetch(`${BASE}api/games/${path}`, {
+    method: "POST", credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+async function apiGet(path: string) {
+  const res = await fetch(`${BASE}api/games/${path}`, { credentials: "include" });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+function blankTiles(): TileState[] {
+  return Array.from({ length: TOTAL_TILES }, () => ({ revealed: false, isSafe: false, isDanger: false, isHit: false }));
 }
 
 export default function IceBreak() {
   const { data: user } = useGetMe({ query: { retry: false } });
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [betAmount, setBetAmount] = useState("100");
-  const [picks, setPicks] = useState(3);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
 
-  async function handlePlay() {
-    if (!user || user.isGuest) { toast({ title: "Login required", variant: "destructive" }); return; }
-    const bet = parseFloat(betAmount);
-    if (isNaN(bet) || bet < 0.01) { toast({ title: "Minimum bet is $0.01", variant: "destructive" }); return; }
-    setLoading(true);
-    setResult(null);
-    try {
-      const res = await fetch(`${BASE}api/games/icebreak`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ betAmount: bet, picks }),
+  const [betAmount, setBetAmount] = useState("100");
+  const [phase, setPhase] = useState<GamePhase>("idle");
+  const [loading, setLoading] = useState(false);
+  const [tiles, setTiles] = useState<TileState[]>(blankTiles());
+  const [revealedCount, setRevealedCount] = useState(0);
+  const [currentMultiplier, setCurrentMultiplier] = useState(1);
+  const [potentialPayout, setPotentialPayout] = useState(0);
+  const [finalResult, setFinalResult] = useState<{ payout: number; multiplier: number } | null>(null);
+  const [activeBet, setActiveBet] = useState(0);
+
+  const bet = parseFloat(betAmount) || 0;
+  const isPlaying = phase === "playing";
+
+  useEffect(() => {
+    apiGet("icebreak/status").then((data) => {
+      if (!data.active) return;
+      setActiveBet(data.betAmount);
+      setBetAmount(String(data.betAmount));
+      setRevealedCount(data.revealedSafe.length);
+      setCurrentMultiplier(data.currentMultiplier);
+      setPotentialPayout(data.potentialPayout);
+      setTiles((prev) => {
+        const next = [...prev];
+        (data.revealedSafe as number[]).forEach((i) => {
+          next[i] = { revealed: true, isSafe: true, isDanger: false, isHit: false };
+        });
+        return next;
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
-      setResult(data);
+      setPhase("playing");
+    }).catch(() => {});
+  }, []);
+
+  function resetGame() {
+    setPhase("idle");
+    setTiles(blankTiles());
+    setRevealedCount(0);
+    setCurrentMultiplier(1);
+    setPotentialPayout(0);
+    setFinalResult(null);
+    qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    qc.invalidateQueries({ queryKey: ["/api/pool"] });
+  }
+
+  async function handleStart() {
+    if (!user || user.isGuest) { toast({ title: "Login required", variant: "destructive" }); return; }
+    if (bet < 0.01) { toast({ title: "Minimum bet is $0.01", variant: "destructive" }); return; }
+    setLoading(true);
+    try {
+      await apiPost("icebreak/start", { betAmount: bet });
+      setActiveBet(bet);
+      setPhase("playing");
+      setTiles(blankTiles());
+      setRevealedCount(0);
+      setCurrentMultiplier(1);
+      setPotentialPayout(0);
       qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      qc.invalidateQueries({ queryKey: ["/api/pool"] });
-      if (!data.hitDanger) toast({ title: `❄️ All safe! +${formatCurrency(data.payout)}`, className: "bg-success text-success-foreground border-none" });
-      else toast({ title: `💥 Cracked ice! Lost ${formatCurrency(bet)}`, variant: "destructive" });
     } catch (err: unknown) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Request failed", variant: "destructive" });
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to start", variant: "destructive" });
     } finally { setLoading(false); }
   }
 
-  const getTileState = (i: number) => {
-    if (!result) return "hidden";
-    if (result.dangerTiles.includes(i) && result.pickedTiles.includes(i)) return "cracked";
-    if (result.dangerTiles.includes(i)) return "danger";
-    if (result.pickedTiles.includes(i)) return "safe";
-    return "hidden";
-  };
+  async function handleReveal(index: number) {
+    if (!isPlaying || loading || tiles[index].revealed) return;
+    setLoading(true);
+    try {
+      const data = await apiPost("icebreak/reveal", { tileIndex: index });
+      if (data.hitDanger) {
+        setTiles((prev) => {
+          const next = [...prev];
+          (data.dangerPositions as number[]).forEach((di: number) => {
+            next[di] = { ...next[di], revealed: true, isDanger: true, isSafe: false, isHit: di === index };
+          });
+          return next;
+        });
+        setPhase("cracked");
+        setFinalResult({ payout: 0, multiplier: 0 });
+        toast({ title: "💥 Cracked Ice!", description: `Lost ${formatCurrency(activeBet)}`, variant: "destructive" });
+        qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        qc.invalidateQueries({ queryKey: ["/api/pool"] });
+      } else {
+        setTiles((prev) => {
+          const next = [...prev];
+          next[index] = { revealed: true, isSafe: true, isDanger: false, isHit: false };
+          return next;
+        });
+        setRevealedCount(data.revealedSafe.length);
+        setCurrentMultiplier(data.currentMultiplier);
+        setPotentialPayout(data.potentialPayout);
+        qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      }
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to reveal", variant: "destructive" });
+    } finally { setLoading(false); }
+  }
 
-  const PICK_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+  async function handleCashout() {
+    if (!isPlaying || loading || revealedCount === 0) return;
+    setLoading(true);
+    try {
+      const data = await apiPost("icebreak/cashout", {});
+      setTiles((prev) => {
+        const next = [...prev];
+        (data.dangerPositions as number[]).forEach((di: number) => {
+          if (!next[di].revealed) next[di] = { revealed: true, isDanger: true, isSafe: false, isHit: false };
+        });
+        return next;
+      });
+      setPhase("cashedOut");
+      setFinalResult({ payout: data.payout, multiplier: data.multiplier });
+      toast({
+        title: `❄️ Cashed out ${formatCurrency(data.payout)}!`,
+        description: `${data.multiplier.toFixed(2)}× — ${revealedCount} safe tiles found`,
+        className: "bg-success text-success-foreground border-none",
+      });
+      qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      qc.invalidateQueries({ queryKey: ["/api/pool"] });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to cash out", variant: "destructive" });
+    } finally { setLoading(false); }
+  }
+
+  async function handleAbandon() {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const data = await apiPost("icebreak/abandon", {});
+      setTiles((prev) => {
+        const next = [...prev];
+        (data.dangerPositions as number[]).forEach((di: number) => {
+          next[di] = { revealed: true, isDanger: true, isSafe: false, isHit: false };
+        });
+        return next;
+      });
+      setPhase("cracked");
+      setFinalResult({ payout: 0, multiplier: 0 });
+      toast({ title: "Game abandoned", description: `Lost ${formatCurrency(activeBet)}`, variant: "destructive" });
+      qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      qc.invalidateQueries({ queryKey: ["/api/pool"] });
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to abandon", variant: "destructive" });
+    } finally { setLoading(false); }
+  }
 
   return (
-    <GameShell heroImage={heroImg} title="Ice Break" description="A 4×4 grid hides 4 danger tiles. Choose how many to flip — all safe and you win big." accentColor="text-cyan-400">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-        <Card className="bg-card/40 border-white/10">
-          <CardContent className="p-6 space-y-5">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground font-medium">Bet Amount</p>
-              <BetInput value={betAmount} onChange={setBetAmount} disabled={loading} />
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground font-medium">Tiles to Flip</p>
-              <div className="flex flex-wrap gap-2">
-                {PICK_OPTIONS.map(n => (
-                  <button key={n} disabled={loading} onClick={() => setPicks(n)}
-                    className={`px-3 py-2 rounded-xl border text-sm font-bold transition-all ${
-                      picks === n ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300" : "bg-black/30 border-white/10 text-muted-foreground hover:border-white/20"
-                    }`}>
-                    {n}
-                    <div className="text-[10px] opacity-60">{(prob(n) * 100).toFixed(0)}%</div>
-                  </button>
-                ))}
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground px-1">
-                <span>Win chance: <span className="text-white font-mono">{(prob(picks) * 100).toFixed(1)}%</span></span>
-                <span>Payout: <span className="text-cyan-300 font-mono">{payout(picks)}×</span></span>
-              </div>
-            </div>
-            <Button className="w-full bg-cyan-600/90 hover:bg-cyan-500 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.3)]"
-              size="lg" disabled={loading} onClick={handlePlay}>
-              {loading ? "Breaking ice…" : `❄️ Flip ${picks} Tile${picks > 1 ? "s" : ""}`}
-            </Button>
-          </CardContent>
-        </Card>
+    <GameShell heroImage={heroImg} title="Ice Break" description="A 4×4 grid hides 4 cracked tiles. Click to reveal safe ice — cash out before you crack through!" accentColor="text-cyan-400">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
+        {/* Tile Grid */}
         <Card className="bg-black/70 border-white/10">
-          <CardContent className="p-4 flex flex-col items-center justify-center gap-4 min-h-[260px]">
-            <div className="grid grid-cols-4 gap-2 w-full max-w-[240px]">
-              {Array.from({ length: TOTAL }, (_, i) => {
-                const state = getTileState(i);
-                return (
-                  <motion.div key={i}
-                    animate={state !== "hidden" ? { scale: [1, 1.15, 1] } : {}}
-                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                    className={`aspect-square rounded-xl flex items-center justify-center text-lg transition-colors duration-200 ${
-                      state === "cracked" ? "bg-red-500/30 border-2 border-red-500/60"
-                      : state === "danger" ? "bg-orange-900/40 border-2 border-orange-500/30"
-                      : state === "safe" ? "bg-cyan-500/20 border-2 border-cyan-500/50"
-                      : "bg-white/5 border-2 border-white/10"
-                    }`}>
-                    {state === "cracked" ? "💥" : state === "danger" ? "🔥" : state === "safe" ? "❄️" : ""}
-                  </motion.div>
-                );
-              })}
+          <CardContent className="p-6 space-y-4">
+            <div className="grid grid-cols-4 gap-2.5">
+              {tiles.map((tile, i) => (
+                <motion.button key={i}
+                  onClick={() => handleReveal(i)}
+                  disabled={!isPlaying || loading || tile.revealed}
+                  whileHover={isPlaying && !tile.revealed && !loading ? { scale: 1.07 } : {}}
+                  whileTap={isPlaying && !tile.revealed && !loading ? { scale: 0.93 } : {}}
+                  className={`
+                    aspect-square rounded-xl border-2 text-2xl font-bold flex items-center justify-center
+                    transition-all duration-200 select-none
+                    ${tile.isHit
+                      ? "bg-red-500/30 border-red-500/70 shadow-[0_0_16px_rgba(239,68,68,0.5)]"
+                      : tile.isDanger
+                      ? "bg-orange-950/40 border-orange-500/30"
+                      : tile.isSafe
+                      ? "bg-cyan-500/20 border-cyan-500/60 shadow-[0_0_10px_rgba(6,182,212,0.25)]"
+                      : isPlaying && !loading
+                      ? "bg-white/5 border-white/10 hover:bg-cyan-500/10 hover:border-cyan-500/40 cursor-pointer"
+                      : "bg-white/5 border-white/10 cursor-not-allowed opacity-60"
+                    }
+                  `}>
+                  <AnimatePresence mode="wait">
+                    {tile.isHit ? (
+                      <motion.span key="hit" initial={{ scale: 0 }} animate={{ scale: 1 }}>💥</motion.span>
+                    ) : tile.isDanger ? (
+                      <motion.span key="danger" initial={{ scale: 0 }} animate={{ scale: 1 }} className="opacity-70">🔥</motion.span>
+                    ) : tile.isSafe ? (
+                      <motion.span key="safe" initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }}>❄️</motion.span>
+                    ) : (
+                      <span key="empty" className="opacity-0">·</span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              ))}
             </div>
+
             <AnimatePresence>
-              {result && (
+              {(phase === "cashedOut" || phase === "cracked") && finalResult && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  className={`text-center text-sm font-bold px-4 py-2 rounded-xl border ${
-                    !result.hitDanger ? "text-cyan-300 bg-cyan-950/40 border-cyan-500/30" : "text-red-300 bg-red-950/40 border-red-500/30"
+                  className={`rounded-xl p-4 text-center border ${
+                    phase === "cashedOut" ? "bg-cyan-950/40 border-cyan-500/30" : "bg-red-950/40 border-red-500/30"
                   }`}>
-                  {!result.hitDanger ? `❄️ All safe — +${formatCurrency(result.payout)}` : `💥 Hit a danger tile — lost`}
+                  {phase === "cashedOut" ? (
+                    <>
+                      <p className="text-2xl font-display font-bold text-cyan-300">+{formatCurrency(finalResult.payout)}</p>
+                      <p className="text-sm text-muted-foreground">{finalResult.multiplier.toFixed(2)}× · {revealedCount} safe tiles</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-display font-bold text-red-400">💥 Cracked Ice!</p>
+                      <p className="text-sm text-muted-foreground">Lost {formatCurrency(activeBet)}</p>
+                    </>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
+          </CardContent>
+        </Card>
+
+        {/* Controls */}
+        <Card className="bg-card/40 border-white/10">
+          <CardContent className="p-6 space-y-5">
+
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground font-medium">Bet Amount</p>
+              <BetInput value={betAmount} onChange={setBetAmount} disabled={isPlaying || loading} />
+            </div>
+
+            {/* Live stats while playing */}
+            {isPlaying && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="bg-black/40 rounded-xl p-4 space-y-2 border border-cyan-500/20">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Bet placed</span>
+                  <span className="font-mono font-bold text-white">{formatCurrency(activeBet)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Safe tiles found</span>
+                  <span className="font-mono font-bold text-cyan-400">{revealedCount} / 12</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Multiplier</span>
+                  <span className="font-mono font-bold text-cyan-300">{currentMultiplier.toFixed(2)}×</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Cash out now</span>
+                  <span className="font-mono font-bold text-white">{formatCurrency(potentialPayout)}</span>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Idle info */}
+            {phase === "idle" && (
+              <div className="bg-black/30 rounded-xl p-4 border border-white/5 text-xs text-muted-foreground space-y-1.5">
+                <p className="text-cyan-400 font-semibold">How to Play</p>
+                <p>4 tiles hide cracked ice beneath the surface. Click any tile to test it. Find a safe tile (❄️) and your multiplier grows. Hit a danger tile (💥) and you lose. Cash out any time!</p>
+              </div>
+            )}
+
+            {/* Buttons */}
+            {phase === "idle" && (
+              <Button className="w-full bg-cyan-600/90 hover:bg-cyan-500 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.3)]"
+                size="lg" disabled={loading || bet < 0.01} onClick={handleStart}>
+                {loading ? "Starting…" : "❄️ Start Game"}
+              </Button>
+            )}
+
+            {isPlaying && (
+              <div className="space-y-2">
+                <Button className="w-full bg-cyan-600/90 hover:bg-cyan-500 text-white font-bold shadow-[0_0_20px_rgba(6,182,212,0.3)]"
+                  size="lg" disabled={loading || revealedCount === 0} onClick={handleCashout}>
+                  {loading ? "Processing…" : revealedCount === 0 ? "Reveal a tile first" : `💰 Cash Out — ${formatCurrency(potentialPayout)}`}
+                </Button>
+                <Button variant="ghost" className="w-full text-red-400/70 hover:text-red-400 hover:bg-red-500/10 text-xs"
+                  size="sm" disabled={loading} onClick={handleAbandon}>
+                  Abandon game (forfeit bet)
+                </Button>
+                <p className="text-xs text-center text-muted-foreground">4 danger tiles hidden · click tiles to reveal</p>
+              </div>
+            )}
+
+            {(phase === "cashedOut" || phase === "cracked") && (
+              <Button className="w-full font-bold" size="lg" onClick={resetGame}>🔄 Play Again</Button>
+            )}
+
           </CardContent>
         </Card>
       </div>
