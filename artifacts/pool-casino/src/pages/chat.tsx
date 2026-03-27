@@ -589,12 +589,12 @@ export default function Chat() {
   const totalUnread = rooms.reduce((sum, r) => sum + (r.unreadCount ?? 0), 0);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex-1 flex flex-col min-h-0">
       <div className="flex flex-1 min-h-0 border-t border-white/5 bg-black/40">
         {/* Sidebar */}
         <div className={`flex flex-col w-64 flex-shrink-0 border-r border-white/5 bg-black/20 ${showMobileRooms ? "block" : "hidden md:flex"}`}>
           {/* Tabs */}
-          <div className="flex border-b border-white/5">
+          <div className="flex border-b border-white/5 flex-shrink-0">
             <button onClick={() => setTab("chat")}
               className={`flex-1 py-3 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${tab === "chat" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>
               <MessageSquare className="w-3.5 h-3.5" />
@@ -623,7 +623,7 @@ export default function Chat() {
           {activeRoom ? (
             <>
               {/* Room Header */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-black/20 relative">
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-black/20 relative flex-shrink-0">
                 <button onClick={() => setShowMobileRooms(!showMobileRooms)} className="md:hidden p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground">
                   <MessageSquare className="w-4 h-4" />
                 </button>

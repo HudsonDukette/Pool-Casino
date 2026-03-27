@@ -484,7 +484,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <main className={`flex-1 w-full ${isChat ? "" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}`}>
+      <main className={`flex-1 w-full ${isChat ? "overflow-hidden min-h-0 flex flex-col" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}`}>
         {children}
       </main>
 
