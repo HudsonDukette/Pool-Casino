@@ -31,6 +31,19 @@ import Lightning from "@/pages/lightning";
 import Multiplayer from "@/pages/multiplayer";
 import WarPvP from "@/pages/war-pvp";
 import HighLowPvP from "@/pages/highlow-pvp";
+import CoinFlipPvP from "@/pages/coinflip-pvp";
+import RPSPvP from "@/pages/rps-pvp";
+import DiceBattlePvP from "@/pages/dicebattle-pvp";
+import NumGuessPvP from "@/pages/numguess-pvp";
+import ReactionPvP from "@/pages/reaction-pvp";
+import QuickMathPvP from "@/pages/quickmath-pvp";
+import TugOfWarPvP from "@/pages/tugofwar-pvp";
+import LastManPvP from "@/pages/lastman-pvp";
+import BJPvPPage from "@/pages/bjpvp-pvp";
+import PokerPvP from "@/pages/poker-pvp";
+import CardRacePvP from "@/pages/cardrace-pvp";
+import SpeedClickPvP from "@/pages/speedclick-pvp";
+import MemoryPvP from "@/pages/memory-pvp";
 import Badges from "@/pages/badges";
 import Casinos from "@/pages/casinos";
 import Profile from "@/pages/profile";
@@ -81,6 +94,19 @@ function Router() {
         <Route path="/multiplayer" component={Multiplayer} />
         <Route path="/multiplayer/war" component={WarPvP} />
         <Route path="/multiplayer/highlow" component={HighLowPvP} />
+        <Route path="/multiplayer/coinflip" component={CoinFlipPvP} />
+        <Route path="/multiplayer/rps" component={RPSPvP} />
+        <Route path="/multiplayer/dicebattle" component={DiceBattlePvP} />
+        <Route path="/multiplayer/numguess" component={NumGuessPvP} />
+        <Route path="/multiplayer/reaction" component={ReactionPvP} />
+        <Route path="/multiplayer/quickmath" component={QuickMathPvP} />
+        <Route path="/multiplayer/tugofwar" component={TugOfWarPvP} />
+        <Route path="/multiplayer/lastman" component={LastManPvP} />
+        <Route path="/multiplayer/bjpvp" component={BJPvPPage} />
+        <Route path="/multiplayer/poker" component={PokerPvP} />
+        <Route path="/multiplayer/cardrace" component={CardRacePvP} />
+        <Route path="/multiplayer/speedclick" component={SpeedClickPvP} />
+        <Route path="/multiplayer/memory" component={MemoryPvP} />
         <Route path="/badges" component={Badges} />
         <Route path="/casinos" component={Casinos} />
         <Route path="/profile" component={Profile} />

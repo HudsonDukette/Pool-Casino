@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, pool, badgesTable, userBadgesTable, monthlyChallengesTable, userMonthlyProgressTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
+import { getLobbyStats } from "../multiplayer/matchmaking";
 
 const router: IRouter = Router();
 
@@ -116,6 +117,10 @@ router.get("/matches/history", async (req, res): Promise<void> => {
   );
 
   res.json({ matches: rows.rows });
+});
+
+router.get("/lobby/stats", (_req, res): void => {
+  res.json(getLobbyStats());
 });
 
 export default router;

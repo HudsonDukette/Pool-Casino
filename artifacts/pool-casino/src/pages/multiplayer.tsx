@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useMultiplayer, type GameType } from "@/context/MultiplayerContext";
 import { useGetMe } from "@workspace/api-client-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Swords, Trophy, Clock, Users } from "lucide-react";
@@ -21,27 +21,28 @@ interface MatchHistoryItem {
 }
 
 const GAME_DEFS = [
-  {
-    id: "war" as GameType,
-    name: "War",
-    emoji: "🃏",
-    desc: "Draw cards against your opponent. Highest card wins the round. Best of 3.",
-    color: "border-purple-500/30 hover:border-purple-500/60",
-    badge: "Card Game",
-  },
-  {
-    id: "highlow" as GameType,
-    name: "Higher or Lower",
-    emoji: "🎲",
-    desc: "A die is rolled. Guess if the next roll is higher or lower. Best of 3.",
-    color: "border-blue-500/30 hover:border-blue-500/60",
-    badge: "Dice Game",
-  },
+  { id: "war" as GameType, name: "War", emoji: "🃏", desc: "Draw cards against your opponent. Highest card wins the round. Best of 3.", color: "border-purple-500/30 hover:border-purple-500/60", badge: "Card Game" },
+  { id: "highlow" as GameType, name: "Higher or Lower", emoji: "🎲", desc: "A die is rolled. Guess if the next roll is higher or lower. Best of 3.", color: "border-blue-500/30 hover:border-blue-500/60", badge: "Dice Game" },
+  { id: "coinflip" as GameType, name: "Coin Flip", emoji: "🪙", desc: "Pick heads or tails — match the flip to win. Best of 3.", color: "border-yellow-500/30 hover:border-yellow-500/60", badge: "Classic" },
+  { id: "rps" as GameType, name: "Rock Paper Scissors", emoji: "✂️", desc: "Classic RPS — both pick simultaneously. Best of 3.", color: "border-green-500/30 hover:border-green-500/60", badge: "Classic" },
+  { id: "dicebattle" as GameType, name: "Dice Battle", emoji: "🎯", desc: "Roll 2 dice, highest total wins each round. Best of 3.", color: "border-orange-500/30 hover:border-orange-500/60", badge: "Dice Game" },
+  { id: "numguess" as GameType, name: "Number Guess", emoji: "🔢", desc: "System picks 1–100. Closest guess wins the round. Best of 3.", color: "border-cyan-500/30 hover:border-cyan-500/60", badge: "Puzzle" },
+  { id: "reaction" as GameType, name: "Reaction Time", emoji: "⚡", desc: "Wait for the green light, then react first. Early click loses the round. Best of 3.", color: "border-lime-500/30 hover:border-lime-500/60", badge: "Reflex" },
+  { id: "quickmath" as GameType, name: "Quick Math", emoji: "🧮", desc: "Solve simple math problems — fastest correct answer wins. First to 3 of 5.", color: "border-pink-500/30 hover:border-pink-500/60", badge: "Mind Game" },
+  { id: "tugofwar" as GameType, name: "Tug of War", emoji: "🪢", desc: "Tap your button to pull the rope to your side. First to the edge wins!", color: "border-rose-500/30 hover:border-rose-500/60", badge: "Timing" },
+  { id: "lastman" as GameType, name: "Last Man Standing", emoji: "💀", desc: "Stay in or fold — risk increases each round. First to fail loses.", color: "border-red-500/30 hover:border-red-500/60", badge: "High Risk" },
+  { id: "bjpvp" as GameType, name: "Blackjack PvP", emoji: "🃏", desc: "Both draw cards and try to get closest to 21 without busting. No dealer.", color: "border-violet-500/30 hover:border-violet-500/60", badge: "Card Game" },
+  { id: "poker" as GameType, name: "5-Card Poker", emoji: "♠️", desc: "Both players get 5 cards. Best poker hand wins immediately.", color: "border-indigo-500/30 hover:border-indigo-500/60", badge: "Card Game" },
+  { id: "cardrace" as GameType, name: "Card Draw Race", emoji: "🏁", desc: "Draw cards to reach 21. Closest without busting wins.", color: "border-teal-500/30 hover:border-teal-500/60", badge: "Card Game" },
+  { id: "speedclick" as GameType, name: "Speed Click", emoji: "👆", desc: "Click as fast as possible for 5 seconds. Most clicks wins. Rate-limited.", color: "border-amber-500/30 hover:border-amber-500/60", badge: "Reflex" },
+  { id: "memory" as GameType, name: "Memory Match", emoji: "🧠", desc: "Flip cards to find pairs — take turns. Player with most pairs wins.", color: "border-sky-500/30 hover:border-sky-500/60", badge: "Memory" },
 ];
+
+const GAME_EMOJI_MAP: Record<string, string> = Object.fromEntries(GAME_DEFS.map(g => [g.id, g.emoji]));
 
 export default function Multiplayer() {
   const { data: user } = useGetMe({ query: { retry: false } });
-  const { queued, queueGameType, joinQueue, leaveQueue, connected, currentMatch } = useMultiplayer();
+  const { queued, queueGameType, joinQueue, leaveQueue, connected, currentMatch, lobbyStats } = useMultiplayer();
 
   const { data: historyData } = useQuery({
     queryKey: ["match-history"],
@@ -64,7 +65,7 @@ export default function Multiplayer() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 space-y-10">
+    <div className="max-w-5xl mx-auto py-8 px-4 space-y-10">
       <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-3">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-medium">
           <span className="relative flex h-2 w-2">
@@ -75,7 +76,7 @@ export default function Multiplayer() {
         </div>
         <h1 className="text-4xl font-black text-white">Multiplayer Arena</h1>
         <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-          Challenge real players to PvP matches. No house edge — winner takes all.
+          15 PvP games. No house edge — winner takes all.
         </p>
       </motion.div>
 
@@ -87,51 +88,57 @@ export default function Multiplayer() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {GAME_DEFS.map((game, i) => {
           const isThisQueued = queued && queueGameType === game.id;
           const inMatch = currentMatch?.gameType === game.id;
+          const stats = lobbyStats[game.id];
 
           return (
             <motion.div
               key={game.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className={`relative bg-card rounded-2xl border-2 p-6 space-y-4 transition-all ${game.color} ${isThisQueued ? "ring-2 ring-primary/40" : ""}`}
+              transition={{ delay: i * 0.04 }}
+              className={`relative bg-card rounded-2xl border-2 p-5 space-y-3 transition-all ${game.color} ${isThisQueued ? "ring-2 ring-primary/40" : ""}`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">{game.emoji}</span>
+                  <span className="text-2xl">{game.emoji}</span>
                   <div>
-                    <h2 className="text-lg font-bold text-white">{game.name}</h2>
+                    <h2 className="text-base font-bold text-white">{game.name}</h2>
                     <span className="text-xs text-muted-foreground bg-white/5 rounded-full px-2 py-0.5">{game.badge}</span>
                   </div>
                 </div>
-                <span className="text-xs bg-green-500/10 text-green-400 border border-green-500/20 rounded-full px-3 py-1 font-medium">Live</span>
               </div>
 
-              <p className="text-sm text-muted-foreground leading-relaxed">{game.desc}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{game.desc}</p>
 
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Users className="w-3.5 h-3.5" /><span>1v1</span>
-                <span>·</span>
-                <Swords className="w-3.5 h-3.5" /><span>No house edge</span>
-                <span>·</span>
-                <span>Best of 3</span>
-              </div>
+              {stats && (
+                <div className="flex items-center gap-3 text-xs">
+                  <span className={`flex items-center gap-1 ${stats.playing > 0 ? "text-green-400" : "text-muted-foreground"}`}>
+                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${stats.playing > 0 ? "bg-green-400 animate-pulse" : "bg-muted-foreground"}`} />
+                    {stats.playing} playing
+                  </span>
+                  <span className="text-muted-foreground">·</span>
+                  <span className={`${stats.queued > 0 ? "text-yellow-400" : "text-muted-foreground"}`}>
+                    {stats.queued} waiting
+                  </span>
+                </div>
+              )}
 
               {!user || isGuest ? (
-                <Link href="/login"><Button className="w-full" variant="outline">Log in to Play</Button></Link>
+                <Link href="/login"><Button className="w-full" variant="outline" size="sm">Log in to Play</Button></Link>
               ) : inMatch ? (
-                <Link href={`/multiplayer/${game.id}`}><Button className="w-full">Resume Match</Button></Link>
+                <Link href={`/multiplayer/${game.id}`}><Button className="w-full" size="sm">Resume Match</Button></Link>
               ) : (
                 <Button
-                  className={`w-full ${isThisQueued ? "bg-destructive hover:bg-destructive/90" : "shadow-[0_0_15px_rgba(0,255,170,0.2)]"}`}
+                  size="sm"
+                  className={`w-full ${isThisQueued ? "bg-destructive hover:bg-destructive/90" : ""}`}
                   onClick={() => handleQueue(game.id)}
                   disabled={queued && !isThisQueued}
                 >
-                  {isThisQueued ? <><Clock className="w-4 h-4 mr-2 animate-spin" /> Cancel Search</> : <><Swords className="w-4 h-4 mr-2" /> Find Match</>}
+                  {isThisQueued ? <><Clock className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Cancel</> : <><Swords className="w-3.5 h-3.5 mr-1.5" /> Find Match</>}
                 </Button>
               )}
             </motion.div>
@@ -148,12 +155,13 @@ export default function Multiplayer() {
             {history.slice(0, 10).map(match => {
               const won = match.winner_id === user?.id;
               const draw = match.winner_id === null;
+              const emoji = GAME_EMOJI_MAP[match.game_type] ?? "⚔️";
               return (
                 <div key={match.id} className="flex items-center justify-between bg-black/20 border border-white/5 rounded-xl px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg">{match.game_type === "war" ? "🃏" : "🎲"}</span>
+                    <span className="text-lg">{emoji}</span>
                     <div>
-                      <p className="text-sm font-medium text-white capitalize">{match.game_type} vs {match.opponent_username}</p>
+                      <p className="text-sm font-medium text-white capitalize">{match.game_type.replace(/-/g, " ")} vs {match.opponent_username}</p>
                       <p className="text-xs text-muted-foreground">{new Date(match.completed_at).toLocaleDateString()}</p>
                     </div>
                   </div>

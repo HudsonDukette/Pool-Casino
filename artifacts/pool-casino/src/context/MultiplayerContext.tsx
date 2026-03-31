@@ -2,7 +2,10 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import { io, Socket } from "socket.io-client";
 import { useGetMe } from "@workspace/api-client-react";
 
-export type GameType = "war" | "highlow";
+export type GameType =
+  | "war" | "highlow" | "coinflip" | "rps" | "dicebattle"
+  | "bjpvp" | "poker" | "memory" | "speedclick" | "numguess"
+  | "reaction" | "tugofwar" | "quickmath" | "cardrace" | "lastman";
 
 export interface MatchFoundEvent {
   matchId: number;
@@ -36,6 +39,10 @@ export interface MatchEndEvent {
   finalBet: number;
 }
 
+export interface LobbyStats {
+  [gameType: string]: { queued: number; playing: number };
+}
+
 interface MultiplayerContextValue {
   socket: Socket | null;
   connected: boolean;
@@ -46,6 +53,8 @@ interface MultiplayerContextValue {
   lastRound: RoundResultEvent | null;
   matchEnd: MatchEndEvent | null;
   hlFirstRoll: number | null;
+  pvpEvent: { event: string; data: any } | null;
+  lobbyStats: LobbyStats;
   joinQueue: (gameType: GameType) => void;
   leaveQueue: () => void;
   acceptMatch: (matchId: number) => void;
@@ -54,9 +63,23 @@ interface MultiplayerContextValue {
   forfeitMatch: (matchId: number) => void;
   clearMatchEnd: () => void;
   clearMatchFound: () => void;
+  clearPvpEvent: () => void;
 }
 
 const MultiplayerContext = createContext<MultiplayerContextValue | null>(null);
+
+const GAME_SPECIFIC_EVENTS = [
+  "speedclick:start",
+  "reaction:waiting",
+  "reaction:go",
+  "quickmath:question",
+  "bjpvp:dealt",
+  "bjpvp:update",
+  "memory:start",
+  "cardrace:start",
+  "cardrace:update",
+  "highlow:waiting_guess",
+];
 
 export function MultiplayerProvider({ children }: { children: React.ReactNode }) {
   const { data: user } = useGetMe({ query: { retry: false } });
@@ -69,6 +92,8 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
   const [lastRound, setLastRound] = useState<RoundResultEvent | null>(null);
   const [matchEnd, setMatchEnd] = useState<MatchEndEvent | null>(null);
   const [hlFirstRoll, setHlFirstRoll] = useState<number | null>(null);
+  const [pvpEvent, setPvpEvent] = useState<{ event: string; data: any } | null>(null);
+  const [lobbyStats, setLobbyStats] = useState<LobbyStats>({});
 
   const userId = user?.id;
 
@@ -85,7 +110,11 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
     socketRef.current = socket;
 
     socket.on("connect", () => setConnected(true));
-    socket.on("disconnect", () => { setConnected(false); setQueued(false); setQueueGameType(null); });
+    socket.on("disconnect", () => {
+      setConnected(false);
+      setQueued(false);
+      setQueueGameType(null);
+    });
 
     socket.on("queue:status", ({ queued: q, gameType }: { queued: boolean; gameType?: GameType }) => {
       setQueued(q);
@@ -104,6 +133,7 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
       setLastRound(null);
       setMatchEnd(null);
       setHlFirstRoll(null);
+      setPvpEvent(null);
     });
 
     socket.on("match:round", (data: RoundResultEvent) => {
@@ -120,6 +150,16 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
     socket.on("highlow:first_roll", ({ roll }: { roll: number }) => {
       setHlFirstRoll(roll);
     });
+
+    socket.on("lobby:stats", (stats: LobbyStats) => {
+      setLobbyStats(stats);
+    });
+
+    for (const evName of GAME_SPECIFIC_EVENTS) {
+      socket.on(evName, (data: any) => {
+        setPvpEvent({ event: evName, data });
+      });
+    }
 
     return () => {
       socket.disconnect();
@@ -155,26 +195,16 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
 
   const clearMatchEnd = useCallback(() => setMatchEnd(null), []);
   const clearMatchFound = useCallback(() => setMatchFound(null), []);
+  const clearPvpEvent = useCallback(() => setPvpEvent(null), []);
 
   return (
     <MultiplayerContext.Provider value={{
       socket: socketRef.current,
-      connected,
-      queued,
-      queueGameType,
-      matchFound,
-      currentMatch,
-      lastRound,
-      matchEnd,
-      hlFirstRoll,
-      joinQueue,
-      leaveQueue,
-      acceptMatch,
-      placeBet,
-      sendAction,
-      forfeitMatch,
-      clearMatchEnd,
-      clearMatchFound,
+      connected, queued, queueGameType,
+      matchFound, currentMatch, lastRound, matchEnd,
+      hlFirstRoll, pvpEvent, lobbyStats,
+      joinQueue, leaveQueue, acceptMatch, placeBet,
+      sendAction, forfeitMatch, clearMatchEnd, clearMatchFound, clearPvpEvent,
     }}>
       {children}
     </MultiplayerContext.Provider>
