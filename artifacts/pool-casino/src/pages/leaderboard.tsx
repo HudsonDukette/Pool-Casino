@@ -92,6 +92,83 @@ function ReportModal({ targetUsername, onClose }: { targetUsername: string; onCl
   );
 }
 
+function TopCasinosTab() {
+  const { toast } = useToast();
+  const [casinos, setCasinos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${BASE}api/leaderboard/top-casinos`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setCasinos(d.casinos ?? []))
+      .catch(() => toast({ title: "Failed to load casinos", variant: "destructive" }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <Card className="bg-card/40 border-white/5">
+        <CardContent className="p-6 space-y-3">
+          {[...Array(5)].map((_, i) => <div key={i} className="h-14 rounded-lg bg-card/20 animate-pulse" />)}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (casinos.length === 0) {
+    return (
+      <Card className="bg-card/40 border-white/5">
+        <CardContent className="p-0">
+          <div className="min-h-[400px] flex flex-col items-center justify-center gap-6 p-8">
+            <div className="p-5 bg-primary/10 rounded-full">
+              <Building2 className="w-12 h-12 text-primary opacity-50" />
+            </div>
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-display font-bold">No Casinos Yet</h2>
+              <p className="text-muted-foreground max-w-sm">
+                No player casinos have been created yet. Be the first — open yours on the{" "}
+                <Link href="/casinos" className="text-primary underline underline-offset-2">Casinos page</Link>!
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const medals = ["🥇", "🥈", "🥉"];
+
+  return (
+    <Card className="bg-card/40 border-white/5 overflow-hidden">
+      <CardContent className="p-6 space-y-3">
+        {casinos.map((casino, i) => (
+          <Link href={`/casino/${casino.id}`} key={casino.id}>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.04 }}
+              className="flex items-center gap-4 p-3 rounded-xl border border-white/5 hover:border-white/10 bg-card/20 hover:bg-card/30 transition-all cursor-pointer"
+            >
+              <div className="w-8 text-lg font-bold text-center shrink-0">
+                {medals[i] ?? <span className="text-muted-foreground text-sm">#{i + 1}</span>}
+              </div>
+              <span className="text-3xl shrink-0">{casino.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold truncate">{casino.name}</p>
+                <p className="text-xs text-muted-foreground">by {casino.ownerUsername ?? "Unknown"}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-sm font-bold text-amber-400">{formatCurrency(parseFloat(casino.bankroll))}</p>
+                <p className="text-[10px] text-muted-foreground">{(casino.totalBets ?? 0).toLocaleString()} bets</p>
+              </div>
+            </motion.div>
+          </Link>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Leaderboard() {
   const [activeTab, setActiveTab] = useState<Tab>("richest");
   const { data: me } = useGetMe({ query: { retry: false } });
@@ -315,28 +392,8 @@ export default function Leaderboard() {
         </Card>
       )}
 
-      {/* Top Casinos — Coming Soon */}
-      {activeTab === "casinos" && (
-        <Card className="bg-card/40 border-white/5 overflow-hidden">
-          <CardContent className="p-0">
-            <div className="min-h-[400px] flex flex-col items-center justify-center gap-6 p-8">
-              <div className="p-5 bg-primary/10 rounded-full">
-                <Building2 className="w-12 h-12 text-primary" />
-              </div>
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-display font-bold">Top Casinos</h2>
-                <p className="text-muted-foreground max-w-sm">Player-owned casinos are coming soon. Build your own casino, set your own rules, and compete for the top spot.</p>
-              </div>
-              <div className="flex flex-wrap gap-3 justify-center">
-                {["Custom Rules", "Revenue Sharing", "Casino Branding", "VIP Lounges"].map(f => (
-                  <span key={f} className="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-muted-foreground">{f}</span>
-                ))}
-              </div>
-              <span className="text-xs px-3 py-1 rounded-full bg-primary/20 text-primary font-medium border border-primary/30">Coming Soon</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Top Casinos — Live */}
+      {activeTab === "casinos" && <TopCasinosTab />}
     </div>
   );
 }

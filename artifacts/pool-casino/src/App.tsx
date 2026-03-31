@@ -46,6 +46,7 @@ import SpeedClickPvP from "@/pages/speedclick-pvp";
 import MemoryPvP from "@/pages/memory-pvp";
 import Badges from "@/pages/badges";
 import Casinos from "@/pages/casinos";
+import CasinoHub from "@/pages/casino-hub";
 import Profile from "@/pages/profile";
 import PlayerProfile from "@/pages/player";
 import Admin from "@/pages/admin";
@@ -109,6 +110,7 @@ function Router() {
         <Route path="/multiplayer/memory" component={MemoryPvP} />
         <Route path="/badges" component={Badges} />
         <Route path="/casinos" component={Casinos} />
+        <Route path="/casino/:id" component={CasinoHub} />
         <Route path="/profile" component={Profile} />
         <Route path="/player/:username" component={PlayerProfile} />
         <Route path="/admin" component={Admin} />

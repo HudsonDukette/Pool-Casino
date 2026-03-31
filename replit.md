@@ -58,6 +58,7 @@ artifacts-monorepo/
 17. **Real-time Multiplayer PvP**: Socket.IO-powered 1v1 matches; War (card game) and Higher-or-Lower (dice); matchmaking queue with 10-second accept window; no house edge — winner takes opponent's bet; chip transfer on win
 18. **Badges System**: 12 permanent badges (First Blood, High Roller, Whale, Hot Streak, etc.); auto-awarded on qualification; visible at `/badges`
 19. **Monthly Challenges**: 6 rotating challenges per month; progress tracking; reward payout on claim
+20. **Player-Owned Casino Hub**: Players spend 100M chips to open a casino; purchase game licenses for 1M chips each; set bankroll/bet limits; earn from player bets; 10% monthly tax to the pool; bar menu with purchasable drinks; leaderboard tab for top casinos
 
 ## Database Tables
 
@@ -79,6 +80,13 @@ artifacts-monorepo/
 - `user_badges` - earned badges per user
 - `monthly_challenges` - monthly challenge definitions by month string
 - `user_monthly_progress` - per-user progress on monthly challenges
+- `casinos` - player-owned casinos (name, emoji, bankroll, bet limits, owner)
+- `casino_games_owned` - game licenses purchased per casino
+- `casino_bets` - individual bet records placed at player casinos
+- `casino_transactions` - financial transaction log (deposit/withdraw/tax/bet/drink)
+- `casino_drinks` - drink menu items configured by casino owner
+- `user_drinks` - drink purchase history per player
+- `monthly_tax_logs` - monthly 10% tax collection history per casino
 
 ## API Routes
 

@@ -16,6 +16,7 @@ import pushRouter from "./push";
 import reportsRouter from "./reports";
 import newGamesRouter from "./new-games";
 import badgesRouter from "./badges";
+import casinosRouter from "./casinos";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(pushRouter);
 router.use(reportsRouter);
 router.use(newGamesRouter);
 router.use(badgesRouter);
+router.use(casinosRouter);
 
 export default router;
