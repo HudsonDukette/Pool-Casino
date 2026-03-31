@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { useGameApi } from "@/lib/game-api";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 
 const SYMBOLS: Record<string, { emoji: string; color: string; payout: number }> = {
   seven:   { emoji: "7️⃣",  color: "text-red-400",    payout: 20 },
@@ -99,6 +99,7 @@ export default function Slots() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const api = useGameApi<SlotsResult>();
+  const casinoId = useCasinoId();
 
   const [betAmount, setBetAmount] = useState("10");
   const [spinning, setSpinning] = useState(false);
@@ -114,7 +115,7 @@ export default function Slots() {
     setSpinning(true);
     setResult(null);
 
-    const data = await api.call("slots", { betAmount: bet });
+    const data = await api.call("slots", { betAmount: bet, casinoId });
     if (!data) {
       setSpinning(false);
       toast({ title: "Bet failed", description: api.error ?? "Something went wrong", variant: "destructive" });

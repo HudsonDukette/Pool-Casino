@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import heroImg from "@/assets/game-icebreak.png";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL;
 const TOTAL_TILES = 16;
@@ -47,6 +47,7 @@ export default function IceBreak() {
   const { data: user } = useGetMe({ query: { retry: false } });
   const qc = useQueryClient();
   const { toast } = useToast();
+  const casinoId = useCasinoId();
 
   const [betAmount, setBetAmount] = useState("100");
   const [phase, setPhase] = useState<GamePhase>("idle");
@@ -96,7 +97,7 @@ export default function IceBreak() {
     if (bet < 0.01) { toast({ title: "Minimum bet is $0.01", variant: "destructive" }); return; }
     setLoading(true);
     try {
-      await apiPost("icebreak/start", { betAmount: bet });
+      await apiPost("icebreak/start", { betAmount: bet, casinoId });
       setActiveBet(bet);
       setPhase("playing");
       setTiles(blankTiles());

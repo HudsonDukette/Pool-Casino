@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL;
 const TOTAL_TILES = 25;
@@ -116,6 +116,7 @@ export default function Mines() {
   const { data: user } = useGetMe({ query: { retry: false } });
   const qc = useQueryClient();
   const { toast } = useToast();
+  const casinoId = useCasinoId();
 
   const [betAmount, setBetAmount] = useState("100");
   const [minesCount, setMinesCount] = useState(5);
@@ -198,7 +199,7 @@ export default function Mines() {
 
     setLoading(true);
     try {
-      await apiPost("mines/start", { betAmount: bet, minesCount });
+      await apiPost("mines/start", { betAmount: bet, minesCount, casinoId });
       setActiveMinesCount(minesCount);
       setPhase("playing");
       setRevealedCount(0);

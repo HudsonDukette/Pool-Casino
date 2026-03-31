@@ -20,6 +20,15 @@ const REPORT_REASONS = [
   "Other",
 ];
 
+interface DrinkItem {
+  id: number;
+  drinkName: string;
+  drinkEmoji: string;
+  drinkPrice: string;
+  casinoName: string | null;
+  purchasedAt: string;
+}
+
 export default function PlayerProfile() {
   const [, params] = useRoute("/player/:username");
   const username = params?.username;
@@ -30,6 +39,8 @@ export default function PlayerProfile() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [drinks, setDrinks] = useState<DrinkItem[]>([]);
+  const [drinksLoading, setDrinksLoading] = useState(false);
 
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState(REPORT_REASONS[0]);
@@ -47,6 +58,19 @@ export default function PlayerProfile() {
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
+  }, [username]);
+
+  useEffect(() => {
+    if (!username) return;
+    setDrinksLoading(true);
+    fetch(`${BASE}api/users/${encodeURIComponent(username)}/drinks`, { credentials: "include" })
+      .then(async r => {
+        if (!r.ok) return;
+        const data = await r.json();
+        setDrinks(data.drinks ?? []);
+      })
+      .catch(() => {})
+      .finally(() => setDrinksLoading(false));
   }, [username]);
 
   const handleReport = async () => {
@@ -83,6 +107,13 @@ export default function PlayerProfile() {
   );
 
   const winRate = profile.gamesPlayed > 0 ? ((profile.totalWins / profile.gamesPlayed) * 100).toFixed(1) : "0.0";
+
+  const groupedDrinks = drinks.reduce<{ name: string; emoji: string; price: string; casino: string | null; count: number }[]>((acc, d) => {
+    const existing = acc.find(g => g.name === d.drinkName && g.casino === d.casinoName);
+    if (existing) { existing.count++; }
+    else { acc.push({ name: d.drinkName, emoji: d.drinkEmoji, price: d.drinkPrice, casino: d.casinoName, count: 1 }); }
+    return acc;
+  }, []);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in py-8">
@@ -196,6 +227,41 @@ export default function PlayerProfile() {
           </Card>
         ))}
       </div>
+
+      {/* Drinks Collection */}
+      {(drinksLoading || drinks.length > 0) && (
+        <Card className="bg-card border-white/10">
+          <CardContent className="p-6 space-y-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              🍹 Drinks Collection
+              <span className="text-xs font-normal normal-case text-muted-foreground/60">
+                ({drinks.length} total)
+              </span>
+            </h2>
+            {drinksLoading ? (
+              <div className="flex justify-center py-4">
+                <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {groupedDrinks.map((d, i) => (
+                  <div
+                    key={i}
+                    title={`${d.name}${d.casino ? ` from ${d.casino}` : ""} · ${formatCurrency(parseFloat(d.price))}`}
+                    className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-sm hover:border-primary/30 transition-colors"
+                  >
+                    <span className="text-base">{d.emoji}</span>
+                    <span className="font-medium">{d.name}</span>
+                    {d.count > 1 && (
+                      <span className="text-xs text-muted-foreground font-mono">×{d.count}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

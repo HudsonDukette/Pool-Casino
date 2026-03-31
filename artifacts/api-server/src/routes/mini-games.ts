@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, poolTable, betsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, usersTable, poolTable, betsTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable } from "@workspace/db";
+import { eq, and, sql } from "drizzle-orm";
 import { calculateWinChance } from "../lib/gambling";
 
 const router: IRouter = Router();
@@ -13,6 +13,7 @@ interface BJState {
   poolId: number;
   poolAmount: number;
   currentBalance: number;
+  casinoId?: number;
 }
 const bjGames = new Map<number, BJState>();
 
@@ -72,21 +73,71 @@ async function settleGame(
   multiplier: number,
   user: Awaited<ReturnType<typeof loadContext>>["user"],
   pool: Awaited<ReturnType<typeof loadContext>>["pool"],
+  casinoId?: number,
 ) {
   const currentBalance = parseFloat(user.balance);
-  const poolAmount = parseFloat(pool.totalAmount);
-  const uncappedPayout = betAmount * multiplier;
-  // Cap payout at pool balance — pool can never go negative
-  const payout = uncappedPayout > betAmount ? Math.min(uncappedPayout, poolAmount) : uncappedPayout;
-  const won = uncappedPayout > betAmount; // game-decided win (for stats/streaks)
-  const breakEven = Math.abs(uncappedPayout - betAmount) < 0.001;
+  const won = multiplier > 1;
+  const breakEven = Math.abs(multiplier - 1) < 0.001;
+
+  let payout: number;
+  let newBalance: number;
+
+  if (casinoId !== undefined) {
+    // ── Casino-aware settlement ──────────────────────────────────────────────
+    const [casino] = await db.select().from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
+    if (!casino) throw new Error("Casino not found");
+    const bankroll = parseFloat(casino.bankroll);
+    const uncappedPayout = betAmount * multiplier;
+    // Cap payout at bankroll so casino can never go below 0
+    payout = won ? Math.min(uncappedPayout, bankroll) : uncappedPayout;
+    newBalance = currentBalance - betAmount + payout;
+    const casinoProfit = betAmount - payout;
+    const newBankroll = Math.max(0, bankroll + casinoProfit);
+
+    await Promise.all([
+      db.update(casinosTable).set({
+        bankroll: newBankroll.toFixed(2),
+        totalBets: sql`${casinosTable.totalBets} + 1`,
+        totalWagered: sql`${casinosTable.totalWagered} + ${betAmount}`,
+        totalPaidOut: sql`${casinosTable.totalPaidOut} + ${payout}`,
+        isPaused: newBankroll <= 0,
+        updatedAt: new Date(),
+      }).where(eq(casinosTable.id, casinoId)),
+      db.insert(casinoBetsTable).values({
+        casinoId,
+        userId,
+        gameType,
+        betAmount: betAmount.toFixed(2),
+        result: won ? "win" : "loss",
+        payout: payout.toFixed(2),
+        multiplier: multiplier.toFixed(4),
+      }),
+      db.insert(casinoTransactionsTable).values({
+        casinoId,
+        type: won ? "bet_loss" : "bet_win",
+        amount: Math.abs(casinoProfit).toFixed(2),
+        description: `${gameType} — ${won ? "Player win" : "Player loss"}`,
+      }),
+    ]);
+  } else {
+    // ── Global pool settlement ───────────────────────────────────────────────
+    const poolAmount = parseFloat(pool.totalAmount);
+    const uncappedPayout = betAmount * multiplier;
+    payout = won ? Math.min(uncappedPayout, poolAmount) : uncappedPayout;
+    newBalance = currentBalance - betAmount + payout;
+    const newPool = poolAmount + betAmount - payout;
+
+    const newBiggestWin = won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin);
+    const newBiggestBet = betAmount > parseFloat(pool.biggestBet) ? betAmount : parseFloat(pool.biggestBet);
+
+    await db.update(poolTable).set({
+      totalAmount: Math.max(0, newPool).toFixed(2),
+      biggestWin: newBiggestWin.toFixed(2),
+      biggestBet: newBiggestBet.toFixed(2),
+    }).where(eq(poolTable.id, pool.id));
+  }
+
   const profit = payout - betAmount;
-
-  const newBalance = currentBalance - betAmount + payout;
-  const newPool = poolAmount + betAmount - payout;
-
-  const newBiggestWin = won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin);
-  const newBiggestBet = betAmount > parseFloat(pool.biggestBet) ? betAmount : parseFloat(pool.biggestBet);
   const newUserBiggestWin = won && payout > parseFloat(user.biggestWin) ? payout : parseFloat(user.biggestWin);
   const newUserBiggestBet = betAmount > parseFloat(user.biggestBet) ? betAmount : parseFloat(user.biggestBet);
   const gamesPlayed = parseInt(user.gamesPlayed) + 1;
@@ -109,11 +160,6 @@ async function settleGame(
       totalLosses: totalLosses.toString(),
       lastBetAt: new Date(),
     }).where(eq(usersTable.id, userId)),
-    db.update(poolTable).set({
-      totalAmount: Math.max(0, newPool).toFixed(2),
-      biggestWin: newBiggestWin.toFixed(2),
-      biggestBet: newBiggestBet.toFixed(2),
-    }).where(eq(poolTable.id, pool.id)),
     db.insert(betsTable).values({
       userId,
       gameType,
@@ -125,6 +171,33 @@ async function settleGame(
   ]);
 
   return { won, breakEven, payout, multiplier, newBalance, profit };
+}
+
+// ─── Casino validation helper ─────────────────────────────────────────────────
+async function validateCasinoPlay(
+  casinoId: number,
+  gameType: string,
+  betAmount: number,
+  res: ReturnType<typeof Router>["response"] extends never ? never : any,
+): Promise<boolean> {
+  const [casino] = await db.select().from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
+  if (!casino) { res.status(404).json({ error: "Casino not found" }); return false; }
+  if (casino.isPaused) { res.status(400).json({ error: "This casino is currently paused" }); return false; }
+
+  const [gameOwned] = await db.select().from(casinoGamesOwnedTable)
+    .where(and(eq(casinoGamesOwnedTable.casinoId, casinoId), eq(casinoGamesOwnedTable.gameType, gameType), eq(casinoGamesOwnedTable.isEnabled, true)))
+    .limit(1);
+  if (!gameOwned) { res.status(400).json({ error: `${gameType} is not offered at this casino` }); return false; }
+
+  const minBet = parseFloat(casino.minBet);
+  const maxBet = parseFloat(casino.maxBet);
+  if (betAmount < minBet) { res.status(400).json({ error: `Minimum bet at this casino is ${minBet}` }); return false; }
+  if (betAmount > maxBet) { res.status(400).json({ error: `Maximum bet at this casino is ${maxBet}` }); return false; }
+
+  const bankroll = parseFloat(casino.bankroll);
+  if (bankroll < betAmount) { res.status(400).json({ error: "Casino bankroll is too low for this bet" }); return false; }
+
+  return true;
 }
 
 function authCheck(req: any, res: any): number | null {
@@ -158,7 +231,8 @@ router.post("/games/dice", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const betAmount = parseBet(req, res); if (!betAmount) return;
 
-  const { betType, prediction } = req.body;
+  const { betType, prediction, casinoId: rawCasinoId } = req.body;
+  const casinoId = rawCasinoId ? parseInt(rawCasinoId) : undefined;
   if (!["exact", "high", "low"].includes(betType)) {
     res.status(400).json({ error: "betType must be 'exact', 'high', or 'low'" }); return;
   }
@@ -170,7 +244,14 @@ router.post("/games/dice", async (req, res): Promise<void> => {
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
-  const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
+  if (casinoId !== undefined) {
+    const ok = await validateCasinoPlay(casinoId, "dice", betAmount, res);
+    if (!ok) return;
+  }
+
+  const winChance = casinoId !== undefined
+    ? 0.5
+    : calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
 
   let rolled: number;
@@ -178,7 +259,7 @@ router.post("/games/dice", async (req, res): Promise<void> => {
     if (doWin) {
       rolled = prediction;
     } else {
-      const others = [1,2,3,4,5,6].filter(n => n !== prediction);
+      const others = [1,2,3,4,5,6].filter((n: number) => n !== prediction);
       rolled = others[Math.floor(Math.random() * others.length)];
     }
   } else {
@@ -197,7 +278,7 @@ router.post("/games/dice", async (req, res): Promise<void> => {
     : betType === "high" ? rolled >= 4 : rolled <= 3;
 
   const multiplier = won ? (betType === "exact" ? 5 : 1.9) : 0;
-  const result = await settleGame(userId, "dice", betAmount, multiplier, user, pool);
+  const result = await settleGame(userId, "dice", betAmount, multiplier, user, pool, casinoId);
   res.json({ ...result, rolled, betType, prediction });
 });
 
@@ -206,7 +287,8 @@ router.post("/games/coinflip", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const betAmount = parseBet(req, res); if (!betAmount) return;
 
-  const { choice } = req.body;
+  const { choice, casinoId: rawCasinoId } = req.body;
+  const casinoId = rawCasinoId ? parseInt(rawCasinoId) : undefined;
   if (!["heads", "tails"].includes(choice)) {
     res.status(400).json({ error: "choice must be 'heads' or 'tails'" }); return;
   }
@@ -215,12 +297,17 @@ router.post("/games/coinflip", async (req, res): Promise<void> => {
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
-  const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
+  if (casinoId !== undefined) {
+    const ok = await validateCasinoPlay(casinoId, "coinflip", betAmount, res);
+    if (!ok) return;
+  }
+
+  const winChance = casinoId !== undefined ? 0.5 : calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
   const result_side = doWin ? choice : (choice === "heads" ? "tails" : "heads");
   const won = result_side === choice;
   const multiplier = won ? 1.95 : 0;
-  const result = await settleGame(userId, "coinflip", betAmount, multiplier, user, pool);
+  const result = await settleGame(userId, "coinflip", betAmount, multiplier, user, pool, casinoId);
   res.json({ ...result, choice, result: result_side });
 });
 
@@ -229,7 +316,9 @@ router.post("/games/crash", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const betAmount = parseBet(req, res); if (!betAmount) return;
 
-  const cashOutAt = parseFloat(req.body?.cashOutAt);
+  const { cashOutAt: rawCashOutAt, casinoId: rawCasinoId } = req.body;
+  const cashOutAt = parseFloat(rawCashOutAt);
+  const casinoId = rawCasinoId ? parseInt(rawCasinoId) : undefined;
   if (isNaN(cashOutAt) || cashOutAt < 1.1 || cashOutAt > 100) {
     res.status(400).json({ error: "cashOutAt must be between 1.1 and 100" }); return;
   }
@@ -238,23 +327,26 @@ router.post("/games/crash", async (req, res): Promise<void> => {
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
-  const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
+  if (casinoId !== undefined) {
+    const ok = await validateCasinoPlay(casinoId, "crash", betAmount, res);
+    if (!ok) return;
+  }
+
+  const winChance = casinoId !== undefined ? 0.5 : calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
 
   let crashAt: number;
   if (doWin) {
-    // Crash happens AFTER cashOutAt — safe
     const extra = 0.5 + Math.random() * 3;
     crashAt = parseFloat((cashOutAt + extra).toFixed(2));
   } else {
-    // Crash happens BEFORE cashOutAt
     const safeRange = cashOutAt - 1.0;
     crashAt = parseFloat((1.0 + Math.random() * safeRange * 0.95).toFixed(2));
   }
 
   const won = crashAt >= cashOutAt;
   const multiplier = won ? cashOutAt : 0;
-  const result = await settleGame(userId, "crash", betAmount, multiplier, user, pool);
+  const result = await settleGame(userId, "crash", betAmount, multiplier, user, pool, casinoId);
   res.json({ ...result, crashAt, cashOutAt });
 });
 
@@ -285,16 +377,24 @@ router.post("/games/slots", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const betAmount = parseBet(req, res); if (!betAmount) return;
 
+  const { casinoId: rawCasinoId } = req.body;
+  const casinoId = rawCasinoId ? parseInt(rawCasinoId) : undefined;
+
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
-  const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
+  if (casinoId !== undefined) {
+    const ok = await validateCasinoPlay(casinoId, "slots", betAmount, res);
+    if (!ok) return;
+  }
+
+  const winChance = casinoId !== undefined ? 0.5 : calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
   const reels = pickSlots(doWin);
   const allMatch = reels[0] === reels[1] && reels[1] === reels[2];
   const multiplier = allMatch ? SLOT_PAYOUTS[reels[0]] : 0;
-  const result = await settleGame(userId, "slots", betAmount, multiplier, user, pool);
+  const result = await settleGame(userId, "slots", betAmount, multiplier, user, pool, casinoId);
   res.json({ ...result, reels });
 });
 
@@ -323,16 +423,23 @@ router.post("/games/wheel", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const betAmount = parseBet(req, res); if (!betAmount) return;
 
+  const { casinoId: rawCasinoId } = req.body;
+  const casinoId = rawCasinoId ? parseInt(rawCasinoId) : undefined;
+
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
-  const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
+  if (casinoId !== undefined) {
+    const ok = await validateCasinoPlay(casinoId, "wheel", betAmount, res);
+    if (!ok) return;
+  }
+
+  const winChance = casinoId !== undefined ? 0.5 : calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
   const segment = weightedPick(doWin ? WIN_SEGMENTS : LOSE_SEGMENTS);
-  // Return the index in the full WHEEL_SEGMENTS array for frontend animation
   const segmentIndex = WHEEL_SEGMENTS.indexOf(segment);
-  const result = await settleGame(userId, "wheel", betAmount, segment.multiplier, user, pool);
+  const result = await settleGame(userId, "wheel", betAmount, segment.multiplier, user, pool, casinoId);
   res.json({ ...result, segment: segment.label, segmentIndex });
 });
 
@@ -341,7 +448,9 @@ router.post("/games/guess", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const betAmount = parseBet(req, res); if (!betAmount) return;
 
-  const guessed = parseInt(req.body?.guess);
+  const { guess: rawGuess, casinoId: rawCasinoId } = req.body;
+  const guessed = parseInt(rawGuess);
+  const casinoId = rawCasinoId ? parseInt(rawCasinoId) : undefined;
   if (isNaN(guessed) || guessed < 1 || guessed > 100) {
     res.status(400).json({ error: "Guess must be 1–100" }); return;
   }
@@ -350,23 +459,21 @@ router.post("/games/guess", async (req, res): Promise<void> => {
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
-  const winChance = calculateWinChance(betAmount, parseFloat(pool.totalAmount));
+  if (casinoId !== undefined) {
+    const ok = await validateCasinoPlay(casinoId, "guess", betAmount, res);
+    if (!ok) return;
+  }
+
+  const winChance = casinoId !== undefined ? 0.5 : calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
 
   let actual: number;
   if (doWin) {
-    // Pick close to guessed number
-    const maxOff = Math.floor(Math.random() * 10) + 1;
-    const offsets = [-maxOff, -5, -2, -1, 0, 1, 2, 5, maxOff].filter(o => {
-      const n = guessed + o;
-      return n >= 1 && n <= 100;
-    });
     const dist = [0, 1, 2, 5, 10];
     const off = dist[Math.floor(Math.random() * dist.length)];
     const sign = Math.random() > 0.5 ? 1 : -1;
     actual = Math.max(1, Math.min(100, guessed + sign * off));
   } else {
-    // Pick far from guessed
     let candidate: number;
     do { candidate = Math.floor(Math.random() * 100) + 1; }
     while (Math.abs(candidate - guessed) <= 20);
@@ -381,7 +488,7 @@ router.post("/games/guess", async (req, res): Promise<void> => {
   else if (distance <= 10)   multiplier = 2;
   else if (distance <= 20)   multiplier = 1.5;
 
-  const result = await settleGame(userId, "guess", betAmount, multiplier, user, pool);
+  const result = await settleGame(userId, "guess", betAmount, multiplier, user, pool, casinoId);
   res.json({ ...result, guessed, actual, distance });
 });
 
@@ -392,7 +499,8 @@ interface MinesGameState {
   minePositions: Set<number>;
   revealedSafe: number[];
   poolId: number;
-  poolAmountAtStart: number; // pool after bet was added
+  poolAmountAtStart: number;
+  casinoId?: number;
 }
 const minesGames = new Map<number, MinesGameState>();
 
@@ -408,7 +516,11 @@ function minesMultiplier(minesCount: number, safeReveals: number): number {
 router.post("/games/mines/start", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const betAmount = parseBet(req, res); if (!betAmount) return;
-  const minesCount = parseInt(req.body?.minesCount);
+
+  const { minesCount: rawMines, casinoId: rawCasinoId } = req.body;
+  const minesCount = parseInt(rawMines);
+  const casinoId = rawCasinoId ? parseInt(rawCasinoId) : undefined;
+
   if (isNaN(minesCount) || minesCount < 1 || minesCount > 24) {
     res.status(400).json({ error: "minesCount must be 1–24" }); return;
   }
@@ -422,7 +534,11 @@ router.post("/games/mines/start", async (req, res): Promise<void> => {
   const currentBalance = parseFloat(user.balance);
   if (currentBalance < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
-  // Place mines randomly across the 25-tile grid
+  if (casinoId !== undefined) {
+    const ok = await validateCasinoPlay(casinoId, "mines", betAmount, res);
+    if (!ok) return;
+  }
+
   const allTiles = Array.from({ length: 25 }, (_, i) => i);
   const shuffled = [...allTiles].sort(() => Math.random() - 0.5);
   const minePositions = new Set(shuffled.slice(0, minesCount));
@@ -431,11 +547,13 @@ router.post("/games/mines/start", async (req, res): Promise<void> => {
   const newBalance = currentBalance - betAmount;
   const newPool = poolAmount + betAmount;
 
-  // Deduct bet immediately; pool receives it
-  await Promise.all([
+  const dbOps: Promise<unknown>[] = [
     db.update(usersTable).set({ balance: newBalance.toFixed(2) }).where(eq(usersTable.id, userId)),
-    db.update(poolTable).set({ totalAmount: newPool.toFixed(2) }).where(eq(poolTable.id, pool.id)),
-  ]);
+  ];
+  if (casinoId === undefined) {
+    dbOps.push(db.update(poolTable).set({ totalAmount: newPool.toFixed(2) }).where(eq(poolTable.id, pool.id)));
+  }
+  await Promise.all(dbOps);
 
   minesGames.set(userId, {
     betAmount,
@@ -443,7 +561,8 @@ router.post("/games/mines/start", async (req, res): Promise<void> => {
     minePositions,
     revealedSafe: [],
     poolId: pool.id,
-    poolAmountAtStart: newPool,
+    poolAmountAtStart: casinoId !== undefined ? poolAmount : newPool,
+    casinoId,
   });
 
   res.json({ started: true, minesCount, totalTiles: 25, newBalance });
@@ -473,29 +592,8 @@ router.post("/games/mines/abandon", async (req, res): Promise<void> => {
   if (!game) { res.status(400).json({ error: "No active mines game to abandon." }); return; }
 
   minesGames.delete(userId);
-
-  // Record as a loss in stats
-  const [[user], [pool]] = await Promise.all([
-    db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
-    db.select().from(poolTable).limit(1),
-  ]);
-  await Promise.all([
-    db.update(usersTable).set({
-      gamesPlayed: sql`(${usersTable.gamesPlayed}::integer + 1)::text`,
-      totalLosses: sql`(${usersTable.totalLosses}::integer + 1)::text`,
-      currentStreak: sql`'0'`,
-      lastBetAt: new Date(),
-    }).where(eq(usersTable.id, userId)),
-    db.insert(betsTable).values({
-      userId,
-      gameType: "mines",
-      betAmount: game.betAmount.toFixed(2),
-      result: "loss",
-      payout: "0.00",
-      multiplier: "0.0000",
-    }),
-  ]);
-
+  const { user, pool } = await loadContext(userId);
+  await settleGame(userId, "mines", game.betAmount, 0, user!, pool, game.casinoId);
   res.json({ abandoned: true, lostAmount: game.betAmount, minePositions: [...game.minePositions] });
 });
 
@@ -517,52 +615,24 @@ router.post("/games/mines/reveal", async (req, res): Promise<void> => {
 
   if (hitMine) {
     minesGames.delete(userId);
-    // Bet already in pool; no payout. Just record the bet.
-    const [[user], [pool]] = await Promise.all([
-      db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
-      db.select().from(poolTable).limit(1),
-    ]);
-    const newBiggestBet = game.betAmount > parseFloat(pool.biggestBet) ? game.betAmount : parseFloat(pool.biggestBet);
-    await Promise.all([
-      db.update(usersTable).set({
-        gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(),
-        totalLosses: (parseInt(user.totalLosses) + 1).toString(),
-        currentStreak: "0",
-        biggestBet: game.betAmount > parseFloat(user.biggestBet) ? game.betAmount.toFixed(2) : user.biggestBet,
-        lastBetAt: new Date(),
-      }).where(eq(usersTable.id, userId)),
-      db.update(poolTable).set({ biggestBet: newBiggestBet.toFixed(2) }).where(eq(poolTable.id, pool.id)),
-      db.insert(betsTable).values({
-        userId,
-        gameType: "mines",
-        betAmount: game.betAmount.toFixed(2),
-        result: "loss",
-        payout: "0.00",
-        multiplier: "0.0000",
-      }),
-    ]);
-    res.json({
-      hitMine: true,
-      minePositions: [...game.minePositions],
-      newBalance: parseFloat(user.balance),
-    });
+    const { user, pool } = await loadContext(userId);
+    const result = await settleGame(userId, "mines", game.betAmount, 0, user!, pool, game.casinoId);
+    res.json({ hitMine: true, minePositions: [...game.minePositions], newBalance: result.newBalance });
     return;
   }
 
   game.revealedSafe.push(tileIndex);
   const currentMultiplier = minesMultiplier(game.minesCount, game.revealedSafe.length);
-  const [[user], [pool]] = await Promise.all([
-    db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
-    db.select().from(poolTable).limit(1),
-  ]);
-  const potentialPayout = Math.min(game.betAmount * currentMultiplier, parseFloat(pool.totalAmount));
+  const [revealUserRow] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  const [revealPoolRow] = await db.select().from(poolTable).limit(1);
+  const potentialPayout = Math.min(game.betAmount * currentMultiplier, parseFloat(revealPoolRow.totalAmount));
   res.json({
     hitMine: false,
     tileIndex,
     revealedSafe: game.revealedSafe,
     currentMultiplier,
     potentialPayout,
-    currentBalance: parseFloat(user.balance),
+    currentBalance: parseFloat(revealUserRow.balance),
     safeLeft: 25 - game.minesCount - game.revealedSafe.length,
   });
 });
@@ -584,22 +654,62 @@ router.post("/games/mines/cashout", async (req, res): Promise<void> => {
     db.select().from(poolTable).limit(1),
   ]);
   const currentBalance = parseFloat(user.balance);
-  const poolAmount = parseFloat(pool.totalAmount);
   const multiplier = minesMultiplier(game.minesCount, game.revealedSafe.length);
   const uncappedPayout = game.betAmount * multiplier;
-  const payout = Math.min(uncappedPayout, poolAmount);
-  const newBalance = currentBalance + payout;
-  const newPool = Math.max(0, poolAmount - payout);
-  const won = payout > game.betAmount;
+  const won = uncappedPayout > game.betAmount;
 
-  const newBiggestWin = won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin);
-  const newBiggestBet = game.betAmount > parseFloat(pool.biggestBet) ? game.betAmount : parseFloat(pool.biggestBet);
+  let payout: number;
+  let newBalance: number;
+
+  if (game.casinoId !== undefined) {
+    const [casino] = await db.select().from(casinosTable).where(eq(casinosTable.id, game.casinoId)).limit(1);
+    const bankroll = parseFloat(casino?.bankroll ?? "0");
+    payout = Math.min(uncappedPayout, bankroll);
+    newBalance = currentBalance + payout;
+    const casinoProfit = game.betAmount - payout;
+    const newBankroll = Math.max(0, bankroll + casinoProfit);
+
+    await Promise.all([
+      db.update(casinosTable).set({
+        bankroll: newBankroll.toFixed(2),
+        totalBets: sql`${casinosTable.totalBets} + 1`,
+        totalWagered: sql`${casinosTable.totalWagered} + ${game.betAmount}`,
+        totalPaidOut: sql`${casinosTable.totalPaidOut} + ${payout}`,
+        isPaused: newBankroll <= 0,
+        updatedAt: new Date(),
+      }).where(eq(casinosTable.id, game.casinoId)),
+      db.insert(casinoBetsTable).values({
+        casinoId: game.casinoId, userId, gameType: "mines",
+        betAmount: game.betAmount.toFixed(2), result: won ? "win" : "loss",
+        payout: payout.toFixed(2), multiplier: multiplier.toFixed(4),
+      }),
+      db.insert(casinoTransactionsTable).values({
+        casinoId: game.casinoId, type: won ? "bet_loss" : "bet_win",
+        amount: Math.abs(casinoProfit).toFixed(2),
+        description: `mines — ${won ? "Player win" : "Player loss"}`,
+      }),
+    ]);
+  } else {
+    const poolAmount = parseFloat(pool.totalAmount);
+    payout = Math.min(uncappedPayout, poolAmount);
+    newBalance = currentBalance + payout;
+    const newPool = Math.max(0, poolAmount - payout);
+    const newBiggestWin = won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin);
+    const newBiggestBet = game.betAmount > parseFloat(pool.biggestBet) ? game.betAmount : parseFloat(pool.biggestBet);
+
+    await db.update(poolTable).set({
+      totalAmount: newPool.toFixed(2),
+      biggestWin: newBiggestWin.toFixed(2),
+      biggestBet: newBiggestBet.toFixed(2),
+    }).where(eq(poolTable.id, pool.id));
+  }
+
+  const profit = payout - game.betAmount;
   const gamesPlayed = parseInt(user.gamesPlayed) + 1;
   const totalWins = parseInt(user.totalWins) + (won ? 1 : 0);
   const totalLosses = parseInt(user.totalLosses) + (!won ? 1 : 0);
   const currentStreak = won ? parseInt(user.currentStreak) + 1 : 0;
   const winStreak = Math.max(parseInt(user.winStreak), currentStreak);
-  const profit = payout - game.betAmount;
   const totalProfit = parseFloat(user.totalProfit) + profit;
 
   await Promise.all([
@@ -615,11 +725,6 @@ router.post("/games/mines/cashout", async (req, res): Promise<void> => {
       totalLosses: totalLosses.toString(),
       lastBetAt: new Date(),
     }).where(eq(usersTable.id, userId)),
-    db.update(poolTable).set({
-      totalAmount: newPool.toFixed(2),
-      biggestWin: newBiggestWin.toFixed(2),
-      biggestBet: newBiggestBet.toFixed(2),
-    }).where(eq(poolTable.id, pool.id)),
     db.insert(betsTable).values({
       userId,
       gameType: "mines",
@@ -645,11 +750,18 @@ router.post("/games/blackjack/deal", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const betAmount = parseBet(req, res); if (!betAmount) return;
 
+  const { casinoId: rawCasinoId } = req.body;
+  const casinoId = rawCasinoId ? parseInt(rawCasinoId) : undefined;
+
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
-  // Clear any previous game
+  if (casinoId !== undefined) {
+    const ok = await validateCasinoPlay(casinoId, "blackjack", betAmount, res);
+    if (!ok) return;
+  }
+
   bjGames.delete(userId);
 
   const playerCards = [drawCard(), drawCard()];
@@ -664,19 +776,19 @@ router.post("/games/blackjack/deal", async (req, res): Promise<void> => {
     poolId: pool.id,
     poolAmount: parseFloat(pool.totalAmount),
     currentBalance: parseFloat(user.balance),
+    casinoId,
   });
 
-  // Auto-resolve blackjack
   const playerBJ = playerCards.length === 2 && playerTotal === 21;
   const dealerBJ = dealerCards.length === 2 && dealerTotal === 21;
 
   if (playerBJ || dealerBJ) {
     bjGames.delete(userId);
-    let multiplier = 1; // push by default
+    let multiplier = 1;
     if (playerBJ && !dealerBJ) multiplier = 2.5;
     else if (dealerBJ && !playerBJ) multiplier = 0;
-    const result = await settleGame(userId, "blackjack", betAmount, multiplier, user, pool);
-    return res.json({
+    const result = await settleGame(userId, "blackjack", betAmount, multiplier, user, pool, casinoId);
+    res.json({
       ...result,
       playerCards: playerCards.map(cardLabel),
       dealerCards: dealerCards.map(cardLabel),
@@ -684,7 +796,7 @@ router.post("/games/blackjack/deal", async (req, res): Promise<void> => {
       dealerTotal,
       done: true,
       outcome: playerBJ && !dealerBJ ? "blackjack" : dealerBJ && !playerBJ ? "dealer_blackjack" : "push",
-    }) as any;
+    }); return;
   }
 
   res.json({
@@ -711,11 +823,10 @@ router.post("/games/blackjack/action", async (req, res): Promise<void> => {
     const playerTotal = handTotal(game.playerCards);
 
     if (playerTotal > 21) {
-      // Bust — player loses
       bjGames.delete(userId);
       const { user, pool } = await loadContext(userId);
-      const result = await settleGame(userId, "blackjack", game.betAmount, 0, user!, pool);
-      return res.json({
+      const result = await settleGame(userId, "blackjack", game.betAmount, 0, user!, pool, game.casinoId);
+      res.json({
         ...result,
         playerCards: game.playerCards.map(cardLabel),
         dealerCards: [cardLabel(game.dealerCards[0]), "?"],
@@ -723,14 +834,14 @@ router.post("/games/blackjack/action", async (req, res): Promise<void> => {
         dealerTotal: null,
         done: true,
         outcome: "bust",
-      }) as any;
+      }); return;
     }
 
-    return res.json({
+    res.json({
       playerCards: game.playerCards.map(cardLabel),
       playerTotal,
       done: false,
-    }) as any;
+    }); return;
   }
 
   // Stand — dealer plays
@@ -749,7 +860,7 @@ router.post("/games/blackjack/action", async (req, res): Promise<void> => {
 
   bjGames.delete(userId);
   const { user, pool } = await loadContext(userId);
-  const result = await settleGame(userId, "blackjack", game.betAmount, multiplier, user!, pool);
+  const result = await settleGame(userId, "blackjack", game.betAmount, multiplier, user!, pool, game.casinoId);
   res.json({
     ...result,
     playerCards: game.playerCards.map(cardLabel),
@@ -769,6 +880,7 @@ interface PyramidGameState {
   outcomes: boolean[];
   currentLevel: number;
   poolId: number;
+  casinoId?: number;
 }
 const pyramidGames = new Map<number, PyramidGameState>();
 
@@ -776,19 +888,31 @@ router.post("/games/pyramid/start", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const betAmount = parseBet(req, res); if (!betAmount) return;
   if (pyramidGames.has(userId)) { res.status(400).json({ error: "You already have an active pyramid game. Cash out or finish first." }); return; }
+
+  const { casinoId: rawCasinoId } = req.body;
+  const casinoId = rawCasinoId ? parseInt(rawCasinoId) : undefined;
+
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   if (user.permanentlyBanned || (user.bannedUntil && user.bannedUntil > new Date())) { res.status(403).json({ error: "You are banned from playing games." }); return; }
   const currentBalance = parseFloat(user.balance);
   if (currentBalance < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+
+  if (casinoId !== undefined) {
+    const ok = await validateCasinoPlay(casinoId, "pyramid", betAmount, res);
+    if (!ok) return;
+  }
+
   const outcomes = Array.from({ length: 10 }, () => Math.random() >= 0.5);
   const newBalance = currentBalance - betAmount;
-  const newPool = parseFloat(pool.totalAmount) + betAmount;
-  await Promise.all([
+  const dbOps: Promise<unknown>[] = [
     db.update(usersTable).set({ balance: newBalance.toFixed(2) }).where(eq(usersTable.id, userId)),
-    db.update(poolTable).set({ totalAmount: newPool.toFixed(2) }).where(eq(poolTable.id, pool.id)),
-  ]);
-  pyramidGames.set(userId, { betAmount, outcomes, currentLevel: 0, poolId: pool.id });
+  ];
+  if (casinoId === undefined) {
+    dbOps.push(db.update(poolTable).set({ totalAmount: (parseFloat(pool.totalAmount) + betAmount).toFixed(2) }).where(eq(poolTable.id, pool.id)));
+  }
+  await Promise.all(dbOps);
+  pyramidGames.set(userId, { betAmount, outcomes, currentLevel: 0, poolId: pool.id, casinoId });
   res.json({ started: true, newBalance, totalLevels: 10 });
 });
 
@@ -818,49 +942,17 @@ router.post("/games/pyramid/advance", async (req, res): Promise<void> => {
 
   if (!passed) {
     pyramidGames.delete(userId);
-    const [[user], [pool]] = await Promise.all([
-      db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
-      db.select().from(poolTable).limit(1),
-    ]);
-    await Promise.all([
-      db.update(usersTable).set({
-        gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(),
-        totalLosses: (parseInt(user.totalLosses) + 1).toString(),
-        currentStreak: "0",
-        biggestBet: (game.betAmount > parseFloat(user.biggestBet) ? game.betAmount : parseFloat(user.biggestBet)).toFixed(2),
-        lastBetAt: new Date(),
-      }).where(eq(usersTable.id, userId)),
-      db.insert(betsTable).values({ userId, gameType: "pyramid", betAmount: game.betAmount.toFixed(2), result: "loss", payout: "0.00", multiplier: "0.0000" }),
-    ]);
-    res.json({ passed: false, failedAtLevel: nextLevel, newBalance: parseFloat(user.balance) }); return;
+    const { user, pool } = await loadContext(userId);
+    const result = await settleGame(userId, "pyramid", game.betAmount, 0, user!, pool, game.casinoId);
+    res.json({ passed: false, failedAtLevel: nextLevel, newBalance: result.newBalance }); return;
   }
 
   if (nextLevel === 10) {
     pyramidGames.delete(userId);
-    const [[user], [pool]] = await Promise.all([
-      db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
-      db.select().from(poolTable).limit(1),
-    ]);
+    const { user, pool } = await loadContext(userId);
     const multiplier = PYRAMID_PAYOUTS[10];
-    const payout = Math.min(game.betAmount * multiplier, parseFloat(pool.totalAmount));
-    const newBalance = parseFloat(user.balance) + payout;
-    const newPool = Math.max(0, parseFloat(pool.totalAmount) - payout);
-    const won = payout > game.betAmount;
-    await Promise.all([
-      db.update(usersTable).set({
-        balance: newBalance.toFixed(2),
-        gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(),
-        totalWins: (parseInt(user.totalWins) + (won ? 1 : 0)).toString(),
-        currentStreak: won ? (parseInt(user.currentStreak) + 1).toString() : "0",
-        winStreak: Math.max(parseInt(user.winStreak), won ? parseInt(user.currentStreak) + 1 : 0).toString(),
-        biggestWin: (won && payout > parseFloat(user.biggestWin) ? payout : parseFloat(user.biggestWin)).toFixed(2),
-        biggestBet: (game.betAmount > parseFloat(user.biggestBet) ? game.betAmount : parseFloat(user.biggestBet)).toFixed(2),
-        lastBetAt: new Date(),
-      }).where(eq(usersTable.id, userId)),
-      db.update(poolTable).set({ totalAmount: newPool.toFixed(2) }).where(eq(poolTable.id, pool.id)),
-      db.insert(betsTable).values({ userId, gameType: "pyramid", betAmount: game.betAmount.toFixed(2), result: won ? "win" : "loss", payout: payout.toFixed(2), multiplier: multiplier.toFixed(4) }),
-    ]);
-    res.json({ passed: true, level: nextLevel, reachedTop: true, payout, newBalance, multiplier }); return;
+    const result = await settleGame(userId, "pyramid", game.betAmount, multiplier, user!, pool, game.casinoId);
+    res.json({ passed: true, level: nextLevel, reachedTop: true, payout: result.payout, newBalance: result.newBalance, multiplier }); return;
   }
 
   const cashOutMultiplier = PYRAMID_PAYOUTS[nextLevel];
@@ -873,32 +965,10 @@ router.post("/games/pyramid/cashout", async (req, res): Promise<void> => {
   if (!game) { res.status(400).json({ error: "No active pyramid game." }); return; }
   if (game.currentLevel === 0) { res.status(400).json({ error: "Advance at least one level before cashing out." }); return; }
   pyramidGames.delete(userId);
-  const [[user], [pool]] = await Promise.all([
-    db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
-    db.select().from(poolTable).limit(1),
-  ]);
+  const { user, pool } = await loadContext(userId);
   const multiplier = PYRAMID_PAYOUTS[game.currentLevel];
-  const payout = Math.min(game.betAmount * multiplier, parseFloat(pool.totalAmount));
-  const newBalance = parseFloat(user.balance) + payout;
-  const newPool = Math.max(0, parseFloat(pool.totalAmount) - payout);
-  const won = payout > game.betAmount;
-  const currentStreak = won ? parseInt(user.currentStreak) + 1 : 0;
-  await Promise.all([
-    db.update(usersTable).set({
-      balance: newBalance.toFixed(2),
-      gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(),
-      totalWins: (parseInt(user.totalWins) + (won ? 1 : 0)).toString(),
-      totalLosses: (parseInt(user.totalLosses) + (!won ? 1 : 0)).toString(),
-      currentStreak: currentStreak.toString(),
-      winStreak: Math.max(parseInt(user.winStreak), currentStreak).toString(),
-      biggestWin: (won && payout > parseFloat(user.biggestWin) ? payout : parseFloat(user.biggestWin)).toFixed(2),
-      biggestBet: (game.betAmount > parseFloat(user.biggestBet) ? game.betAmount : parseFloat(user.biggestBet)).toFixed(2),
-      lastBetAt: new Date(),
-    }).where(eq(usersTable.id, userId)),
-    db.update(poolTable).set({ totalAmount: newPool.toFixed(2), biggestWin: (won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin)).toFixed(2) }).where(eq(poolTable.id, pool.id)),
-    db.insert(betsTable).values({ userId, gameType: "pyramid", betAmount: game.betAmount.toFixed(2), result: won ? "win" : "loss", payout: payout.toFixed(2), multiplier: multiplier.toFixed(4) }),
-  ]);
-  res.json({ payout, multiplier, won, newBalance, level: game.currentLevel });
+  const result = await settleGame(userId, "pyramid", game.betAmount, multiplier, user!, pool, game.casinoId);
+  res.json({ payout: result.payout, multiplier, won: result.won, newBalance: result.newBalance, level: game.currentLevel });
 });
 
 // ─── IceBreak (Session-Based, like Mines) ────────────────────────────────────
@@ -919,6 +989,7 @@ interface IceGameState {
   dangerPositions: Set<number>;
   revealedSafe: number[];
   poolId: number;
+  casinoId?: number;
 }
 const iceGames = new Map<number, IceGameState>();
 
@@ -926,20 +997,32 @@ router.post("/games/icebreak/start", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const betAmount = parseBet(req, res); if (!betAmount) return;
   if (iceGames.has(userId)) { res.status(400).json({ error: "You already have an active ice break game." }); return; }
+
+  const { casinoId: rawCasinoId } = req.body;
+  const casinoId = rawCasinoId ? parseInt(rawCasinoId) : undefined;
+
   const { user, pool } = await loadContext(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   if (user.permanentlyBanned || (user.bannedUntil && user.bannedUntil > new Date())) { res.status(403).json({ error: "You are banned from playing games." }); return; }
   const currentBalance = parseFloat(user.balance);
   if (currentBalance < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+
+  if (casinoId !== undefined) {
+    const ok = await validateCasinoPlay(casinoId, "icebreak", betAmount, res);
+    if (!ok) return;
+  }
+
   const shuffled = Array.from({ length: ICE_TOTAL }, (_, i) => i).sort(() => Math.random() - 0.5);
   const dangerPositions = new Set(shuffled.slice(0, ICE_DANGER));
   const newBalance = currentBalance - betAmount;
-  const newPool = parseFloat(pool.totalAmount) + betAmount;
-  await Promise.all([
+  const dbOps: Promise<unknown>[] = [
     db.update(usersTable).set({ balance: newBalance.toFixed(2) }).where(eq(usersTable.id, userId)),
-    db.update(poolTable).set({ totalAmount: newPool.toFixed(2) }).where(eq(poolTable.id, pool.id)),
-  ]);
-  iceGames.set(userId, { betAmount, dangerPositions, revealedSafe: [], poolId: pool.id });
+  ];
+  if (casinoId === undefined) {
+    dbOps.push(db.update(poolTable).set({ totalAmount: (parseFloat(pool.totalAmount) + betAmount).toFixed(2) }).where(eq(poolTable.id, pool.id)));
+  }
+  await Promise.all(dbOps);
+  iceGames.set(userId, { betAmount, dangerPositions, revealedSafe: [], poolId: pool.id, casinoId });
   res.json({ started: true, totalTiles: ICE_TOTAL, dangerCount: ICE_DANGER, newBalance });
 });
 
@@ -961,27 +1044,14 @@ router.post("/games/icebreak/reveal", async (req, res): Promise<void> => {
   const hitDanger = game.dangerPositions.has(tileIndex);
   if (hitDanger) {
     iceGames.delete(userId);
-    const [[user], [pool]] = await Promise.all([
-      db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
-      db.select().from(poolTable).limit(1),
-    ]);
-    await Promise.all([
-      db.update(usersTable).set({
-        gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(),
-        totalLosses: (parseInt(user.totalLosses) + 1).toString(),
-        currentStreak: "0",
-        biggestBet: (game.betAmount > parseFloat(user.biggestBet) ? game.betAmount : parseFloat(user.biggestBet)).toFixed(2),
-        lastBetAt: new Date(),
-      }).where(eq(usersTable.id, userId)),
-      db.update(poolTable).set({ biggestBet: (game.betAmount > parseFloat(pool.biggestBet) ? game.betAmount : parseFloat(pool.biggestBet)).toFixed(2) }).where(eq(poolTable.id, pool.id)),
-      db.insert(betsTable).values({ userId, gameType: "icebreak", betAmount: game.betAmount.toFixed(2), result: "loss", payout: "0.00", multiplier: "0.0000" }),
-    ]);
-    res.json({ hitDanger: true, dangerPositions: [...game.dangerPositions], newBalance: parseFloat(user.balance) }); return;
+    const { user, pool } = await loadContext(userId);
+    const result = await settleGame(userId, "icebreak", game.betAmount, 0, user!, pool, game.casinoId);
+    res.json({ hitDanger: true, dangerPositions: [...game.dangerPositions], newBalance: result.newBalance }); return;
   }
   game.revealedSafe.push(tileIndex);
   const currentMultiplier = iceMultiplier(game.revealedSafe.length);
-  const [pool] = await db.select().from(poolTable).limit(1);
-  const potentialPayout = Math.min(game.betAmount * currentMultiplier, parseFloat(pool.totalAmount));
+  const [poolRow] = await db.select().from(poolTable).limit(1);
+  const potentialPayout = Math.min(game.betAmount * currentMultiplier, parseFloat(poolRow.totalAmount));
   res.json({ hitDanger: false, tileIndex, revealedSafe: game.revealedSafe, currentMultiplier, potentialPayout, safeLeft: ICE_SAFE - game.revealedSafe.length });
 });
 
@@ -991,32 +1061,10 @@ router.post("/games/icebreak/cashout", async (req, res): Promise<void> => {
   if (!game) { res.status(400).json({ error: "No active ice break game." }); return; }
   if (game.revealedSafe.length === 0) { res.status(400).json({ error: "Reveal at least one safe tile before cashing out." }); return; }
   iceGames.delete(userId);
-  const [[user], [pool]] = await Promise.all([
-    db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
-    db.select().from(poolTable).limit(1),
-  ]);
+  const { user, pool } = await loadContext(userId);
   const multiplier = iceMultiplier(game.revealedSafe.length);
-  const payout = Math.min(game.betAmount * multiplier, parseFloat(pool.totalAmount));
-  const newBalance = parseFloat(user.balance) + payout;
-  const newPool = Math.max(0, parseFloat(pool.totalAmount) - payout);
-  const won = payout > game.betAmount;
-  const currentStreak = won ? parseInt(user.currentStreak) + 1 : 0;
-  await Promise.all([
-    db.update(usersTable).set({
-      balance: newBalance.toFixed(2),
-      gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(),
-      totalWins: (parseInt(user.totalWins) + (won ? 1 : 0)).toString(),
-      totalLosses: (parseInt(user.totalLosses) + (!won ? 1 : 0)).toString(),
-      currentStreak: currentStreak.toString(),
-      winStreak: Math.max(parseInt(user.winStreak), currentStreak).toString(),
-      biggestWin: (won && payout > parseFloat(user.biggestWin) ? payout : parseFloat(user.biggestWin)).toFixed(2),
-      biggestBet: (game.betAmount > parseFloat(user.biggestBet) ? game.betAmount : parseFloat(user.biggestBet)).toFixed(2),
-      lastBetAt: new Date(),
-    }).where(eq(usersTable.id, userId)),
-    db.update(poolTable).set({ totalAmount: newPool.toFixed(2), biggestWin: (won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin)).toFixed(2) }).where(eq(poolTable.id, pool.id)),
-    db.insert(betsTable).values({ userId, gameType: "icebreak", betAmount: game.betAmount.toFixed(2), result: won ? "win" : "loss", payout: payout.toFixed(2), multiplier: multiplier.toFixed(4) }),
-  ]);
-  res.json({ payout, multiplier, won, newBalance, revealedCount: game.revealedSafe.length, dangerPositions: [...game.dangerPositions] });
+  const result = await settleGame(userId, "icebreak", game.betAmount, multiplier, user!, pool, game.casinoId);
+  res.json({ payout: result.payout, multiplier, won: result.won, newBalance: result.newBalance, revealedCount: game.revealedSafe.length, dangerPositions: [...game.dangerPositions] });
 });
 
 router.post("/games/icebreak/abandon", async (req, res): Promise<void> => {
@@ -1024,11 +1072,8 @@ router.post("/games/icebreak/abandon", async (req, res): Promise<void> => {
   const game = iceGames.get(userId);
   if (!game) { res.status(400).json({ error: "No active ice break game to abandon." }); return; }
   iceGames.delete(userId);
-  const [[user]] = await Promise.all([db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1)]);
-  await Promise.all([
-    db.update(usersTable).set({ gamesPlayed: (parseInt(user.gamesPlayed) + 1).toString(), totalLosses: (parseInt(user.totalLosses) + 1).toString(), currentStreak: "0", lastBetAt: new Date() }).where(eq(usersTable.id, userId)),
-    db.insert(betsTable).values({ userId, gameType: "icebreak", betAmount: game.betAmount.toFixed(2), result: "loss", payout: "0.00", multiplier: "0.0000" }),
-  ]);
+  const { user, pool } = await loadContext(userId);
+  await settleGame(userId, "icebreak", game.betAmount, 0, user!, pool, game.casinoId);
   res.json({ abandoned: true, lostAmount: game.betAmount, dangerPositions: [...game.dangerPositions] });
 });
 

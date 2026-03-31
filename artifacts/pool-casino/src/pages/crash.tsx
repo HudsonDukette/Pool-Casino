@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { useGameApi } from "@/lib/game-api";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 
 interface CrashResult {
   won: boolean;
@@ -75,6 +75,7 @@ export default function Crash() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const api = useGameApi<CrashResult>();
+  const casinoId = useCasinoId();
 
   const [betAmount, setBetAmount] = useState("10");
   const [cashOutAt, setCashOutAt] = useState(2);
@@ -97,7 +98,7 @@ export default function Crash() {
     setDisplayMult(1.0);
     setGraphProgress(0);
 
-    const data = await api.call("crash", { betAmount: bet, cashOutAt });
+    const data = await api.call("crash", { betAmount: bet, cashOutAt, casinoId });
     if (!data) {
       setRunning(false);
       toast({ title: "Bet failed", description: api.error ?? "Something went wrong", variant: "destructive" });

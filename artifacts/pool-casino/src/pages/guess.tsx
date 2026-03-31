@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { useGameApi } from "@/lib/game-api";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 
 interface GuessResult {
   won: boolean;
@@ -70,6 +70,7 @@ export default function Guess() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const api = useGameApi<GuessResult>();
+  const casinoId = useCasinoId();
 
   const [betAmount, setBetAmount] = useState("10");
   const [guess, setGuess] = useState(50);
@@ -85,7 +86,7 @@ export default function Guess() {
     setResult(null);
     setRevealing(true);
 
-    const data = await api.call("guess", { betAmount: bet, guess });
+    const data = await api.call("guess", { betAmount: bet, guess, casinoId });
 
     // Animate reveal after a short delay
     setTimeout(() => {

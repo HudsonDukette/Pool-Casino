@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { useGameApi } from "@/lib/game-api";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 
 interface DealResult {
   playerCards: string[];
@@ -131,6 +131,7 @@ export default function Blackjack() {
   const { toast } = useToast();
   const dealApi = useGameApi<DealResult>();
   const actionApi = useGameApi<ActionResult>();
+  const casinoId = useCasinoId();
 
   const [betAmount, setBetAmount] = useState("10");
   const [gameState, setGameState] = useState<DealResult | null>(null);
@@ -145,7 +146,7 @@ export default function Blackjack() {
     if (bet < 0.01) { toast({ title: "Minimum bet is $0.01", variant: "destructive" }); return; }
 
     setActionState(null);
-    const data = await dealApi.call("blackjack/deal", { betAmount: bet });
+    const data = await dealApi.call("blackjack/deal", { betAmount: bet, casinoId });
     if (!data) {
       toast({ title: "Bet failed", description: dealApi.error ?? "Something went wrong", variant: "destructive" });
       return;

@@ -11,7 +11,7 @@ import {
   Building2, ArrowLeft, Gamepad2, BarChart2, ScrollText,
   Settings, Plus, Coins, TrendingUp, TrendingDown, PauseCircle,
   PlayCircle, ShoppingCart, Check, X, AlertCircle, Trash2,
-  ChevronDown, ChevronUp, RefreshCw, Pencil, Save, Wine,
+  ChevronDown, ChevronUp, RefreshCw, Pencil, Save, Wine, ExternalLink,
 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -74,22 +74,24 @@ interface Transaction {
 }
 
 const PURCHASABLE_GAMES = [
-  { type: "slots", name: "Neon Slots", emoji: "🎰" },
-  { type: "roulette", name: "Roulette", emoji: "🎡" },
-  { type: "blackjack", name: "Blackjack", emoji: "🃏" },
-  { type: "crash", name: "Crash", emoji: "🚀" },
-  { type: "plinko", name: "Plinko", emoji: "🎪" },
-  { type: "dice", name: "Dice Roll", emoji: "🎲" },
-  { type: "coinflip", name: "Coin Flip", emoji: "🪙" },
-  { type: "wheel", name: "Fortune Wheel", emoji: "🎠" },
-  { type: "mines", name: "Mines", emoji: "💣" },
-  { type: "highlow", name: "High-Low", emoji: "🃏" },
-  { type: "doubledice", name: "Double Dice", emoji: "🎲" },
-  { type: "ladder", name: "Risk Ladder", emoji: "🪜" },
-  { type: "war", name: "War", emoji: "⚔️" },
-  { type: "icebreak", name: "Ice Break", emoji: "🧊" },
-  { type: "lightning", name: "Lightning Round", emoji: "⚡" },
-  { type: "advwheel", name: "Advanced Wheel", emoji: "🎡" },
+  { type: "slots", name: "Neon Slots", emoji: "🎰", route: "slots" },
+  { type: "roulette", name: "Roulette", emoji: "🎡", route: null },
+  { type: "blackjack", name: "Blackjack", emoji: "🃏", route: "blackjack" },
+  { type: "crash", name: "Crash", emoji: "🚀", route: "crash" },
+  { type: "plinko", name: "Plinko", emoji: "🎪", route: null },
+  { type: "dice", name: "Dice Roll", emoji: "🎲", route: "dice" },
+  { type: "coinflip", name: "Coin Flip", emoji: "🪙", route: "coinflip" },
+  { type: "wheel", name: "Fortune Wheel", emoji: "🎠", route: "wheel" },
+  { type: "mines", name: "Mines", emoji: "💣", route: "mines" },
+  { type: "highlow", name: "High-Low", emoji: "🃏", route: null },
+  { type: "doubledice", name: "Double Dice", emoji: "🎲", route: null },
+  { type: "ladder", name: "Risk Ladder", emoji: "🪜", route: null },
+  { type: "war", name: "War", emoji: "⚔️", route: null },
+  { type: "icebreak", name: "Ice Break", emoji: "🧊", route: "icebreak" },
+  { type: "lightning", name: "Lightning Round", emoji: "⚡", route: null },
+  { type: "advwheel", name: "Advanced Wheel", emoji: "🎡", route: "advwheel" },
+  { type: "guess", name: "Number Guess", emoji: "🔢", route: "guess" },
+  { type: "pyramid", name: "Pyramid", emoji: "🔺", route: "pyramid" },
 ];
 
 function fmt(v: string | number) {
@@ -186,6 +188,7 @@ function GamesTab({ casino, games, drinks, isOwner, onRefresh }: {
   onRefresh: () => void;
 }) {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [buying, setBuying] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
   const GAME_COST = 1_000_000;
@@ -245,17 +248,29 @@ function GamesTab({ casino, games, drinks, isOwner, onRefresh }: {
                       <p className="text-[10px] text-muted-foreground">{g.isEnabled ? "Live" : "Disabled"}</p>
                     </div>
                   </div>
-                  {isOwner && (
-                    <Button
-                      size="sm"
-                      variant={g.isEnabled ? "outline" : "ghost"}
-                      className="h-7 px-2 text-xs"
-                      disabled={toggling === g.gameType}
-                      onClick={() => toggle(g.gameType, !g.isEnabled)}
-                    >
-                      {g.isEnabled ? "Disable" : "Enable"}
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {g.isEnabled && meta?.route && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => navigate(`${BASE}games/${meta.route}?casinoId=${casino.id}`)}
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" /> Play
+                      </Button>
+                    )}
+                    {isOwner && (
+                      <Button
+                        size="sm"
+                        variant={g.isEnabled ? "outline" : "ghost"}
+                        className="h-7 px-2 text-xs"
+                        disabled={toggling === g.gameType}
+                        onClick={() => toggle(g.gameType, !g.isEnabled)}
+                      >
+                        {g.isEnabled ? "Disable" : "Enable"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -783,7 +798,7 @@ export default function CasinoHub() {
 
   useEffect(() => { load(); }, [load]);
 
-  const meId = (me as any)?.id;
+  const meId = me?.id;
   const isOwner = !!casino && !!meId && casino.ownerId === meId;
 
   const tabs = [

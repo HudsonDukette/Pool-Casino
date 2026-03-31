@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { useGameApi } from "@/lib/game-api";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 
 const SEGMENTS = [
   { label: "0.2×", multiplier: 0.2, color: "#ef4444", bg: "rgba(239,68,68,0.2)"   },
@@ -88,6 +88,7 @@ export default function Wheel() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const api = useGameApi<WheelResult>();
+  const casinoId = useCasinoId();
 
   const [betAmount, setBetAmount] = useState("10");
   const [spinning, setSpinning] = useState(false);
@@ -104,7 +105,7 @@ export default function Wheel() {
     setSpinning(true);
     setResult(null);
 
-    const data = await api.call("wheel", { betAmount: bet });
+    const data = await api.call("wheel", { betAmount: bet, casinoId });
     if (!data) {
       setSpinning(false);
       toast({ title: "Bet failed", description: api.error ?? "Something went wrong", variant: "destructive" });

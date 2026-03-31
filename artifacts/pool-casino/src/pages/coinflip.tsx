@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { useGameApi } from "@/lib/game-api";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 
 interface FlipResult {
   won: boolean;
@@ -80,6 +80,7 @@ export default function CoinFlip() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const api = useGameApi<FlipResult>();
+  const casinoId = useCasinoId();
 
   const [betAmount, setBetAmount] = useState("10");
   const [choice, setChoice] = useState<"heads" | "tails">("heads");
@@ -96,7 +97,7 @@ export default function CoinFlip() {
     setFlipping(true);
     setResult(null);
 
-    const data = await api.call("coinflip", { betAmount: bet, choice });
+    const data = await api.call("coinflip", { betAmount: bet, choice, casinoId });
 
     setTimeout(() => {
       setFlipping(false);

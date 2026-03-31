@@ -1,16 +1,16 @@
-import { Router, type IRouter } from "express";
+import { Router, type Request, type Response, type IRouter } from "express";
 import { db, usersTable, poolTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable, casinoDrinksTable, userDrinksTable, monthlyTaxLogsTable } from "@workspace/db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
 
 const router: IRouter = Router();
 
 const CASINO_CREATION_COST = 100_000_000;
 const GAME_PURCHASE_COST = 1_000_000;
 
-function authCheck(req: any, res: any): number | null {
-  const userId = req.session?.userId;
+function authCheck(req: Request, res: Response): number | null {
+  const userId = (req as Request & { session?: { userId?: number } }).session?.userId;
   if (!userId) { res.status(401).json({ error: "Not authenticated" }); return null; }
-  return userId as number;
+  return userId;
 }
 
 async function getPool() {
@@ -54,16 +54,24 @@ router.get("/casinos", async (req, res): Promise<void> => {
 
   const casinoIds = casinos.map(c => c.id);
   let gameCountsByID: Record<number, number> = {};
+  let activePlayersByID: Record<number, number> = {};
   if (casinoIds.length > 0) {
-    const gameCounts = await db
-      .select({ casinoId: casinoGamesOwnedTable.casinoId, count: sql<number>`count(*)::int` })
-      .from(casinoGamesOwnedTable)
-      .where(eq(casinoGamesOwnedTable.isEnabled, true))
-      .groupBy(casinoGamesOwnedTable.casinoId);
+    const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const [gameCounts, activePlayers] = await Promise.all([
+      db.select({ casinoId: casinoGamesOwnedTable.casinoId, count: sql<number>`count(*)::int` })
+        .from(casinoGamesOwnedTable)
+        .where(eq(casinoGamesOwnedTable.isEnabled, true))
+        .groupBy(casinoGamesOwnedTable.casinoId),
+      db.select({ casinoId: casinoBetsTable.casinoId, count: sql<number>`count(distinct ${casinoBetsTable.userId})::int` })
+        .from(casinoBetsTable)
+        .where(gte(casinoBetsTable.createdAt, thirtyMinsAgo))
+        .groupBy(casinoBetsTable.casinoId),
+    ]);
     for (const gc of gameCounts) gameCountsByID[gc.casinoId] = gc.count;
+    for (const ap of activePlayers) activePlayersByID[ap.casinoId] = ap.count;
   }
 
-  res.json({ casinos: casinos.map(c => ({ ...c, gameCount: gameCountsByID[c.id] ?? 0 })) });
+  res.json({ casinos: casinos.map(c => ({ ...c, gameCount: gameCountsByID[c.id] ?? 0, activePlayers: activePlayersByID[c.id] ?? 0 })) });
 });
 
 // ─── Get single casino ────────────────────────────────────────────────────────
@@ -296,70 +304,6 @@ router.patch("/casinos/:id/games/:gameType", async (req, res): Promise<void> => 
   res.json({ game });
 });
 
-// ─── Casino bet settlement ────────────────────────────────────────────────────
-router.post("/casinos/:id/bet", async (req, res): Promise<void> => {
-  const userId = authCheck(req, res); if (!userId) return;
-  const casinoId = parseInt(req.params.id);
-  if (isNaN(casinoId)) { res.status(400).json({ error: "Invalid casino ID" }); return; }
-
-  const { gameType, betAmount: betAmountRaw, multiplier: multiplierRaw } = req.body;
-  const betAmount = parseFloat(betAmountRaw);
-  const multiplier = parseFloat(multiplierRaw);
-  if (isNaN(betAmount) || betAmount < 0.01) { res.status(400).json({ error: "Invalid bet amount" }); return; }
-  if (isNaN(multiplier) || multiplier < 0) { res.status(400).json({ error: "Invalid multiplier" }); return; }
-
-  const [casino] = await db.select().from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
-  if (!casino) { res.status(404).json({ error: "Casino not found" }); return; }
-  if (casino.isPaused) { res.status(400).json({ error: "This casino is paused" }); return; }
-
-  const minBet = parseFloat(casino.minBet);
-  const maxBet = parseFloat(casino.maxBet);
-  const bankroll = parseFloat(casino.bankroll);
-
-  if (betAmount < minBet) { res.status(400).json({ error: `Minimum bet is ${minBet}` }); return; }
-  if (betAmount > maxBet) { res.status(400).json({ error: `Maximum bet is ${maxBet}` }); return; }
-  if (bankroll < betAmount * 2) { res.status(400).json({ error: "Casino bankroll too low for this bet" }); return; }
-
-  const [user] = await db.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-  if (!user) { res.status(401).json({ error: "User not found" }); return; }
-
-  const userBalance = parseFloat(user.balance);
-  if (userBalance < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
-
-  const payout = multiplier > 0 ? Math.min(betAmount * multiplier, bankroll) : 0;
-  const won = payout > betAmount;
-  const casinoProfit = betAmount - payout;
-
-  const newUserBalance = userBalance - betAmount + payout;
-  const newBankroll = bankroll + betAmount - payout;
-
-  await Promise.all([
-    db.update(usersTable).set({ balance: newUserBalance.toFixed(2) }).where(eq(usersTable.id, userId)),
-    db.update(casinosTable).set({
-      bankroll: Math.max(0, newBankroll).toFixed(2),
-      totalBets: sql`${casinosTable.totalBets} + 1`,
-      totalWagered: sql`${casinosTable.totalWagered} + ${betAmount}`,
-      totalPaidOut: sql`${casinosTable.totalPaidOut} + ${payout}`,
-      isPaused: newBankroll <= 0,
-      updatedAt: new Date(),
-    }).where(eq(casinosTable.id, casinoId)),
-    db.insert(casinoBetsTable).values({
-      casinoId, userId, gameType,
-      betAmount: betAmount.toFixed(2),
-      result: won ? "win" : "loss",
-      payout: payout.toFixed(2),
-      multiplier: multiplier.toFixed(4),
-    }),
-    db.insert(casinoTransactionsTable).values({
-      casinoId,
-      type: won ? "bet_loss" : "bet_win",
-      amount: Math.abs(casinoProfit).toFixed(2),
-      description: `${gameType} — ${won ? "Player win" : "Player loss"}`,
-    }),
-  ]);
-
-  res.json({ won, payout, multiplier, newBalance: newUserBalance, newBankroll: Math.max(0, newBankroll) });
-});
 
 // ─── Casino bet logs (owner) ──────────────────────────────────────────────────
 router.get("/casinos/:id/bets", async (req, res): Promise<void> => {

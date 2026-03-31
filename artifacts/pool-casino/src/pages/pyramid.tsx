@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import heroImg from "@/assets/game-pyramid.png";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 import { ChevronUp, TrendingUp, Trophy } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -38,6 +38,7 @@ export default function Pyramid() {
   const { data: user } = useGetMe({ query: { retry: false } });
   const qc = useQueryClient();
   const { toast } = useToast();
+  const casinoId = useCasinoId();
 
   const [betAmount, setBetAmount] = useState("100");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -76,7 +77,7 @@ export default function Pyramid() {
     if (bet < 0.01) { toast({ title: "Minimum bet is $0.01", variant: "destructive" }); return; }
     setLoading(true);
     try {
-      await apiPost("pyramid/start", { betAmount: bet });
+      await apiPost("pyramid/start", { betAmount: bet, casinoId });
       setActiveBet(bet);
       setCurrentLevel(0);
       setFailedAtLevel(null);

@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { useGameApi } from "@/lib/game-api";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 
 // Dot positions for each face [row][col] grid (3x3, center position index = 4)
 const DICE_LAYOUTS: Record<number, boolean[]> = {
@@ -68,6 +68,7 @@ export default function Dice() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const api = useGameApi<DiceResult>();
+  const casinoId = useCasinoId();
 
   const [betAmount, setBetAmount] = useState("10");
   const [betType, setBetType] = useState<"exact" | "high" | "low">("high");
@@ -90,7 +91,7 @@ export default function Dice() {
     // Visual die tumble while waiting for result
     intervalRef.current = setInterval(() => setDieValue(Math.ceil(Math.random() * 6)), 80);
 
-    const data = await api.call("dice", { betAmount: bet, betType, prediction });
+    const data = await api.call("dice", { betAmount: bet, betType, prediction, casinoId });
 
     // Let it roll for at least 600ms for feel
     setTimeout(() => {
