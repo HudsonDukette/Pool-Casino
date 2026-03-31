@@ -5,6 +5,7 @@ import { logger } from "./lib/logger";
 import { db, usersTable } from "@workspace/db";
 import { eq, and, sql, lt } from "drizzle-orm";
 import { setupMatchmaking } from "./multiplayer/matchmaking";
+import { seedBadgesAndChallenges } from "./lib/seed";
 
 const rawPort = process.env["PORT"];
 
@@ -51,6 +52,7 @@ setupMatchmaking(io);
 
 httpServer.listen(port, () => {
   logger.info({ port }, "Server listening");
+  seedBadgesAndChallenges();
   cleanupStaleGuests();
   setInterval(cleanupStaleGuests, 24 * 60 * 60 * 1000);
 });
