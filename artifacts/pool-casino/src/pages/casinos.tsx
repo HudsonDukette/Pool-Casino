@@ -262,7 +262,7 @@ export default function Casinos() {
     (c.ownerUsername ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const userBalance = me ? parseFloat((me as any).balance ?? "0") : 0;
+  const userBalance = me ? me.balance : 0;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 py-8 px-4">
