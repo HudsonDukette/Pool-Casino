@@ -55,6 +55,9 @@ artifacts-monorepo/
 14. **Notifications**: In-app bell + browser push notifications (VAPID)
 15. **Report System**: Players can report others from leaderboard or profile page; admins review with chat history viewer
 16. **Admin Panel** (collapsable sections): Game controls, Economy (refill/seize/reset), Balance adjustment, User Management (change username/avatar, suspend/ban/perma-ban/unban/delete), Reports inbox, Broadcast, Money requests, Settings
+17. **Real-time Multiplayer PvP**: Socket.IO-powered 1v1 matches; War (card game) and Higher-or-Lower (dice); matchmaking queue with 10-second accept window; no house edge — winner takes opponent's bet; chip transfer on win
+18. **Badges System**: 12 permanent badges (First Blood, High Roller, Whale, Hot Streak, etc.); auto-awarded on qualification; visible at `/badges`
+19. **Monthly Challenges**: 6 rotating challenges per month; progress tracking; reward payout on claim
 
 ## Database Tables
 
@@ -68,6 +71,14 @@ artifacts-monorepo/
 - `settings` - admin-configurable settings (username/avatar costs, disabled games)
 - `push_subscriptions` - web push subscriptions per user
 - `reports` - player reports (reporter, reported, reason, details, status)
+- `multiplayer_queue` - active matchmaking queue entries
+- `matches` - PvP match records with status/winner/bet
+- `match_players` - per-player state in each match
+- `match_rounds` - round-by-round game results with JSONB game data
+- `badges` - badge definitions (name, icon, requirement)
+- `user_badges` - earned badges per user
+- `monthly_challenges` - monthly challenge definitions by month string
+- `user_monthly_progress` - per-user progress on monthly challenges
 
 ## API Routes
 

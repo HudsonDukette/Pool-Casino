@@ -4,6 +4,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { Layout } from "@/components/layout";
+import { MultiplayerProvider } from "@/context/MultiplayerContext";
+import { MatchmakingBar } from "@/components/MatchmakingBar";
 import Home from "@/pages/home";
 import Games from "@/pages/games";
 import Roulette from "@/pages/roulette";
@@ -27,6 +29,9 @@ import RangeBet from "@/pages/range";
 import Pyramid from "@/pages/pyramid";
 import Lightning from "@/pages/lightning";
 import Multiplayer from "@/pages/multiplayer";
+import WarPvP from "@/pages/war-pvp";
+import HighLowPvP from "@/pages/highlow-pvp";
+import Badges from "@/pages/badges";
 import Casinos from "@/pages/casinos";
 import Profile from "@/pages/profile";
 import PlayerProfile from "@/pages/player";
@@ -74,6 +79,9 @@ function Router() {
         <Route path="/games/pyramid" component={Pyramid} />
         <Route path="/games/lightning" component={Lightning} />
         <Route path="/multiplayer" component={Multiplayer} />
+        <Route path="/multiplayer/war" component={WarPvP} />
+        <Route path="/multiplayer/highlow" component={HighLowPvP} />
+        <Route path="/badges" component={Badges} />
         <Route path="/casinos" component={Casinos} />
         <Route path="/profile" component={Profile} />
         <Route path="/player/:username" component={PlayerProfile} />
@@ -94,7 +102,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
+          <MultiplayerProvider>
+            <Router />
+            <MatchmakingBar />
+          </MultiplayerProvider>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

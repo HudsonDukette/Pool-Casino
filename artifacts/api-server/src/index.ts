@@ -1,18 +1,18 @@
+import { createServer } from "http";
+import { Server as SocketIOServer } from "socket.io";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { db, usersTable } from "@workspace/db";
 import { eq, and, sql, lt } from "drizzle-orm";
+import { setupMatchmaking } from "./multiplayer/matchmaking";
 
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
+  throw new Error("PORT environment variable is required but was not provided.");
 }
 
 const port = Number(rawPort);
-
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
@@ -39,14 +39,18 @@ async function cleanupStaleGuests() {
   }
 }
 
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
+const httpServer = createServer(app);
 
+const io = new SocketIOServer(httpServer, {
+  path: "/api/socket.io",
+  cors: { origin: true, credentials: true },
+  transports: ["websocket", "polling"],
+});
+
+setupMatchmaking(io);
+
+httpServer.listen(port, () => {
   logger.info({ port }, "Server listening");
-
   cleanupStaleGuests();
   setInterval(cleanupStaleGuests, 24 * 60 * 60 * 1000);
 });

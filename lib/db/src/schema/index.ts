@@ -8,3 +8,4 @@ export * from "./money-requests";
 export * from "./push";
 export * from "./reports";
 export * from "./ban-appeals";
+export * from "./multiplayer";
