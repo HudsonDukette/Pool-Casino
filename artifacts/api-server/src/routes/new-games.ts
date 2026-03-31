@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, usersTable, poolTable, betsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { calculateWinChance } from "../lib/gambling";
+import { trackGameProgress } from "../lib/progress";
 
 const router: IRouter = Router();
 
@@ -82,6 +83,7 @@ async function settle(
       payout: payout.toFixed(2), multiplier: multiplier.toFixed(4),
     }),
   ]);
+  trackGameProgress({ userId, gameType, betAmount, won, lostAmount: won ? 0 : betAmount, currentWinStreak: winStreak });
   return { won, breakEven, payout, multiplier, newBalance, profit };
 }
 

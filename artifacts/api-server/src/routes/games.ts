@@ -7,6 +7,7 @@ import {
   ROULETTE_NUMBERS,
   simulatePlinko,
 } from "../lib/gambling";
+import { trackGameProgress } from "../lib/progress";
 
 const router: IRouter = Router();
 
@@ -138,6 +139,8 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
     }),
   ]);
 
+  trackGameProgress({ userId, gameType: "roulette", betAmount, won, lostAmount: won ? 0 : betAmount, currentWinStreak: newWinStreak });
+
   res.json(
     PlayRouletteResponse.parse({
       won,
@@ -222,6 +225,10 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
       multiplier: multiplier.toFixed(4),
     }),
   ]);
+
+  const plinkoNewStreak = won ? parseInt(user.currentStreak) + 1 : 0;
+  const plinkoWinStreak = Math.max(parseInt(user.winStreak), plinkoNewStreak);
+  trackGameProgress({ userId, gameType: "plinko", betAmount, won, lostAmount: won ? 0 : betAmount, currentWinStreak: plinkoWinStreak });
 
   res.json(
     PlayPlinkoResponse.parse({

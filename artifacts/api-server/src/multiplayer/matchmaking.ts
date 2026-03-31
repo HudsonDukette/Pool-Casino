@@ -3,7 +3,7 @@ import { db, pool, usersTable, matchesTable, matchPlayersTable, matchRoundsTable
 import { eq, and } from "drizzle-orm";
 import { playWarRound } from "./games/war";
 import { playHighLowRound, type HighLowGuess } from "./games/highlow";
-import { checkAndAwardBadges } from "./badges";
+import { trackGameProgress } from "../lib/progress";
 import { logger } from "../lib/logger";
 
 interface QueueEntry {
@@ -364,8 +364,9 @@ async function finalizeMatch(io: Server, match: ActiveMatch, winnerId: number | 
 
   const payload = { matchId: match.matchId, winnerId, reason, scores: match.scores, finalBet: match.finalBet };
   for (const p of match.players) {
-    io.to(p.socketId).emit("match:end", { ...payload, youWon: p.userId === winnerId });
-    checkAndAwardBadges(p.userId).catch(() => {});
+    const youWon = p.userId === winnerId;
+    io.to(p.socketId).emit("match:end", { ...payload, youWon });
+    trackGameProgress({ userId: p.userId, gameType: match.gameType, betAmount: match.finalBet, won: youWon, lostAmount: youWon ? 0 : match.finalBet });
   }
 
   logger.info({ matchId: match.matchId, winnerId, reason }, "Match finalized");
