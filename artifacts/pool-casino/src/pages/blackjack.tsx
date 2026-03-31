@@ -143,10 +143,13 @@ export default function Blackjack() {
   async function handleDeal() {
     if (!user) { toast({ title: "Login required", variant: "destructive" }); return; }
     if (bet < 0.01) { toast({ title: "Minimum bet is $0.01", variant: "destructive" }); return; }
-    if (bet > parseFloat(String(user.balance))) { toast({ title: "Insufficient balance", variant: "destructive" }); return; }
 
     setActionState(null);
     const data = await dealApi.call("blackjack/deal", { betAmount: bet });
+    if (!data) {
+      toast({ title: "Bet failed", description: dealApi.error ?? "Something went wrong", variant: "destructive" });
+      return;
+    }
     if (data) {
       setGameState(data);
       if (data.done) {

@@ -92,7 +92,6 @@ export default function CoinFlip() {
   async function handleFlip() {
     if (!user) { toast({ title: "Login required", variant: "destructive" }); return; }
     if (bet < 0.01) { toast({ title: "Minimum bet is $0.01", variant: "destructive" }); return; }
-    if (bet > parseFloat(String(user.balance))) { toast({ title: "Insufficient balance", variant: "destructive" }); return; }
 
     setFlipping(true);
     setResult(null);
@@ -101,6 +100,10 @@ export default function CoinFlip() {
 
     setTimeout(() => {
       setFlipping(false);
+      if (!data) {
+        toast({ title: "Bet failed", description: api.error ?? "Something went wrong", variant: "destructive" });
+        return;
+      }
       if (data) {
         setCoinSide(data.result as "heads" | "tails");
         setResult(data);

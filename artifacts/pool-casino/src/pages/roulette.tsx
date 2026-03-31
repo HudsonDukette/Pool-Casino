@@ -107,11 +107,6 @@ export default function Roulette() {
       toast({ title: "Invalid Bet", description: "Bet amount is outside allowed limits.", variant: "destructive" });
       return;
     }
-    if (numericBet > user.balance) {
-      toast({ title: "Insufficient Funds", description: "You do not have enough coins.", variant: "destructive" });
-      return;
-    }
-
     setSpinning(true);
     setResult(null);
 

@@ -91,7 +91,6 @@ export default function Crash() {
   async function handlePlay() {
     if (!user) { toast({ title: "Login required", variant: "destructive" }); return; }
     if (bet < 0.01) { toast({ title: "Minimum bet is $0.01", variant: "destructive" }); return; }
-    if (bet > parseFloat(String(user.balance))) { toast({ title: "Insufficient balance", variant: "destructive" }); return; }
 
     setRunning(true);
     setResult(null);
@@ -99,7 +98,11 @@ export default function Crash() {
     setGraphProgress(0);
 
     const data = await api.call("crash", { betAmount: bet, cashOutAt });
-    if (!data) { setRunning(false); return; }
+    if (!data) {
+      setRunning(false);
+      toast({ title: "Bet failed", description: api.error ?? "Something went wrong", variant: "destructive" });
+      return;
+    }
 
     const target = Math.min(data.cashOutAt, data.crashAt);
     let current = 1.0;

@@ -81,7 +81,6 @@ export default function Guess() {
   async function handleGuess() {
     if (!user) { toast({ title: "Login required", variant: "destructive" }); return; }
     if (bet < 0.01) { toast({ title: "Minimum bet is $0.01", variant: "destructive" }); return; }
-    if (bet > parseFloat(String(user.balance))) { toast({ title: "Insufficient balance", variant: "destructive" }); return; }
 
     setResult(null);
     setRevealing(true);
@@ -91,6 +90,10 @@ export default function Guess() {
     // Animate reveal after a short delay
     setTimeout(() => {
       setRevealing(false);
+      if (!data) {
+        toast({ title: "Bet failed", description: api.error ?? "Something went wrong", variant: "destructive" });
+        return;
+      }
       if (data) {
         setResult(data);
         qc.invalidateQueries({ queryKey: ["/api/auth/me"] });

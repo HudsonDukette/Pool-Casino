@@ -110,12 +110,16 @@ export default function Slots() {
   async function handleSpin() {
     if (!user) { toast({ title: "Login required", variant: "destructive" }); return; }
     if (bet < 0.01) { toast({ title: "Minimum bet is $0.01", variant: "destructive" }); return; }
-    if (bet > parseFloat(String(user.balance))) { toast({ title: "Insufficient balance", variant: "destructive" }); return; }
 
     setSpinning(true);
     setResult(null);
 
     const data = await api.call("slots", { betAmount: bet });
+    if (!data) {
+      setSpinning(false);
+      toast({ title: "Bet failed", description: api.error ?? "Something went wrong", variant: "destructive" });
+      return;
+    }
     if (data) {
       // Keep spinning visible, then stop reels one by one
       setTimeout(() => {

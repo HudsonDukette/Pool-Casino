@@ -151,20 +151,12 @@ export default function Plinko() {
       return;
     }
     if (numericCount === 1) {
-      if (numericBet > displayBalance) {
-        toast({ title: "Insufficient Funds", description: "You don't have enough coins.", variant: "destructive" });
-        return;
-      }
       if (balls.length >= MAX_BALLS) {
         toast({ title: "Max balls reached", description: "Wait for some balls to finish.", variant: "destructive" });
         return;
       }
       dropOneBall(numericBet, risk);
     } else {
-      if (totalCost > displayBalance) {
-        toast({ title: "Insufficient Funds", description: `Need ${formatCurrency(totalCost)} for ${numericCount} balls.`, variant: "destructive" });
-        return;
-      }
       droppingRef.current = true;
       setIsDropping(true);
 

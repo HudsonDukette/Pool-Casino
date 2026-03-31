@@ -83,7 +83,6 @@ export default function Dice() {
   async function handleRoll() {
     if (!user) { toast({ title: "Login required", variant: "destructive" }); return; }
     if (bet < 0.01) { toast({ title: "Minimum bet is $0.01", variant: "destructive" }); return; }
-    if (bet > parseFloat(String(user.balance))) { toast({ title: "Insufficient balance", variant: "destructive" }); return; }
 
     setRolling(true);
     setResult(null);
@@ -97,17 +96,19 @@ export default function Dice() {
     setTimeout(() => {
       clearInterval(intervalRef.current);
       setRolling(false);
-      if (data) {
-        setDieValue(data.rolled);
-        setResult(data);
-        qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
-        qc.invalidateQueries({ queryKey: ["/api/pool"] });
-        toast({
-          title: data.won ? `🎲 Rolled ${data.rolled}! You Win!` : `Rolled ${data.rolled}`,
-          description: data.won ? `Won ${formatCurrency(data.payout)}!` : "Better luck next time",
-          variant: data.won ? "default" : "destructive",
-        });
+      if (!data) {
+        toast({ title: "Bet failed", description: api.error ?? "Something went wrong", variant: "destructive" });
+        return;
       }
+      setDieValue(data.rolled);
+      setResult(data);
+      qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      qc.invalidateQueries({ queryKey: ["/api/pool"] });
+      toast({
+        title: data.won ? `🎲 Rolled ${data.rolled}! You Win!` : `Rolled ${data.rolled}`,
+        description: data.won ? `Won ${formatCurrency(data.payout)}!` : "Better luck next time",
+        variant: data.won ? "default" : "destructive",
+      });
     }, 700);
   }
 
