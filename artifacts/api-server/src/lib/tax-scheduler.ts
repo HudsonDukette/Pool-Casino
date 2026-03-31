@@ -1,6 +1,7 @@
 import { db, casinosTable, poolTable, casinoTransactionsTable, monthlyTaxLogsTable } from "@workspace/db";
 import { eq, gt } from "drizzle-orm";
 import { logger } from "./logger";
+import cron from "node-cron";
 
 const TAX_RATE = 0.10;
 
@@ -21,24 +22,24 @@ export async function runMonthlyTax(): Promise<void> {
     const taxAmount = parseFloat((bankrollBefore * TAX_RATE).toFixed(2));
     const bankrollAfter = parseFloat((bankrollBefore - taxAmount).toFixed(2));
 
-    await Promise.all([
-      db.update(casinosTable).set({
+    await db.transaction(async (tx) => {
+      await tx.update(casinosTable).set({
         bankroll: bankrollAfter.toFixed(2),
         updatedAt: new Date(),
-      }).where(eq(casinosTable.id, casino.id)),
-      db.insert(monthlyTaxLogsTable).values({
+      }).where(eq(casinosTable.id, casino.id));
+      await tx.insert(monthlyTaxLogsTable).values({
         casinoId: casino.id,
         taxAmount: taxAmount.toFixed(2),
         bankrollBefore: bankrollBefore.toFixed(2),
         bankrollAfter: bankrollAfter.toFixed(2),
-      }),
-      db.insert(casinoTransactionsTable).values({
+      });
+      await tx.insert(casinoTransactionsTable).values({
         casinoId: casino.id,
         type: "tax",
         amount: taxAmount.toFixed(2),
         description: "Monthly 10% bankroll tax",
-      }),
-    ]);
+      });
+    });
 
     totalTaxCollected += taxAmount;
     logger.info({ casinoId: casino.id, taxAmount, bankrollBefore, bankrollAfter }, "Casino taxed");
@@ -55,21 +56,10 @@ export async function runMonthlyTax(): Promise<void> {
 }
 
 export function scheduleTax() {
-  const checkInterval = 60 * 60 * 1000;
-
-  let lastTaxMonth = -1;
-
-  const run = async () => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-
-    if (now.getDate() === 1 && currentMonth !== lastTaxMonth) {
-      lastTaxMonth = currentMonth;
-      try { await runMonthlyTax(); }
-      catch (err) { logger.error({ err }, "Monthly tax failed"); }
-    }
-  };
-
-  setInterval(run, checkInterval);
+  // Run at 00:00 on the 1st of every month
+  cron.schedule("0 0 1 * *", async () => {
+    try { await runMonthlyTax(); }
+    catch (err) { logger.error({ err }, "Monthly tax failed"); }
+  });
   logger.info("Casino monthly tax scheduler initialized");
 }

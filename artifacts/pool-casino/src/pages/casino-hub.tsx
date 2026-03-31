@@ -13,6 +13,7 @@ import {
   PlayCircle, ShoppingCart, Check, X, AlertCircle, Trash2,
   ChevronDown, ChevronUp, RefreshCw, Pencil, Save, Wine, ExternalLink,
 } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -341,12 +342,41 @@ function GamesTab({ casino, games, drinks, isOwner, onRefresh }: {
 }
 
 // ─── Stats Tab ────────────────────────────────────────────────────────────────
+interface TxRecord { type: string; amount: string; createdAt: string; }
+
 function StatsTab({ casino }: { casino: Casino }) {
   const wagered = parseFloat(casino.totalWagered);
   const paidOut = parseFloat(casino.totalPaidOut);
   const profit = wagered - paidOut;
   const profitPct = wagered > 0 ? (profit / wagered) * 100 : 0;
+  const playerWinRate = wagered > 0 ? (paidOut / wagered) * 100 : 0;
   const bankroll = parseFloat(casino.bankroll);
+
+  const [txns, setTxns] = useState<TxRecord[]>([]);
+  const [txLoading, setTxLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${BASE}api/casinos/${casino.id}/transactions`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : { transactions: [] })
+      .then(d => { setTxns((d.transactions ?? []).slice().reverse()); })
+      .finally(() => setTxLoading(false));
+  }, [casino.id]);
+
+  const bankrollSeries = React.useMemo(() => {
+    const POSITIVE_TYPES = new Set(["deposit", "bet_win", "drink_sale"]);
+    const NEGATIVE_TYPES = new Set(["withdraw", "bet_loss", "tax"]);
+    let running = 0;
+    return txns.map(tx => {
+      const amt = parseFloat(tx.amount) || 0;
+      if (POSITIVE_TYPES.has(tx.type)) running += amt;
+      else if (NEGATIVE_TYPES.has(tx.type)) running -= amt;
+      const d = new Date(tx.createdAt);
+      return {
+        label: `${d.getMonth() + 1}/${d.getDate()}`,
+        value: running,
+      };
+    });
+  }, [txns]);
 
   const stats = [
     { label: "Total Bankroll", value: fmt(casino.bankroll), sub: "chips", color: "text-amber-400", icon: "💰" },
@@ -361,10 +391,17 @@ function StatsTab({ casino }: { casino: Casino }) {
       icon: profit >= 0 ? "📈" : "📉"
     },
     {
+      label: "Player Win Rate",
+      value: wagered > 0 ? `${playerWinRate.toFixed(1)}%` : "—",
+      sub: "of wagered chips returned to players",
+      color: playerWinRate > 100 ? "text-red-400" : playerWinRate > 90 ? "text-yellow-400" : "text-teal-400",
+      icon: "🏆"
+    },
+    {
       label: "Avg Bet Size",
-      value: casino.totalBets > 0 ? fmt(wagered / casino.totalBets) : "0",
+      value: casino.totalBets > 0 ? fmt(wagered / casino.totalBets) : "—",
       sub: "per bet",
-      color: "text-teal-400",
+      color: "text-sky-400",
       icon: "🎲"
     },
   ];
@@ -380,6 +417,37 @@ function StatsTab({ casino }: { casino: Casino }) {
             <p className="text-[10px] text-muted-foreground/60">{s.sub}</p>
           </div>
         ))}
+      </div>
+
+      {/* Bankroll trend */}
+      <div className="bg-card/30 border border-white/5 rounded-xl p-4">
+        <p className="text-sm font-medium text-white/70 mb-3">📉 Bankroll Activity Trend</p>
+        {txLoading ? (
+          <div className="h-36 flex items-center justify-center text-muted-foreground text-sm">Loading...</div>
+        ) : bankrollSeries.length < 2 ? (
+          <div className="h-36 flex items-center justify-center text-muted-foreground text-sm">
+            Not enough transaction history yet
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={140}>
+            <AreaChart data={bankrollSeries} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="bankrollGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#6b7280" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+              <YAxis hide />
+              <Tooltip
+                contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontSize: 11 }}
+                formatter={(v: number) => [fmt(v), "Net flow"]}
+              />
+              <Area type="monotone" dataKey="value" stroke="#f59e0b" strokeWidth={2} fill="url(#bankrollGrad)" dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+        <p className="text-[10px] text-muted-foreground/60 mt-1">Cumulative net bankroll flow from all transactions</p>
       </div>
 
       {/* Monthly tax info */}

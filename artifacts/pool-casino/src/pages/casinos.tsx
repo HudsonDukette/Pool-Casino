@@ -28,6 +28,7 @@ interface CasinoListing {
   totalWagered: string;
   totalPaidOut: string;
   gameCount: number;
+  activePlayers: number;
   ownerUsername: string | null;
   ownerAvatarUrl: string | null;
   ownerId: number;
@@ -198,8 +199,14 @@ function CasinoCard({ casino }: { casino: CasinoListing }) {
                 <p className="text-xs font-bold text-purple-400">{casino.gameCount}</p>
               </div>
               <div className="bg-background/30 rounded-lg p-2.5 text-center">
-                <p className="text-[10px] text-muted-foreground mb-0.5">Bets</p>
-                <p className="text-xs font-bold text-blue-400">{formatNumber(casino.totalBets)}</p>
+                <p className="text-[10px] text-muted-foreground mb-0.5">Active</p>
+                <p className={`text-xs font-bold ${casino.activePlayers > 0 ? "text-green-400" : "text-muted-foreground"}`}>
+                  {casino.activePlayers > 0 ? (
+                    <span className="flex items-center justify-center gap-0.5">
+                      <Users className="w-3 h-3" />{casino.activePlayers}
+                    </span>
+                  ) : "—"}
+                </p>
               </div>
             </div>
 
@@ -207,6 +214,8 @@ function CasinoCard({ casino }: { casino: CasinoListing }) {
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span>Min: <span className="text-white/60">{formatNumber(parseFloat(casino.minBet))}</span></span>
                 <span>Max: <span className="text-white/60">{formatNumber(parseFloat(casino.maxBet))}</span></span>
+                <span className="text-white/30">·</span>
+                <span>{formatNumber(casino.totalBets)} bets</span>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-white/70 transition-colors" />
             </div>
