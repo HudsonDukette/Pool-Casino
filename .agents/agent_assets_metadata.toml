@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "WSyQDI4xyjY0xvxQ3Dyx_"
+uri = "file://README.md"
+type = "text"
+title = "README.md — Codespaces + Vercel + Supabase setup guide"
