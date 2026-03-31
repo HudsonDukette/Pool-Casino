@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { db, usersTable, poolTable, betsTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { calculateWinChance } from "../lib/gambling";
@@ -74,6 +74,7 @@ async function settleGame(
   user: Awaited<ReturnType<typeof loadContext>>["user"],
   pool: Awaited<ReturnType<typeof loadContext>>["pool"],
   casinoId?: number,
+  betAlreadyDeducted = false,
 ) {
   const currentBalance = parseFloat(user.balance);
   const won = multiplier > 1;
@@ -90,7 +91,8 @@ async function settleGame(
     const uncappedPayout = betAmount * multiplier;
     // Cap payout at bankroll so casino can never go below 0
     payout = won ? Math.min(uncappedPayout, bankroll) : uncappedPayout;
-    newBalance = currentBalance - betAmount + payout;
+    // If bet was already deducted at session start, only credit payout back; otherwise do full net settlement
+    newBalance = betAlreadyDeducted ? currentBalance + payout : currentBalance - betAmount + payout;
     const casinoProfit = betAmount - payout;
     const newBankroll = Math.max(0, bankroll + casinoProfit);
 
@@ -124,8 +126,10 @@ async function settleGame(
     const poolAmount = parseFloat(pool.totalAmount);
     const uncappedPayout = betAmount * multiplier;
     payout = won ? Math.min(uncappedPayout, poolAmount) : uncappedPayout;
-    newBalance = currentBalance - betAmount + payout;
-    const newPool = poolAmount + betAmount - payout;
+    // If bet was already deducted at session start, balance only receives payout; pool already has the bet
+    newBalance = betAlreadyDeducted ? currentBalance + payout : currentBalance - betAmount + payout;
+    // If bet was already credited to pool at start, only subtract payout; otherwise full net
+    const newPool = betAlreadyDeducted ? poolAmount - payout : poolAmount + betAmount - payout;
 
     const newBiggestWin = won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin);
     const newBiggestBet = betAmount > parseFloat(pool.biggestBet) ? betAmount : parseFloat(pool.biggestBet);
@@ -178,7 +182,7 @@ async function validateCasinoPlay(
   casinoId: number,
   gameType: string,
   betAmount: number,
-  res: ReturnType<typeof Router>["response"] extends never ? never : any,
+  res: Response,
 ): Promise<boolean> {
   const [casino] = await db.select().from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
   if (!casino) { res.status(404).json({ error: "Casino not found" }); return false; }
@@ -200,20 +204,20 @@ async function validateCasinoPlay(
   return true;
 }
 
-function authCheck(req: any, res: any): number | null {
-  const userId = req.session?.userId;
+function authCheck(req: Request, res: Response): number | null {
+  const userId = (req as Request & { session: { userId?: number } }).session?.userId;
   if (!userId) { res.status(401).json({ error: "Not authenticated" }); return null; }
-  return userId as number;
+  return userId;
 }
 
-function parseBet(req: any, res: any): number | null {
-  const bet = parseFloat(req.body?.betAmount);
+function parseBet(req: Request, res: Response): number | null {
+  const bet = parseFloat((req.body as { betAmount?: string })?.betAmount ?? "");
   if (isNaN(bet) || bet < 0.01) { res.status(400).json({ error: "Invalid bet amount (min $0.01)" }); return null; }
   return bet;
 }
 
 // ─── Ban enforcement middleware ───────────────────────────────────────────────
-router.use("/games", async (req: any, res: any, next: any) => {
+router.use("/games", async (req: Request, res: Response, next: NextFunction) => {
   if (req.method !== "POST") return next();
   const userId = req.session?.userId;
   if (!userId) return next();
@@ -593,7 +597,7 @@ router.post("/games/mines/abandon", async (req, res): Promise<void> => {
 
   minesGames.delete(userId);
   const { user, pool } = await loadContext(userId);
-  await settleGame(userId, "mines", game.betAmount, 0, user!, pool, game.casinoId);
+  await settleGame(userId, "mines", game.betAmount, 0, user!, pool, game.casinoId, true);
   res.json({ abandoned: true, lostAmount: game.betAmount, minePositions: [...game.minePositions] });
 });
 
@@ -616,7 +620,7 @@ router.post("/games/mines/reveal", async (req, res): Promise<void> => {
   if (hitMine) {
     minesGames.delete(userId);
     const { user, pool } = await loadContext(userId);
-    const result = await settleGame(userId, "mines", game.betAmount, 0, user!, pool, game.casinoId);
+    const result = await settleGame(userId, "mines", game.betAmount, 0, user!, pool, game.casinoId, true);
     res.json({ hitMine: true, minePositions: [...game.minePositions], newBalance: result.newBalance });
     return;
   }
@@ -943,7 +947,7 @@ router.post("/games/pyramid/advance", async (req, res): Promise<void> => {
   if (!passed) {
     pyramidGames.delete(userId);
     const { user, pool } = await loadContext(userId);
-    const result = await settleGame(userId, "pyramid", game.betAmount, 0, user!, pool, game.casinoId);
+    const result = await settleGame(userId, "pyramid", game.betAmount, 0, user!, pool, game.casinoId, true);
     res.json({ passed: false, failedAtLevel: nextLevel, newBalance: result.newBalance }); return;
   }
 
@@ -951,7 +955,7 @@ router.post("/games/pyramid/advance", async (req, res): Promise<void> => {
     pyramidGames.delete(userId);
     const { user, pool } = await loadContext(userId);
     const multiplier = PYRAMID_PAYOUTS[10];
-    const result = await settleGame(userId, "pyramid", game.betAmount, multiplier, user!, pool, game.casinoId);
+    const result = await settleGame(userId, "pyramid", game.betAmount, multiplier, user!, pool, game.casinoId, true);
     res.json({ passed: true, level: nextLevel, reachedTop: true, payout: result.payout, newBalance: result.newBalance, multiplier }); return;
   }
 
@@ -967,7 +971,7 @@ router.post("/games/pyramid/cashout", async (req, res): Promise<void> => {
   pyramidGames.delete(userId);
   const { user, pool } = await loadContext(userId);
   const multiplier = PYRAMID_PAYOUTS[game.currentLevel];
-  const result = await settleGame(userId, "pyramid", game.betAmount, multiplier, user!, pool, game.casinoId);
+  const result = await settleGame(userId, "pyramid", game.betAmount, multiplier, user!, pool, game.casinoId, true);
   res.json({ payout: result.payout, multiplier, won: result.won, newBalance: result.newBalance, level: game.currentLevel });
 });
 
@@ -1045,7 +1049,7 @@ router.post("/games/icebreak/reveal", async (req, res): Promise<void> => {
   if (hitDanger) {
     iceGames.delete(userId);
     const { user, pool } = await loadContext(userId);
-    const result = await settleGame(userId, "icebreak", game.betAmount, 0, user!, pool, game.casinoId);
+    const result = await settleGame(userId, "icebreak", game.betAmount, 0, user!, pool, game.casinoId, true);
     res.json({ hitDanger: true, dangerPositions: [...game.dangerPositions], newBalance: result.newBalance }); return;
   }
   game.revealedSafe.push(tileIndex);
@@ -1063,7 +1067,7 @@ router.post("/games/icebreak/cashout", async (req, res): Promise<void> => {
   iceGames.delete(userId);
   const { user, pool } = await loadContext(userId);
   const multiplier = iceMultiplier(game.revealedSafe.length);
-  const result = await settleGame(userId, "icebreak", game.betAmount, multiplier, user!, pool, game.casinoId);
+  const result = await settleGame(userId, "icebreak", game.betAmount, multiplier, user!, pool, game.casinoId, true);
   res.json({ payout: result.payout, multiplier, won: result.won, newBalance: result.newBalance, revealedCount: game.revealedSafe.length, dangerPositions: [...game.dangerPositions] });
 });
 
@@ -1073,7 +1077,7 @@ router.post("/games/icebreak/abandon", async (req, res): Promise<void> => {
   if (!game) { res.status(400).json({ error: "No active ice break game to abandon." }); return; }
   iceGames.delete(userId);
   const { user, pool } = await loadContext(userId);
-  await settleGame(userId, "icebreak", game.betAmount, 0, user!, pool, game.casinoId);
+  await settleGame(userId, "icebreak", game.betAmount, 0, user!, pool, game.casinoId, true);
   res.json({ abandoned: true, lostAmount: game.betAmount, dangerPositions: [...game.dangerPositions] });
 });
 

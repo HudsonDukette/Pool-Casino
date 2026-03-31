@@ -398,7 +398,12 @@ router.patch("/casinos/:id/drinks/:drinkId", async (req, res): Promise<void> => 
   if (!casino) { res.status(403).json({ error: "Not your casino" }); return; }
 
   const { name, emoji, price, isAvailable } = req.body;
-  const updates: any = {};
+  const updates: {
+    name?: string;
+    emoji?: string;
+    price?: string;
+    isAvailable?: boolean;
+  } = {};
   if (name !== undefined) updates.name = String(name).trim();
   if (emoji !== undefined) updates.emoji = String(emoji).slice(0, 10);
   if (price !== undefined) { const p = parseFloat(price); if (!isNaN(p)) updates.price = p.toFixed(2); }
