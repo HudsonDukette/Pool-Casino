@@ -134,20 +134,24 @@ router.post("/casinos", async (req, res): Promise<void> => {
   if (existingName) { res.status(400).json({ error: "A casino with that name already exists." }); return; }
 
   const pool = await getPool();
-  const newBalance = balance - CASINO_CREATION_COST;
-  const newPool = parseFloat(pool.totalAmount) + CASINO_CREATION_COST;
 
-  const [casino] = await db.insert(casinosTable).values({
-    ownerId: userId,
-    name: name.trim(),
-    description: (description ?? "").trim(),
-    emoji: emoji ?? "🏦",
-  }).returning();
+  const { casino, newBalance } = await db.transaction(async (tx) => {
+    const [freshUser] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!freshUser) throw new Error("User not found");
+    const freshBalance = parseFloat(freshUser.balance);
+    if (freshBalance < CASINO_CREATION_COST) throw new Error("Insufficient balance");
 
-  await Promise.all([
-    db.update(usersTable).set({ balance: newBalance.toFixed(2) }).where(eq(usersTable.id, userId)),
-    db.update(poolTable).set({ totalAmount: newPool.toFixed(2) }).where(eq(poolTable.id, pool.id)),
-  ]);
+    const updatedBalance = freshBalance - CASINO_CREATION_COST;
+    await tx.update(usersTable).set({ balance: updatedBalance.toFixed(2) }).where(eq(usersTable.id, userId));
+    await tx.update(poolTable).set({ totalAmount: sql`${poolTable.totalAmount} + ${CASINO_CREATION_COST}` }).where(eq(poolTable.id, pool.id));
+    const [newCasino] = await tx.insert(casinosTable).values({
+      ownerId: userId,
+      name: name.trim(),
+      description: (description ?? "").trim(),
+      emoji: emoji ?? "🏦",
+    }).returning();
+    return { casino: newCasino, newBalance: updatedBalance };
+  });
 
   res.json({ casino, newBalance });
 });
@@ -205,17 +209,23 @@ router.post("/casinos/:id/deposit", async (req, res): Promise<void> => {
   const [user] = await db.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
 
-  const userBalance = parseFloat(user.balance);
-  if (userBalance < amount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  const { newBankroll, newUserBalance } = await db.transaction(async (tx) => {
+    const [freshUser] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!freshUser) throw new Error("User not found");
+    const userBal = parseFloat(freshUser.balance);
+    if (userBal < amount) throw new Error("Insufficient balance");
 
-  const newUserBalance = userBalance - amount;
-  const newBankroll = parseFloat(casino.bankroll) + amount;
+    const [freshCasino] = await tx.select({ bankroll: casinosTable.bankroll }).from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
+    if (!freshCasino) throw new Error("Casino not found");
 
-  await Promise.all([
-    db.update(usersTable).set({ balance: newUserBalance.toFixed(2) }).where(eq(usersTable.id, userId)),
-    db.update(casinosTable).set({ bankroll: newBankroll.toFixed(2), updatedAt: new Date() }).where(eq(casinosTable.id, casinoId)),
-    db.insert(casinoTransactionsTable).values({ casinoId, type: "deposit", amount: amount.toFixed(2), description: "Owner deposit" }),
-  ]);
+    const updatedUserBalance = userBal - amount;
+    const updatedBankroll = parseFloat(freshCasino.bankroll) + amount;
+
+    await tx.update(usersTable).set({ balance: updatedUserBalance.toFixed(2) }).where(eq(usersTable.id, userId));
+    await tx.update(casinosTable).set({ bankroll: updatedBankroll.toFixed(2), updatedAt: new Date() }).where(eq(casinosTable.id, casinoId));
+    await tx.insert(casinoTransactionsTable).values({ casinoId, type: "deposit", amount: amount.toFixed(2), description: "Owner deposit" });
+    return { newBankroll: updatedBankroll, newUserBalance: updatedUserBalance };
+  });
 
   res.json({ newBankroll, newUserBalance });
 });
@@ -232,20 +242,23 @@ router.post("/casinos/:id/withdraw", async (req, res): Promise<void> => {
   const amount = parseFloat(req.body?.amount);
   if (isNaN(amount) || amount < 1) { res.status(400).json({ error: "Invalid amount" }); return; }
 
-  const bankroll = parseFloat(casino.bankroll);
-  if (bankroll < amount) { res.status(400).json({ error: "Insufficient bankroll" }); return; }
+  const { newBankroll, newUserBalance } = await db.transaction(async (tx) => {
+    const [freshCasino] = await tx.select({ bankroll: casinosTable.bankroll }).from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
+    if (!freshCasino) throw new Error("Casino not found");
+    const bankroll = parseFloat(freshCasino.bankroll);
+    if (bankroll < amount) throw new Error("Insufficient bankroll");
 
-  const [user] = await db.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-  if (!user) { res.status(401).json({ error: "User not found" }); return; }
+    const [freshUser] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!freshUser) throw new Error("User not found");
 
-  const newBankroll = bankroll - amount;
-  const newUserBalance = parseFloat(user.balance) + amount;
+    const updatedBankroll = bankroll - amount;
+    const updatedUserBalance = parseFloat(freshUser.balance) + amount;
 
-  await Promise.all([
-    db.update(usersTable).set({ balance: newUserBalance.toFixed(2) }).where(eq(usersTable.id, userId)),
-    db.update(casinosTable).set({ bankroll: newBankroll.toFixed(2), updatedAt: new Date() }).where(eq(casinosTable.id, casinoId)),
-    db.insert(casinoTransactionsTable).values({ casinoId, type: "withdraw", amount: amount.toFixed(2), description: "Owner withdrawal" }),
-  ]);
+    await tx.update(casinosTable).set({ bankroll: updatedBankroll.toFixed(2), updatedAt: new Date() }).where(eq(casinosTable.id, casinoId));
+    await tx.update(usersTable).set({ balance: updatedUserBalance.toFixed(2) }).where(eq(usersTable.id, userId));
+    await tx.insert(casinoTransactionsTable).values({ casinoId, type: "withdraw", amount: amount.toFixed(2), description: "Owner withdrawal" });
+    return { newBankroll: updatedBankroll, newUserBalance: updatedUserBalance };
+  });
 
   res.json({ newBankroll, newUserBalance });
 });
@@ -273,14 +286,19 @@ router.post("/casinos/:id/games", async (req, res): Promise<void> => {
   if (balance < GAME_PURCHASE_COST) { res.status(400).json({ error: `Purchasing a game costs ${GAME_PURCHASE_COST.toLocaleString()} chips.` }); return; }
 
   const pool = await getPool();
-  const newBalance = balance - GAME_PURCHASE_COST;
-  const newPool = parseFloat(pool.totalAmount) + GAME_PURCHASE_COST;
 
-  const [game] = await db.insert(casinoGamesOwnedTable).values({ casinoId, gameType }).returning();
-  await Promise.all([
-    db.update(usersTable).set({ balance: newBalance.toFixed(2) }).where(eq(usersTable.id, userId)),
-    db.update(poolTable).set({ totalAmount: newPool.toFixed(2) }).where(eq(poolTable.id, pool.id)),
-  ]);
+  const { game, newBalance } = await db.transaction(async (tx) => {
+    const [freshUser] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!freshUser) throw new Error("User not found");
+    const freshBalance = parseFloat(freshUser.balance);
+    if (freshBalance < GAME_PURCHASE_COST) throw new Error("Insufficient balance");
+
+    const updatedBalance = freshBalance - GAME_PURCHASE_COST;
+    await tx.update(usersTable).set({ balance: updatedBalance.toFixed(2) }).where(eq(usersTable.id, userId));
+    await tx.update(poolTable).set({ totalAmount: sql`${poolTable.totalAmount} + ${GAME_PURCHASE_COST}` }).where(eq(poolTable.id, pool.id));
+    const [newGame] = await tx.insert(casinoGamesOwnedTable).values({ casinoId, gameType }).returning();
+    return { game: newGame, newBalance: updatedBalance };
+  });
 
   res.json({ game, newBalance });
 });
@@ -432,27 +450,28 @@ router.post("/casinos/:id/drinks/:drinkId/buy", async (req, res): Promise<void> 
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
 
   const price = parseFloat(drink.price);
-  const userBalance = parseFloat(user.balance);
-  if (userBalance < price) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
-  const newUserBalance = userBalance - price;
-  const [casino] = await db.select({ bankroll: casinosTable.bankroll }).from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
-  const newBankroll = parseFloat(casino?.bankroll ?? "0") + price;
+  const newBalance = await db.transaction(async (tx) => {
+    const [freshUser] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!freshUser) throw new Error("User not found");
+    const userBal = parseFloat(freshUser.balance);
+    if (userBal < price) throw new Error("Insufficient balance");
 
-  await Promise.all([
-    db.update(usersTable).set({ balance: newUserBalance.toFixed(2) }).where(eq(usersTable.id, userId)),
-    db.update(casinosTable).set({ bankroll: newBankroll.toFixed(2) }).where(eq(casinosTable.id, casinoId)),
-    db.insert(userDrinksTable).values({
+    const updatedUserBalance = userBal - price;
+    await tx.update(usersTable).set({ balance: updatedUserBalance.toFixed(2) }).where(eq(usersTable.id, userId));
+    await tx.update(casinosTable).set({ bankroll: sql`${casinosTable.bankroll} + ${price}` }).where(eq(casinosTable.id, casinoId));
+    await tx.insert(userDrinksTable).values({
       userId, casinoId, drinkId: drink.id,
       drinkName: drink.name, drinkEmoji: drink.emoji, drinkPrice: drink.price,
-    }),
-    db.insert(casinoTransactionsTable).values({
+    });
+    await tx.insert(casinoTransactionsTable).values({
       casinoId, type: "drink_sale", amount: price.toFixed(2),
       description: `${drink.emoji} ${drink.name} sold`,
-    }),
-  ]);
+    });
+    return updatedUserBalance;
+  });
 
-  res.json({ success: true, drinkName: drink.name, drinkEmoji: drink.emoji, newBalance: newUserBalance });
+  res.json({ success: true, drinkName: drink.name, drinkEmoji: drink.emoji, newBalance });
 });
 
 // ─── User's drinks collection ─────────────────────────────────────────────────
