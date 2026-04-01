@@ -36,6 +36,12 @@ const GAME_DEFS = [
   { id: "cardrace" as GameType, name: "Card Draw Race", emoji: "🏁", desc: "Draw cards to reach 21. Closest without busting wins.", color: "border-teal-500/30 hover:border-teal-500/60", badge: "Card Game" },
   { id: "speedclick" as GameType, name: "Speed Click", emoji: "👆", desc: "Click as fast as possible for 5 seconds. Most clicks wins. Rate-limited.", color: "border-amber-500/30 hover:border-amber-500/60", badge: "Reflex" },
   { id: "memory" as GameType, name: "Memory Match", emoji: "🧠", desc: "Flip cards to find pairs — take turns. Player with most pairs wins.", color: "border-sky-500/30 hover:border-sky-500/60", badge: "Memory" },
+  { id: "splitorsteal" as GameType, name: "Split or Steal", emoji: "🤝", desc: "Split = both gain. Steal = only you gain. Both steal = both lose. 1 round, pure psychology.", color: "border-emerald-500/30 hover:border-emerald-500/60", badge: "Social" },
+  { id: "riskdice" as GameType, name: "Risk Dice", emoji: "🎲", desc: "Pick 1–3 dice to roll. More dice = higher potential but diminishing returns. Highest total wins. Best of 3.", color: "border-purple-500/30 hover:border-purple-500/60", badge: "Dice Game" },
+  { id: "duelflip" as GameType, name: "Duel Flip", emoji: "🪙", desc: "Both call the coin flip. Right when opponent is wrong = win. Best of 5.", color: "border-yellow-500/30 hover:border-yellow-500/60", badge: "Classic" },
+  { id: "riskauction" as GameType, name: "Risk Auction", emoji: "🏛️", desc: "Bid 1–10 points on a prize. Highest bidder wins 2× the prize but pays their bid. 1 round.", color: "border-amber-500/30 hover:border-amber-500/60", badge: "Strategy" },
+  { id: "quickdraw" as GameType, name: "Quick Draw", emoji: "🔫", desc: "Draw when you see the signal — but a decoy fires first. React early = you lose. Best of 3.", color: "border-red-500/30 hover:border-red-500/60", badge: "Reflex" },
+  { id: "balancebattle" as GameType, name: "Balance Battle", emoji: "⚖️", desc: "Split 10 points between Attack and Defense. Your attack vs opponent's defense. 1 round.", color: "border-indigo-500/30 hover:border-indigo-500/60", badge: "Strategy" },
 ];
 
 const GAME_EMOJI_MAP: Record<string, string> = Object.fromEntries(GAME_DEFS.map(g => [g.id, g.emoji]));

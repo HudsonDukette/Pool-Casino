@@ -5,7 +5,8 @@ import { useGetMe } from "@workspace/api-client-react";
 export type GameType =
   | "war" | "highlow" | "coinflip" | "rps" | "dicebattle"
   | "bjpvp" | "poker" | "memory" | "speedclick" | "numguess"
-  | "reaction" | "tugofwar" | "quickmath" | "cardrace" | "lastman";
+  | "reaction" | "tugofwar" | "quickmath" | "cardrace" | "lastman"
+  | "splitorsteal" | "riskdice" | "duelflip" | "riskauction" | "quickdraw" | "balancebattle";
 
 export interface MatchFoundEvent {
   matchId: number;

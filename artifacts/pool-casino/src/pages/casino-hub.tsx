@@ -94,6 +94,22 @@ const PURCHASABLE_GAMES = [
   { type: "advwheel", name: "Advanced Wheel", emoji: "🎡", route: "advwheel" },
   { type: "guess", name: "Number Guess", emoji: "🔢", route: "guess" },
   { type: "pyramid", name: "Pyramid", emoji: "🔺", route: "pyramid" },
+  { type: "target", name: "Target Multiplier", emoji: "🎯", route: "target" },
+  { type: "range", name: "Range Bet", emoji: "📏", route: "range" },
+  { type: "blinddraw", name: "Blind Draw", emoji: "🃏", route: "blinddraw" },
+  { type: "hiddenpath", name: "Hidden Path", emoji: "🌿", route: "hiddenpath" },
+  { type: "jackpothunt", name: "Jackpot Hunt", emoji: "📦", route: "jackpothunt" },
+  { type: "targethit", name: "Target Hit", emoji: "🎯", route: "targethit" },
+  { type: "chainreaction", name: "Chain Reaction", emoji: "⛓️", route: "chainreaction" },
+  { type: "timedsafe", name: "Timed Safe", emoji: "🔐", route: "timedsafe" },
+  { type: "reversecrash", name: "Reverse Crash", emoji: "📉", route: "reversecrash" },
+  { type: "countdown", name: "Countdown Gamble", emoji: "⏱️", route: "countdown" },
+  { type: "cardstack", name: "Card Stack", emoji: "🃏", route: "cardstack" },
+  { type: "powergrid", name: "Power Grid", emoji: "⚡", route: "powergrid" },
+  { type: "elimwheel", name: "Elim. Wheel", emoji: "🎡", route: "elimwheel" },
+  { type: "combobuilder", name: "Combo Builder", emoji: "🔥", route: "combobuilder" },
+  { type: "safesteps", name: "Safe Steps", emoji: "🪜", route: "safesteps" },
+  { type: "predchain", name: "Prediction Chain", emoji: "🔮", route: "predchain" },
 ];
 
 function fmt(v: string | number) {

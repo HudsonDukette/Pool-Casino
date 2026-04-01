@@ -44,6 +44,26 @@ import PokerPvP from "@/pages/poker-pvp";
 import CardRacePvP from "@/pages/cardrace-pvp";
 import SpeedClickPvP from "@/pages/speedclick-pvp";
 import MemoryPvP from "@/pages/memory-pvp";
+import SplitOrStealPvP from "@/pages/splitorsteal-pvp";
+import RiskDicePvP from "@/pages/riskdice-pvp";
+import DuelFlipPvP from "@/pages/duelflip-pvp";
+import RiskAuctionPvP from "@/pages/riskauction-pvp";
+import QuickDrawPvP from "@/pages/quickdraw-pvp";
+import BalanceBattlePvP from "@/pages/balancebattle-pvp";
+import BlindDraw from "@/pages/blinddraw";
+import HiddenPath from "@/pages/hiddenpath";
+import JackpotHunt from "@/pages/jackpothunt";
+import TargetHit from "@/pages/targethit";
+import ChainReaction from "@/pages/chainreaction";
+import TimedSafe from "@/pages/timedsafe";
+import ReverseCrash from "@/pages/reversecrash";
+import Countdown from "@/pages/countdown";
+import CardStack from "@/pages/cardstack";
+import PowerGrid from "@/pages/powergrid";
+import ElimWheel from "@/pages/elimwheel";
+import ComboBuilder from "@/pages/combobuilder";
+import SafeSteps from "@/pages/safesteps";
+import PredChain from "@/pages/predchain";
 import Badges from "@/pages/badges";
 import Casinos from "@/pages/casinos";
 import CasinoHub from "@/pages/casino-hub";
@@ -108,6 +128,26 @@ function Router() {
         <Route path="/multiplayer/cardrace" component={CardRacePvP} />
         <Route path="/multiplayer/speedclick" component={SpeedClickPvP} />
         <Route path="/multiplayer/memory" component={MemoryPvP} />
+        <Route path="/multiplayer/splitorsteal" component={SplitOrStealPvP} />
+        <Route path="/multiplayer/riskdice" component={RiskDicePvP} />
+        <Route path="/multiplayer/duelflip" component={DuelFlipPvP} />
+        <Route path="/multiplayer/riskauction" component={RiskAuctionPvP} />
+        <Route path="/multiplayer/quickdraw" component={QuickDrawPvP} />
+        <Route path="/multiplayer/balancebattle" component={BalanceBattlePvP} />
+        <Route path="/games/blinddraw" component={BlindDraw} />
+        <Route path="/games/hiddenpath" component={HiddenPath} />
+        <Route path="/games/jackpothunt" component={JackpotHunt} />
+        <Route path="/games/targethit" component={TargetHit} />
+        <Route path="/games/chainreaction" component={ChainReaction} />
+        <Route path="/games/timedsafe" component={TimedSafe} />
+        <Route path="/games/reversecrash" component={ReverseCrash} />
+        <Route path="/games/countdown" component={Countdown} />
+        <Route path="/games/cardstack" component={CardStack} />
+        <Route path="/games/powergrid" component={PowerGrid} />
+        <Route path="/games/elimwheel" component={ElimWheel} />
+        <Route path="/games/combobuilder" component={ComboBuilder} />
+        <Route path="/games/safesteps" component={SafeSteps} />
+        <Route path="/games/predchain" component={PredChain} />
         <Route path="/badges" component={Badges} />
         <Route path="/casinos" component={Casinos} />
         <Route path="/casino/:id" component={CasinoHub} />

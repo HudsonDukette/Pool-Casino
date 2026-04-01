@@ -16,6 +16,12 @@ import * as BJPvP from "./games/bjpvp";
 import * as Poker from "./games/poker";
 import * as SpeedClick from "./games/speedclick";
 import * as Reaction from "./games/reaction";
+import * as SplitOrSteal from "./games/splitorsteal";
+import * as RiskDice from "./games/riskdice";
+import * as DuelFlip from "./games/duelflip";
+import * as RiskAuction from "./games/riskauction";
+import * as QuickDraw from "./games/quickdraw";
+import * as BalanceBattle from "./games/balancebattle";
 import { trackGameProgress } from "../lib/progress";
 import { logger } from "../lib/logger";
 
@@ -23,12 +29,14 @@ const ALL_GAME_TYPES = [
   "war", "highlow", "coinflip", "rps", "dicebattle",
   "bjpvp", "poker", "memory", "speedclick", "numguess",
   "reaction", "tugofwar", "quickmath", "cardrace", "lastman",
+  "splitorsteal", "riskdice", "duelflip", "riskauction", "quickdraw", "balancebattle",
 ];
 
 const GAME_TOTAL_ROUNDS: Record<string, number> = {
   war: 3, highlow: 3, coinflip: 3, rps: 3, dicebattle: 3,
   bjpvp: 1, poker: 1, memory: 8, speedclick: 1, numguess: 3,
   reaction: 3, tugofwar: 30, quickmath: 5, cardrace: 1, lastman: 5,
+  splitorsteal: 1, riskdice: 3, duelflip: 5, riskauction: 1, quickdraw: 3, balancebattle: 1,
 };
 
 interface PlayerRef { userId: number; username: string; socketId: string; }
@@ -215,6 +223,12 @@ function initGameState(gameType: string, p1Id: number, p2Id: number): any {
     case "speedclick": return SpeedClick.initGameState();
     case "reaction": return Reaction.initGameState();
     case "highlow": return { hlFirstRoll: null as number | null, hlGuesses: {} as Record<number, string> };
+    case "splitorsteal": return SplitOrSteal.initGameState();
+    case "riskdice": return RiskDice.initGameState();
+    case "duelflip": return DuelFlip.initGameState();
+    case "riskauction": return RiskAuction.initGameState();
+    case "quickdraw": return QuickDraw.initGameState();
+    case "balancebattle": return BalanceBattle.initGameState();
     default: return {};
   }
 }
@@ -289,6 +303,10 @@ async function onMatchStart(io: Server, match: ActiveMatch) {
       startReactionRound(io, match);
       break;
     }
+    case "quickdraw": {
+      startQuickDrawRound(io, match);
+      break;
+    }
     case "quickmath": {
       const q = QuickMath.getInitialQuestion(match.gameState);
       for (const p of match.players) io.to(p.socketId).emit("quickmath:question", { question: q.display, round: 1, total: match.totalRounds });
@@ -311,6 +329,25 @@ async function onMatchStart(io: Server, match: ActiveMatch) {
     }
     default: break;
   }
+}
+
+function startQuickDrawRound(io: Server, match: ActiveMatch) {
+  const [p1, p2] = match.players;
+  match.gameState = QuickDraw.initGameState();
+  const t = QuickDraw.startRound(io, p1, p2, match.gameState, async (result, winnerId) => {
+    match.currentRound++;
+    if (winnerId) match.scores[winnerId]++;
+    match.gameState.phase = "resolved";
+    await db.insert(matchRoundsTable).values({ matchId: match.matchId, roundNumber: match.currentRound, gameData: result as any, winnerId });
+    const rp = { round: match.currentRound, total: match.totalRounds, result, scores: match.scores };
+    for (const p of match.players) io.to(p.socketId).emit("match:round", rp);
+    if (match.currentRound >= match.totalRounds) {
+      await finalizeMatch(io, match, getScoreWinner(match), "normal");
+    } else {
+      setTimeout(() => startQuickDrawRound(io, match), 2000);
+    }
+  });
+  match.timers.push(t);
 }
 
 function startReactionRound(io: Server, match: ActiveMatch) {
@@ -361,6 +398,11 @@ async function dispatchAction(
     return;
   }
 
+  if (gt === "quickdraw") {
+    QuickDraw.handleAction(p1.userId, p2.userId, match.gameState, userId, action, payload);
+    return;
+  }
+
   if (gt === "tugofwar") {
     await handleTugOfWarAction(io, match, userId, action, payload);
     return;
@@ -403,6 +445,11 @@ async function handleGenericRoundAction(io: Server, match: ActiveMatch, userId: 
     case "dicebattle": result = DiceBattle.handleAction(p1Id, p2Id, match.gameState, userId, action, payload); break;
     case "numguess": result = NumGuess.handleAction(p1Id, p2Id, match.gameState, userId, action, payload); break;
     case "quickmath": result = QuickMath.handleAction(p1Id, p2Id, match.gameState, userId, action, payload); break;
+    case "splitorsteal": result = SplitOrSteal.handleAction(p1Id, p2Id, match.gameState, userId, action, payload); break;
+    case "riskdice": result = RiskDice.handleAction(p1Id, p2Id, match.gameState, userId, action, payload); break;
+    case "duelflip": result = DuelFlip.handleAction(p1Id, p2Id, match.gameState, userId, action, payload); break;
+    case "riskauction": result = RiskAuction.handleAction(p1Id, p2Id, match.gameState, userId, action, payload); break;
+    case "balancebattle": result = BalanceBattle.handleAction(p1Id, p2Id, match.gameState, userId, action, payload); break;
     default: return;
   }
 

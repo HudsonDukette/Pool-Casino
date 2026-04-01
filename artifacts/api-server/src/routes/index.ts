@@ -15,6 +15,7 @@ import moneyRequestsRouter from "./money-requests";
 import pushRouter from "./push";
 import reportsRouter from "./reports";
 import newGamesRouter from "./new-games";
+import newGames2Router from "./newgames2";
 import badgesRouter from "./badges";
 import casinosRouter from "./casinos";
 
@@ -36,6 +37,7 @@ router.use(moneyRequestsRouter);
 router.use(pushRouter);
 router.use(reportsRouter);
 router.use(newGamesRouter);
+router.use(newGames2Router);
 router.use(badgesRouter);
 router.use(casinosRouter);
 
