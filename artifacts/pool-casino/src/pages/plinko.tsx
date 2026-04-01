@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 import { Coins, Info, StopCircle, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,7 @@ export default function Plinko() {
   const playMut = usePlayPlinko();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const casinoId = useCasinoId();
 
   const [betAmount, setBetAmount] = useState<string>("10");
   const [risk, setRisk] = useState<"low" | "medium" | "high">("medium");
@@ -75,7 +76,7 @@ export default function Plinko() {
     setInFlightTotal(prev => prev + betAmt);
 
     playMut.mutate(
-      { data: { betAmount: betAmt, risk: riskLevel } },
+      { data: { betAmount: betAmt, risk: riskLevel, ...(casinoId !== undefined ? { casinoId } : {}) } as any },
       {
         onSuccess: (data) => {
           const coords = data.path as { x: number; y: number }[];
@@ -196,10 +197,10 @@ export default function Plinko() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center gap-3">
-        <Link href="/games">
+        <Link href={casinoId !== undefined ? `/casino/${casinoId}` : "/games"}>
           <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-white">
             <ArrowLeft className="w-4 h-4" />
-            All Games
+            {casinoId !== undefined ? "Back to Casino" : "All Games"}
           </Button>
         </Link>
       </div>

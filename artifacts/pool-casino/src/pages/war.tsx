@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import heroImg from "@/assets/game-war.png";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -24,6 +24,7 @@ export default function War() {
   const { data: user } = useGetMe({ query: { retry: false } });
   const qc = useQueryClient();
   const { toast } = useToast();
+  const casinoId = useCasinoId();
   const [betAmount, setBetAmount] = useState("100");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -38,7 +39,7 @@ export default function War() {
       const res = await fetch(`${BASE}api/games/war`, {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ betAmount: bet }),
+        body: JSON.stringify({ betAmount: bet, ...(casinoId !== undefined ? { casinoId } : {}) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed");
@@ -57,7 +58,7 @@ export default function War() {
   const colorFor = (label: string) => ["K","Q","J"].includes(label) ? "text-red-400" : "text-white";
 
   return (
-    <GameShell heroImage={heroImg} title="War" description="Draw a card against the dealer. Higher card wins 2×. Ties push your bet back." accentColor="text-red-400">
+    <GameShell heroImage={heroImg} title="War" description="Draw a card against the dealer. Higher card wins 2×. Ties push your bet back." accentColor="text-red-400" backHref={casinoId !== undefined ? `/casino/${casinoId}` : "/games"}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

@@ -9,6 +9,7 @@ export const casinosTable = pgTable("casinos", {
   name: text("name").notNull().unique(),
   description: text("description").notNull().default(""),
   emoji: text("emoji").notNull().default("🏦"),
+  imageUrl: text("image_url"),
   bankroll: numeric("bankroll", { precision: 25, scale: 2 }).notNull().default("0.00"),
   minBet: numeric("min_bet", { precision: 15, scale: 2 }).notNull().default("100.00"),
   maxBet: numeric("max_bet", { precision: 15, scale: 2 }).notNull().default("10000.00"),
@@ -93,3 +94,13 @@ export const monthlyTaxLogsTable = pgTable("monthly_tax_logs", {
 });
 
 export type MonthlyTaxLog = typeof monthlyTaxLogsTable.$inferSelect;
+
+export const casinoGameOddsTable = pgTable("casino_game_odds", {
+  id: serial("id").primaryKey(),
+  casinoId: integer("casino_id").notNull().references(() => casinosTable.id),
+  gameType: text("game_type").notNull(),
+  payoutMultiplier: numeric("payout_multiplier", { precision: 5, scale: 4 }).notNull().default("1.0000"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type CasinoGameOdds = typeof casinoGameOddsTable.$inferSelect;

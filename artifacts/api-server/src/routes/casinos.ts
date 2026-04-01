@@ -1,5 +1,5 @@
 import { Router, type Request, type Response, type IRouter } from "express";
-import { db, usersTable, poolTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable, casinoDrinksTable, userDrinksTable, monthlyTaxLogsTable } from "@workspace/db";
+import { db, usersTable, poolTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable, casinoDrinksTable, userDrinksTable, monthlyTaxLogsTable, casinoGameOddsTable } from "@workspace/db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 
 const router: IRouter = Router();
@@ -179,6 +179,7 @@ router.patch("/casinos/:id", async (req, res): Promise<void> => {
   if (description !== undefined) updates.description = String(description).slice(0, 300);
   if (emoji !== undefined) updates.emoji = String(emoji).slice(0, 10);
   if (isPaused !== undefined) updates.isPaused = Boolean(isPaused);
+  if (req.body.imageUrl !== undefined) updates.imageUrl = req.body.imageUrl ? String(req.body.imageUrl).slice(0, 500) : null;
   if (minBet !== undefined) {
     const mb = parseFloat(minBet);
     if (isNaN(mb) || mb < 1) { res.status(400).json({ error: "minBet must be >= 1" }); return; }
@@ -535,6 +536,44 @@ router.get("/casinos/:id/tax-logs", async (req, res): Promise<void> => {
     .limit(24);
 
   res.json({ logs });
+});
+
+// ─── Game Odds (owner-only, never exposed to players) ────────────────────────
+router.get("/casinos/:id/odds", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const casinoId = parseInt(req.params.id);
+  if (isNaN(casinoId)) { res.status(400).json({ error: "Invalid casino ID" }); return; }
+  const casino = await getCasinoOwned(casinoId, userId);
+  if (!casino) { res.status(403).json({ error: "Not your casino" }); return; }
+  const odds = await db.select().from(casinoGameOddsTable).where(eq(casinoGameOddsTable.casinoId, casinoId));
+  res.json({ odds });
+});
+
+router.put("/casinos/:id/odds/:gameType", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const casinoId = parseInt(req.params.id);
+  if (isNaN(casinoId)) { res.status(400).json({ error: "Invalid casino ID" }); return; }
+  const casino = await getCasinoOwned(casinoId, userId);
+  if (!casino) { res.status(403).json({ error: "Not your casino" }); return; }
+  const gameType = req.params.gameType;
+  const payoutMultiplier = parseFloat(req.body?.payoutMultiplier);
+  if (isNaN(payoutMultiplier) || payoutMultiplier < 0.5 || payoutMultiplier > 2.0) {
+    res.status(400).json({ error: "payoutMultiplier must be between 0.5 and 2.0" }); return;
+  }
+  const [existing] = await db.select().from(casinoGameOddsTable)
+    .where(and(eq(casinoGameOddsTable.casinoId, casinoId), eq(casinoGameOddsTable.gameType, gameType))).limit(1);
+  if (existing) {
+    const [updated] = await db.update(casinoGameOddsTable)
+      .set({ payoutMultiplier: payoutMultiplier.toFixed(4), updatedAt: new Date() })
+      .where(and(eq(casinoGameOddsTable.casinoId, casinoId), eq(casinoGameOddsTable.gameType, gameType)))
+      .returning();
+    res.json({ odds: updated });
+  } else {
+    const [created] = await db.insert(casinoGameOddsTable)
+      .values({ casinoId, gameType, payoutMultiplier: payoutMultiplier.toFixed(4) })
+      .returning();
+    res.json({ odds: created });
+  }
 });
 
 export default router;

@@ -24,6 +24,7 @@ interface Casino {
   name: string;
   description: string;
   emoji: string;
+  imageUrl: string | null;
   bankroll: string;
   minBet: string;
   maxBet: string;
@@ -76,20 +77,20 @@ interface Transaction {
 
 const PURCHASABLE_GAMES = [
   { type: "slots", name: "Neon Slots", emoji: "🎰", route: "slots" },
-  { type: "roulette", name: "Roulette", emoji: "🎡", route: null },
+  { type: "roulette", name: "Roulette", emoji: "🎡", route: "roulette" },
   { type: "blackjack", name: "Blackjack", emoji: "🃏", route: "blackjack" },
   { type: "crash", name: "Crash", emoji: "🚀", route: "crash" },
-  { type: "plinko", name: "Plinko", emoji: "🎪", route: null },
+  { type: "plinko", name: "Plinko", emoji: "🎪", route: "plinko" },
   { type: "dice", name: "Dice Roll", emoji: "🎲", route: "dice" },
   { type: "coinflip", name: "Coin Flip", emoji: "🪙", route: "coinflip" },
   { type: "wheel", name: "Fortune Wheel", emoji: "🎠", route: "wheel" },
   { type: "mines", name: "Mines", emoji: "💣", route: "mines" },
-  { type: "highlow", name: "High-Low", emoji: "🃏", route: null },
-  { type: "doubledice", name: "Double Dice", emoji: "🎲", route: null },
-  { type: "ladder", name: "Risk Ladder", emoji: "🪜", route: null },
-  { type: "war", name: "War", emoji: "⚔️", route: null },
+  { type: "highlow", name: "High-Low", emoji: "🃏", route: "highlow" },
+  { type: "doubledice", name: "Double Dice", emoji: "🎲", route: "doubledice" },
+  { type: "ladder", name: "Risk Ladder", emoji: "🪜", route: "ladder" },
+  { type: "war", name: "War", emoji: "⚔️", route: "war" },
   { type: "icebreak", name: "Ice Break", emoji: "🧊", route: "icebreak" },
-  { type: "lightning", name: "Lightning Round", emoji: "⚡", route: null },
+  { type: "lightning", name: "Lightning Round", emoji: "⚡", route: "lightning" },
   { type: "advwheel", name: "Advanced Wheel", emoji: "🎡", route: "advwheel" },
   { type: "guess", name: "Number Guess", emoji: "🔢", route: "guess" },
   { type: "pyramid", name: "Pyramid", emoji: "🔺", route: "pyramid" },
@@ -563,9 +564,55 @@ function OwnerTab({ casino, drinks, onRefresh }: {
   const [name, setName] = useState(casino.name);
   const [description, setDescription] = useState(casino.description);
   const [emoji, setEmoji] = useState(casino.emoji);
+  const [imageUrl, setImageUrl] = useState(casino.imageUrl ?? "");
   const [minBet, setMinBet] = useState(casino.minBet);
   const [maxBet, setMaxBet] = useState(casino.maxBet);
   const [savingSettings, setSavingSettings] = useState(false);
+
+  // Game odds
+  const GAME_TYPES = ["plinko", "roulette", "highlow", "doubledice", "ladder", "war", "lightning"] as const;
+  type GameType = typeof GAME_TYPES[number];
+  const GAME_LABELS: Record<GameType, string> = {
+    plinko: "Plinko", roulette: "Roulette", highlow: "High-Low",
+    doubledice: "Double Dice", ladder: "Risk Ladder", war: "War", lightning: "Lightning",
+  };
+  const [odds, setOdds] = useState<Record<string, string>>({});
+  const [oddsLoaded, setOddsLoaded] = useState(false);
+  const [savingOdds, setSavingOdds] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`${BASE}api/casinos/${casino.id}/odds`, { credentials: "include" })
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const map: Record<string, string> = {};
+          data.forEach((row: { gameType: string; payoutMultiplier: string }) => {
+            map[row.gameType] = row.payoutMultiplier;
+          });
+          setOdds(map);
+        }
+        setOddsLoaded(true);
+      })
+      .catch(() => setOddsLoaded(true));
+  }, [casino.id]);
+
+  const saveOdds = async (gameType: string) => {
+    const val = parseFloat(odds[gameType] ?? "1");
+    if (isNaN(val) || val <= 0) { toast({ title: "Enter a valid multiplier", variant: "destructive" }); return; }
+    setSavingOdds(gameType);
+    try {
+      const res = await fetch(`${BASE}api/casinos/${casino.id}/odds/${gameType}`, {
+        method: "PUT", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payoutMultiplier: val }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error || "Failed", variant: "destructive" }); return; }
+      toast({ title: `${GAME_LABELS[gameType as GameType] ?? gameType} odds updated!` });
+    } finally {
+      setSavingOdds(null);
+    }
+  };
 
   // Bankroll
   const [depositAmt, setDepositAmt] = useState("");
@@ -589,7 +636,7 @@ function OwnerTab({ casino, drinks, onRefresh }: {
       const res = await fetch(`${BASE}api/casinos/${casino.id}`, {
         method: "PATCH", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, emoji, minBet: parseFloat(minBet), maxBet: parseFloat(maxBet) }),
+        body: JSON.stringify({ name, description, emoji, imageUrl: imageUrl.trim() || null, minBet: parseFloat(minBet), maxBet: parseFloat(maxBet) }),
       });
       const data = await res.json();
       if (!res.ok) { toast({ title: data.error || "Failed", variant: "destructive" }); return; }
@@ -731,6 +778,21 @@ function OwnerTab({ casino, drinks, onRefresh }: {
               className="w-full rounded-md border border-white/10 bg-background/50 px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             />
           </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Banner Image URL <span className="text-white/30">(optional)</span></label>
+            <Input
+              type="url"
+              placeholder="https://example.com/your-casino-banner.jpg"
+              value={imageUrl}
+              onChange={e => setImageUrl(e.target.value)}
+              className="bg-background/50"
+            />
+            {imageUrl.trim() && (
+              <div className="mt-2 rounded-lg overflow-hidden border border-white/10 h-20">
+                <img src={imageUrl.trim()} alt="Banner preview" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Min Bet</label>
@@ -745,6 +807,43 @@ function OwnerTab({ casino, drinks, onRefresh }: {
             <Save className="w-4 h-4 mr-2" /> {savingSettings ? "Saving..." : "Save Settings"}
           </Button>
         </div>
+      </div>
+
+      {/* Game Odds */}
+      <div>
+        <h3 className="font-semibold mb-1 flex items-center gap-2">
+          <Gamepad2 className="w-4 h-4 text-emerald-400" /> Game House Edge
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">Set custom payout multipliers for each game. Lower values give the house a bigger edge. Leave blank to use default odds.</p>
+        {!oddsLoaded ? (
+          <p className="text-xs text-muted-foreground">Loading odds…</p>
+        ) : (
+          <div className="space-y-2">
+            {GAME_TYPES.map(gt => (
+              <div key={gt} className="flex items-center gap-2">
+                <span className="text-sm text-white/80 w-28 shrink-0">{GAME_LABELS[gt]}</span>
+                <Input
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  placeholder="Default"
+                  value={odds[gt] ?? ""}
+                  onChange={e => setOdds(prev => ({ ...prev, [gt]: e.target.value }))}
+                  className="bg-background/50 h-8 text-sm font-mono"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={savingOdds === gt}
+                  onClick={() => saveOdds(gt)}
+                  className="h-8 px-3 text-xs shrink-0"
+                >
+                  {savingOdds === gt ? "…" : <Save className="w-3 h-3" />}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Drinks management */}

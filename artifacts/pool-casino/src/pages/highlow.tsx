@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import heroImg from "@/assets/game-highlow.png";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, useCasinoId } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -28,6 +28,7 @@ export default function HighLow() {
   const { data: user } = useGetMe({ query: { retry: false } });
   const qc = useQueryClient();
   const { toast } = useToast();
+  const casinoId = useCasinoId();
   const [betAmount, setBetAmount] = useState("100");
   const [currentCard, setCurrentCard] = useState<{ card: number; label: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -55,7 +56,7 @@ export default function HighLow() {
       const res = await fetch(`${BASE}api/games/highlow`, {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ betAmount: bet, guess, card1: currentCard.card }),
+        body: JSON.stringify({ betAmount: bet, guess, card1: currentCard.card, ...(casinoId !== undefined ? { casinoId } : {}) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed");
@@ -73,7 +74,7 @@ export default function HighLow() {
   function handleNext() { fetchCard(); }
 
   return (
-    <GameShell heroImage={heroImg} title="High-Low" description="Guess if the next card is higher or lower. Win 1.85× — ties push your bet back." accentColor="text-yellow-400">
+    <GameShell heroImage={heroImg} title="High-Low" description="Guess if the next card is higher or lower. Win 1.85× — ties push your bet back." accentColor="text-yellow-400" backHref={casinoId !== undefined ? `/casino/${casinoId}` : "/games"}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

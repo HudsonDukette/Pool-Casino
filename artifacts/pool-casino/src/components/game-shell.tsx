@@ -12,17 +12,20 @@ interface GameShellProps {
   description: string;
   accentColor?: string;
   heroImage?: string;
+  backHref?: string;
+  backLabel?: string;
   children: React.ReactNode;
 }
 
-export function GameShell({ title, description, accentColor = "text-primary", heroImage, children }: GameShellProps) {
+export function GameShell({ title, description, accentColor = "text-primary", heroImage, backHref = "/games", backLabel, children }: GameShellProps) {
+  const label = backLabel ?? (backHref === "/games" ? "All Games" : "Back to Casino");
   return (
     <div className="max-w-3xl mx-auto space-y-6 pt-4">
       <div className="flex items-center gap-3">
-        <Link href="/games">
+        <Link href={backHref}>
           <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-white">
             <ArrowLeft className="w-4 h-4" />
-            All Games
+            {label}
           </Button>
         </Link>
       </div>
