@@ -84,11 +84,16 @@ export const GetMeResponse = zod.object({
   email: zod.string().nullish(),
   balance: zod.number(),
   isAdmin: zod.boolean(),
+  isOwner: zod.boolean().optional(),
   isGuest: zod.boolean().optional(),
   isCrazyGamesLinked: zod.boolean().optional(),
   referralCode: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
   createdAt: zod.string(),
+  suspendedUntil: zod.string().nullish(),
+  bannedUntil: zod.string().nullish(),
+  permanentlyBanned: zod.boolean().optional(),
+  banReason: zod.string().nullish(),
 });
 
 /**
