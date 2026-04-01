@@ -395,13 +395,29 @@ router.post("/casinos/:id/drinks", async (req, res): Promise<void> => {
   if (isNaN(priceVal) || priceVal < 1) { res.status(400).json({ error: "Price must be >= 1" }); return; }
   if (!["cheap", "standard", "expensive"].includes(tier)) { res.status(400).json({ error: "tier must be cheap/standard/expensive" }); return; }
 
-  const [drink] = await db.insert(casinoDrinksTable).values({
-    casinoId,
-    name: name.trim(),
-    emoji: emoji ?? "🍹",
-    price: priceVal.toFixed(2),
-    tier,
-  }).returning();
+  const drink = await db.transaction(async (tx) => {
+    const [freshUser] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!freshUser) throw new Error("User not found");
+    const ownerBal = parseFloat(freshUser.balance);
+    if (ownerBal < priceVal) throw new Error(`Insufficient balance — creating this drink costs ${priceVal} chips`);
+
+    await tx.update(usersTable).set({ balance: (ownerBal - priceVal).toFixed(2) }).where(eq(usersTable.id, userId));
+
+    const [newDrink] = await tx.insert(casinoDrinksTable).values({
+      casinoId,
+      name: name.trim(),
+      emoji: emoji ?? "🍹",
+      price: priceVal.toFixed(2),
+      tier,
+    }).returning();
+
+    await tx.insert(casinoTransactionsTable).values({
+      casinoId, type: "expense", amount: priceVal.toFixed(2),
+      description: `${emoji ?? "🍹"} ${name.trim()} added to menu (cost: ${priceVal})`,
+    });
+
+    return newDrink;
+  });
 
   res.json({ drink });
 });
@@ -417,6 +433,14 @@ router.patch("/casinos/:id/drinks/:drinkId", async (req, res): Promise<void> => 
   if (!casino) { res.status(403).json({ error: "Not your casino" }); return; }
 
   const { name, emoji, price, isAvailable } = req.body;
+
+  const [currentDrink] = await db.select().from(casinoDrinksTable)
+    .where(and(eq(casinoDrinksTable.id, drinkId), eq(casinoDrinksTable.casinoId, casinoId)))
+    .limit(1);
+  if (!currentDrink) { res.status(404).json({ error: "Drink not found" }); return; }
+
+  const isRestocking = isAvailable === true && !currentDrink.isAvailable;
+
   const updates: {
     name?: string;
     emoji?: string;
@@ -427,6 +451,31 @@ router.patch("/casinos/:id/drinks/:drinkId", async (req, res): Promise<void> => 
   if (emoji !== undefined) updates.emoji = String(emoji).slice(0, 10);
   if (price !== undefined) { const p = parseFloat(price); if (!isNaN(p)) updates.price = p.toFixed(2); }
   if (isAvailable !== undefined) updates.isAvailable = Boolean(isAvailable);
+
+  if (isRestocking) {
+    const restockCost = Math.ceil(parseFloat(currentDrink.price) * 0.25);
+    const drink = await db.transaction(async (tx) => {
+      const [freshUser] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+      if (!freshUser) throw new Error("User not found");
+      const ownerBal = parseFloat(freshUser.balance);
+      if (ownerBal < restockCost) throw new Error(`Insufficient balance — restocking costs ${restockCost} chips`);
+
+      await tx.update(usersTable).set({ balance: (ownerBal - restockCost).toFixed(2) }).where(eq(usersTable.id, userId));
+
+      const [updatedDrink] = await tx.update(casinoDrinksTable).set(updates)
+        .where(and(eq(casinoDrinksTable.id, drinkId), eq(casinoDrinksTable.casinoId, casinoId)))
+        .returning();
+
+      await tx.insert(casinoTransactionsTable).values({
+        casinoId, type: "expense", amount: restockCost.toFixed(2),
+        description: `${currentDrink.emoji} ${currentDrink.name} restocked (cost: ${restockCost})`,
+      });
+
+      return updatedDrink;
+    });
+    res.json({ drink, restockCost });
+    return;
+  }
 
   const [drink] = await db.update(casinoDrinksTable).set(updates)
     .where(and(eq(casinoDrinksTable.id, drinkId), eq(casinoDrinksTable.casinoId, casinoId)))

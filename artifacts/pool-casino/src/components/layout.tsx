@@ -207,7 +207,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         { href: "/games",      label: "All Games",             icon: <Dices className="w-3.5 h-3.5" />,          sub: "20 games available" },
                         { href: "/multiplayer",label: "Multiplayer",            icon: <span className="text-sm">👥</span>,         sub: "PvP War & Higher/Lower" },
                         { href: "/badges",     label: "Badges & Challenges",    icon: <span className="text-sm">🏆</span>,         sub: "Earn badges" },
-                        { href: "/casinos",    label: "Player-Owned Casinos",   icon: <span className="text-sm">🏦</span>,         sub: "Coming soon" },
+                        { href: "/casinos",    label: "Player-Owned Casinos",   icon: <span className="text-sm">🏦</span>,         sub: "Own & operate casinos" },
                       ].map(item => (
                         <Link key={item.href} href={item.href} onClick={() => setGamesDropdownOpen(false)}
                           className={`flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors ${location === item.href || (item.href !== "/games" && location.startsWith(item.href)) ? "bg-white/5" : ""}`}>

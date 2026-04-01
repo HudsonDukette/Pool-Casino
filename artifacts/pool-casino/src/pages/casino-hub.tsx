@@ -134,6 +134,7 @@ function txTypeLabel(type: string) {
     case "bet_win": return { label: "Casino Win", color: "text-green-400" };
     case "bet_loss": return { label: "Casino Loss", color: "text-red-400" };
     case "drink_sale": return { label: "Drink Sale", color: "text-purple-400" };
+    case "expense": return { label: "Expense", color: "text-orange-400" };
     default: return { label: type, color: "text-muted-foreground" };
   }
 }
@@ -708,26 +709,6 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
   const [savingSettings, setSavingSettings] = useState(false);
   const [draggingImage, setDraggingImage] = useState(false);
 
-  // Game odds — dynamic based on owned games
-  const [odds, setOdds] = useState<Record<string, string>>({});
-  const [oddsLoaded, setOddsLoaded] = useState(false);
-  const [savingOdds, setSavingOdds] = useState<string | null>(null);
-  const [togglingGame, setTogglingGame] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch(`${BASE}api/casinos/${casino.id}/odds`, { credentials: "include" })
-      .then(r => r.json())
-      .then(data => {
-        const list = Array.isArray(data) ? data : (data?.odds ?? []);
-        const map: Record<string, string> = {};
-        list.forEach((row: { gameType: string; payoutMultiplier: string }) => {
-          map[row.gameType] = row.payoutMultiplier;
-        });
-        setOdds(map);
-        setOddsLoaded(true);
-      })
-      .catch(() => setOddsLoaded(true));
-  }, [casino.id]);
 
   const handleImageFile = (file: File) => {
     if (!file.type.startsWith("image/")) { toast({ title: "Please drop an image file", variant: "destructive" }); return; }
@@ -735,39 +716,6 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
     const reader = new FileReader();
     reader.onload = e => setImageUrl(e.target?.result as string ?? "");
     reader.readAsDataURL(file);
-  };
-
-  const toggleGameEnabled = async (gameType: string, isEnabled: boolean) => {
-    setTogglingGame(gameType);
-    try {
-      const res = await fetch(`${BASE}api/casinos/${casino.id}/games/${gameType}`, {
-        method: "PATCH", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isEnabled }),
-      });
-      if (!res.ok) { toast({ title: "Failed to update game", variant: "destructive" }); return; }
-      onRefresh();
-    } finally {
-      setTogglingGame(null);
-    }
-  };
-
-  const saveOdds = async (gameType: string) => {
-    const val = parseFloat(odds[gameType] ?? "1");
-    if (isNaN(val) || val <= 0) { toast({ title: "Enter a valid multiplier", variant: "destructive" }); return; }
-    setSavingOdds(gameType);
-    try {
-      const res = await fetch(`${BASE}api/casinos/${casino.id}/odds/${gameType}`, {
-        method: "PUT", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payoutMultiplier: val }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast({ title: data.error || "Failed", variant: "destructive" }); return; }
-      toast({ title: `${GAME_LABELS[gameType as GameType] ?? gameType} odds updated!` });
-    } finally {
-      setSavingOdds(null);
-    }
   };
 
   // Bankroll
@@ -859,7 +807,11 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isAvailable: !drink.isAvailable }),
     });
-    if (!res.ok) { toast({ title: "Failed", variant: "destructive" }); return; }
+    const data = await res.json();
+    if (!res.ok) { toast({ title: data.error || "Failed", variant: "destructive" }); return; }
+    if (data.restockCost) {
+      toast({ title: `${drink.emoji} Restocked!`, description: `Paid ${fmt(data.restockCost)} chips to restock` });
+    }
     onRefresh();
   };
 
@@ -977,70 +929,6 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
         </div>
       </div>
 
-      {/* Game Library — enable/disable + custom odds */}
-      <div>
-        <h3 className="font-semibold mb-1 flex items-center gap-2">
-          <Gamepad2 className="w-4 h-4 text-emerald-400" /> Game Library & Multipliers
-        </h3>
-        <p className="text-xs text-muted-foreground mb-3">
-          Toggle games on/off and set custom payout multipliers. Lower multipliers give the house a bigger edge.
-        </p>
-        {games.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-4">No games yet — purchase some from the Games tab!</p>
-        ) : !oddsLoaded ? (
-          <p className="text-xs text-muted-foreground">Loading…</p>
-        ) : (
-          <div className="space-y-2">
-            {games.map(g => {
-              const meta = PURCHASABLE_GAMES.find(p => p.type === g.gameType);
-              const label = meta?.name ?? g.gameType;
-              const emoji = meta?.emoji ?? "🎮";
-              return (
-                <div key={g.gameType} className={`rounded-lg border p-2.5 transition-colors ${g.isEnabled ? "border-primary/20 bg-primary/5" : "border-white/5 bg-card/20"}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base">{emoji}</span>
-                    <span className="text-sm font-medium flex-1">{label}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${g.isEnabled ? "bg-green-500/20 text-green-400" : "bg-white/5 text-muted-foreground"}`}>
-                      {g.isEnabled ? "Live" : "Off"}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant={g.isEnabled ? "outline" : "ghost"}
-                      className="h-6 px-2 text-[10px] shrink-0"
-                      disabled={togglingGame === g.gameType}
-                      onClick={() => toggleGameEnabled(g.gameType, !g.isEnabled)}
-                    >
-                      {togglingGame === g.gameType ? "…" : (g.isEnabled ? "Disable" : "Enable")}
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-muted-foreground w-20 shrink-0">Payout mult.</span>
-                    <Input
-                      type="number"
-                      min={0.01}
-                      step={0.01}
-                      placeholder="Default"
-                      value={odds[g.gameType] ?? ""}
-                      onChange={e => setOdds(prev => ({ ...prev, [g.gameType]: e.target.value }))}
-                      className="bg-background/50 h-7 text-xs font-mono"
-                    />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={savingOdds === g.gameType}
-                      onClick={() => saveOdds(g.gameType)}
-                      className="h-7 px-2 text-[10px] shrink-0"
-                    >
-                      {savingOdds === g.gameType ? "…" : <Save className="w-3 h-3" />}
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
       {/* Drinks management */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -1093,9 +981,14 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
                     ))}
                   </div>
                 </div>
-                <Button onClick={addDrink} disabled={addingDrink} className="w-full" size="sm">
-                  {addingDrink ? "Adding..." : `Add ${drinkEmoji} ${drinkName || "Drink"}`}
-                </Button>
+                <div className="space-y-1">
+                  <p className="text-[10px] text-amber-400/80 text-center">
+                    Creating this drink costs <span className="font-bold font-mono">{fmt(parseFloat(drinkPrice) || 0)}</span> chips from your balance
+                  </p>
+                  <Button onClick={addDrink} disabled={addingDrink} className="w-full" size="sm">
+                    {addingDrink ? "Adding..." : `Add ${drinkEmoji} ${drinkName || "Drink"} — ${fmt(parseFloat(drinkPrice) || 0)} chips`}
+                  </Button>
+                </div>
               </div>
             </motion.div>
           )}
@@ -1112,9 +1005,14 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
                     <p className="text-xs text-muted-foreground">{fmt(d.price)} chips · {d.tier}</p>
                   </div>
                 </div>
-                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => toggleDrink(d)}>
-                  {d.isAvailable ? "Hide" : "Show"}
-                </Button>
+                <div className="flex flex-col items-end gap-0.5">
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => toggleDrink(d)}>
+                    {d.isAvailable ? "Hide" : "Restock"}
+                  </Button>
+                  {!d.isAvailable && (
+                    <p className="text-[9px] text-amber-400/70 font-mono pr-1">costs {fmt(Math.ceil(parseFloat(d.price) * 0.25))}</p>
+                  )}
+                </div>
               </div>
             ))}
           </div>
