@@ -423,7 +423,7 @@ router.post("/casinos/:id/drinks", async (req, res): Promise<void> => {
   res.json({ drink });
 });
 
-// ─── Update drink ────────────────────────────────────────────────────────────
+// ─── Update drink (name/emoji/price/visibility only) ─────────────────────────
 router.patch("/casinos/:id/drinks/:drinkId", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const casinoId = parseInt(req.params.id);
@@ -433,56 +433,149 @@ router.patch("/casinos/:id/drinks/:drinkId", async (req, res): Promise<void> => 
   const casino = await getCasinoOwned(casinoId, userId);
   if (!casino) { res.status(403).json({ error: "Not your casino" }); return; }
 
-  const { name, emoji, price, isAvailable } = req.body;
-
   const [currentDrink] = await db.select().from(casinoDrinksTable)
     .where(and(eq(casinoDrinksTable.id, drinkId), eq(casinoDrinksTable.casinoId, casinoId)))
     .limit(1);
   if (!currentDrink) { res.status(404).json({ error: "Drink not found" }); return; }
 
-  const isRestocking = isAvailable === true && !currentDrink.isAvailable;
-
-  const updates: {
-    name?: string;
-    emoji?: string;
-    price?: string;
-    isAvailable?: boolean;
-  } = {};
+  const { name, emoji, price, isAvailable } = req.body;
+  const updates: { name?: string; emoji?: string; price?: string; isAvailable?: boolean } = {};
   if (name !== undefined) updates.name = String(name).trim();
   if (emoji !== undefined) updates.emoji = String(emoji).slice(0, 10);
   if (price !== undefined) { const p = parseFloat(price); if (!isNaN(p)) updates.price = p.toFixed(2); }
-  if (isAvailable !== undefined) updates.isAvailable = Boolean(isAvailable);
-
-  if (isRestocking) {
-    const restockCost = Math.ceil(parseFloat(currentDrink.price) * 0.25);
-    const drink = await db.transaction(async (tx) => {
-      const [freshUser] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-      if (!freshUser) throw new Error("User not found");
-      const ownerBal = parseFloat(freshUser.balance);
-      if (ownerBal < restockCost) throw new Error(`Insufficient balance — restocking costs ${restockCost} chips`);
-
-      await tx.update(usersTable).set({ balance: (ownerBal - restockCost).toFixed(2) }).where(eq(usersTable.id, userId));
-
-      const [updatedDrink] = await tx.update(casinoDrinksTable).set(updates)
-        .where(and(eq(casinoDrinksTable.id, drinkId), eq(casinoDrinksTable.casinoId, casinoId)))
-        .returning();
-
-      await tx.insert(casinoTransactionsTable).values({
-        casinoId, type: "expense", amount: restockCost.toFixed(2),
-        description: `${currentDrink.emoji} ${currentDrink.name} restocked (cost: ${restockCost})`,
-      });
-
-      return updatedDrink;
-    });
-    res.json({ drink, restockCost });
-    return;
+  // Allow toggling visibility but only enable if stock > 0
+  if (isAvailable !== undefined) {
+    const enable = Boolean(isAvailable);
+    if (enable && parseInt(currentDrink.stock as unknown as string) <= 0) {
+      res.status(400).json({ error: "Cannot make drink available — stock is 0. Restock first." }); return;
+    }
+    updates.isAvailable = enable;
   }
 
   const [drink] = await db.update(casinoDrinksTable).set(updates)
     .where(and(eq(casinoDrinksTable.id, drinkId), eq(casinoDrinksTable.casinoId, casinoId)))
     .returning();
-
   res.json({ drink });
+});
+
+// ─── Restock drink (buy N units) ─────────────────────────────────────────────
+router.post("/casinos/:id/drinks/:drinkId/restock", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const casinoId = parseInt(req.params.id);
+  const drinkId = parseInt(req.params.drinkId);
+  if (isNaN(casinoId) || isNaN(drinkId)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const casino = await getCasinoOwned(casinoId, userId);
+  if (!casino) { res.status(403).json({ error: "Not your casino" }); return; }
+
+  const qty = Math.max(1, parseInt(req.body.qty ?? 1));
+  if (isNaN(qty) || qty < 1 || qty > 200) { res.status(400).json({ error: "qty must be 1–200" }); return; }
+
+  const [drink] = await db.select().from(casinoDrinksTable)
+    .where(and(eq(casinoDrinksTable.id, drinkId), eq(casinoDrinksTable.casinoId, casinoId))).limit(1);
+  if (!drink) { res.status(404).json({ error: "Drink not found" }); return; }
+
+  const tier = drink.tier as "cheap" | "standard" | "expensive";
+  const storageLevelKey = `${tier}StorageLevel` as "cheapStorageLevel" | "standardStorageLevel" | "expensiveStorageLevel";
+  const casinoStorageLevel = parseInt(String(casino[storageLevelKey] ?? 0));
+  const maxStorage = 20 + casinoStorageLevel * 5;
+  const currentStock = parseInt(String(drink.stock ?? 0));
+
+  const available = maxStorage - currentStock;
+  if (available <= 0) { res.status(400).json({ error: `Storage full (${maxStorage} max). Upgrade your ${tier} storage first.` }); return; }
+
+  const actualQty = Math.min(qty, available);
+  const costPerUnit = Math.ceil(parseFloat(drink.price) * 0.25);
+  const totalCost = costPerUnit * actualQty;
+
+  const result = await db.transaction(async (tx) => {
+    const [freshUser] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!freshUser) throw new Error("User not found");
+    const ownerBal = parseFloat(freshUser.balance);
+    if (ownerBal < totalCost) throw new Error(`Insufficient balance — restocking ${actualQty} units costs ${totalCost} chips`);
+
+    await tx.update(usersTable).set({ balance: (ownerBal - totalCost).toFixed(2) }).where(eq(usersTable.id, userId));
+    const newStock = currentStock + actualQty;
+    const [updated] = await tx.update(casinoDrinksTable)
+      .set({ stock: newStock, isAvailable: true })
+      .where(eq(casinoDrinksTable.id, drinkId))
+      .returning();
+
+    await tx.insert(casinoTransactionsTable).values({
+      casinoId, type: "expense", amount: totalCost.toFixed(2),
+      description: `${drink.emoji} ${drink.name} ×${actualQty} restocked — ${totalCost} chips`,
+    });
+
+    return { drink: updated, totalCost, actualQty, newStock, maxStorage };
+  });
+
+  res.json(result);
+});
+
+// ─── Upgrade storage tier ─────────────────────────────────────────────────────
+router.post("/casinos/:id/upgrade-storage", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const casinoId = parseInt(req.params.id);
+  if (isNaN(casinoId)) { res.status(400).json({ error: "Invalid casino ID" }); return; }
+
+  const casino = await getCasinoOwned(casinoId, userId);
+  if (!casino) { res.status(403).json({ error: "Not your casino" }); return; }
+
+  const { tier } = req.body as { tier: "cheap" | "standard" | "expensive" };
+  if (!["cheap", "standard", "expensive"].includes(tier)) { res.status(400).json({ error: "tier must be cheap/standard/expensive" }); return; }
+
+  const UPGRADE_COST = 1_000_000;
+  const levelKey = `${tier}StorageLevel` as "cheapStorageLevel" | "standardStorageLevel" | "expensiveStorageLevel";
+  const currentLevel = parseInt(String(casino[levelKey] ?? 0));
+  const newLevel = currentLevel + 1;
+
+  const result = await db.transaction(async (tx) => {
+    const [freshUser] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!freshUser) throw new Error("User not found");
+    const ownerBal = parseFloat(freshUser.balance);
+    if (ownerBal < UPGRADE_COST) throw new Error(`Insufficient balance — upgrade costs ${UPGRADE_COST.toLocaleString()} chips`);
+
+    await tx.update(usersTable).set({ balance: (ownerBal - UPGRADE_COST).toFixed(2) }).where(eq(usersTable.id, userId));
+    const [updated] = await tx.update(casinosTable)
+      .set({ [levelKey]: newLevel })
+      .where(eq(casinosTable.id, casinoId))
+      .returning();
+
+    await tx.insert(casinoTransactionsTable).values({
+      casinoId, type: "expense", amount: UPGRADE_COST.toFixed(2),
+      description: `${tier} storage upgraded to level ${newLevel} (+5 slots)`,
+    });
+
+    return { casino: updated, tier, newLevel, newCapacity: 20 + newLevel * 5 };
+  });
+
+  res.json(result);
+});
+
+// ─── Sell casino ──────────────────────────────────────────────────────────────
+router.post("/casinos/:id/sell", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const casinoId = parseInt(req.params.id);
+  if (isNaN(casinoId)) { res.status(400).json({ error: "Invalid casino ID" }); return; }
+
+  const [casino] = await db.select().from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
+  if (!casino) { res.status(404).json({ error: "Casino not found" }); return; }
+  if (casino.ownerId !== userId) { res.status(403).json({ error: "You are not the owner of this casino" }); return; }
+
+  const purchasePrice = parseFloat(casino.purchasePrice ?? "0");
+  const refund = Math.floor(purchasePrice > 0 ? purchasePrice * 0.10 : 0);
+
+  await db.transaction(async (tx) => {
+    if (refund > 0) {
+      const [owner] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+      if (owner) {
+        await tx.update(usersTable).set({ balance: (parseFloat(owner.balance) + refund).toFixed(2) }).where(eq(usersTable.id, userId));
+      }
+    }
+    await tx.delete(casinosTable).where(eq(casinosTable.id, casinoId));
+  });
+
+  res.json({ sold: true, refund, message: refund > 0 ? `Casino sold for ${refund.toLocaleString()} chips refunded.` : "Casino sold." });
 });
 
 // ─── Purchase drink (player) ──────────────────────────────────────────────────
@@ -508,16 +601,25 @@ router.post("/casinos/:id/drinks/:drinkId/buy", async (req, res): Promise<void> 
     const userBal = parseFloat(freshUser.balance);
     if (userBal < price) throw new Error("Insufficient balance");
 
+    // Re-read drink inside tx to get current stock
+    const [freshDrink] = await tx.select().from(casinoDrinksTable)
+      .where(and(eq(casinoDrinksTable.id, drinkId), eq(casinoDrinksTable.isAvailable, true))).limit(1);
+    if (!freshDrink) throw new Error("Drink no longer available");
+    const currentStock = parseInt(String(freshDrink.stock ?? 0));
+    const newStock = Math.max(0, currentStock - 1);
+    const nowAvailable = newStock > 0;
+
     const updatedUserBalance = userBal - price;
     await tx.update(usersTable).set({ balance: updatedUserBalance.toFixed(2) }).where(eq(usersTable.id, userId));
     await tx.update(casinosTable).set({ bankroll: sql`${casinosTable.bankroll} + ${price}` }).where(eq(casinosTable.id, casinoId));
+    await tx.update(casinoDrinksTable).set({ stock: newStock, isAvailable: nowAvailable }).where(eq(casinoDrinksTable.id, drinkId));
     await tx.insert(userDrinksTable).values({
       userId, casinoId, drinkId: drink.id,
       drinkName: drink.name, drinkEmoji: drink.emoji, drinkPrice: drink.price,
     });
     await tx.insert(casinoTransactionsTable).values({
       casinoId, type: "drink_sale", amount: price.toFixed(2),
-      description: `${drink.emoji} ${drink.name} sold`,
+      description: `${drink.emoji} ${drink.name} sold (${newStock} left)`,
     });
     return updatedUserBalance;
   });
@@ -680,7 +782,7 @@ router.post("/casinos/:id/resolve-insolvency", async (req, res): Promise<void> =
       if (winner) {
         await tx.update(usersTable).set({ balance: (parseFloat(winner.balance) + debtAmount).toFixed(2) }).where(eq(usersTable.id, winnerId));
       }
-      await tx.update(casinosTable).set({ insolvencyWinnerId: null, insolvencyDebtAmount: null, isActive: true }).where(eq(casinosTable.id, casinoId));
+      await tx.update(casinosTable).set({ insolvencyWinnerId: null, insolvencyDebtAmount: null, isPaused: false }).where(eq(casinosTable.id, casinoId));
     });
     res.json({ resolved: true, action: "pay", message: "Debt paid. Casino is back in operation." });
 
@@ -711,7 +813,7 @@ router.post("/casinos/:id/resolve-insolvency", async (req, res): Promise<void> =
         ownerId: winnerId,
         insolvencyWinnerId: null,
         insolvencyDebtAmount: null,
-        isActive: true,
+        isPaused: false,
       }).where(eq(casinosTable.id, casinoId));
     });
     res.json({ resolved: true, action: "transfer", message: "Casino ownership transferred to winner. Debt paid from casino funds." });

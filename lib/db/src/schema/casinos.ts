@@ -20,6 +20,9 @@ export const casinosTable = pgTable("casinos", {
   totalBets: integer("total_bets").notNull().default(0),
   totalWagered: numeric("total_wagered", { precision: 25, scale: 2 }).notNull().default("0.00"),
   totalPaidOut: numeric("total_paid_out", { precision: 25, scale: 2 }).notNull().default("0.00"),
+  cheapStorageLevel: integer("cheap_storage_level").notNull().default(0),
+  standardStorageLevel: integer("standard_storage_level").notNull().default(0),
+  expensiveStorageLevel: integer("expensive_storage_level").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -68,7 +71,8 @@ export const casinoDrinksTable = pgTable("casino_drinks", {
   emoji: text("emoji").notNull().default("🍹"),
   price: numeric("price", { precision: 15, scale: 2 }).notNull().default("500.00"),
   tier: text("tier").notNull().default("standard"), // 'cheap' | 'standard' | 'expensive'
-  isAvailable: boolean("is_available").notNull().default(true),
+  isAvailable: boolean("is_available").notNull().default(false),
+  stock: integer("stock").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

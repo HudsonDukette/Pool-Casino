@@ -39,6 +39,9 @@ interface Casino {
   purchasePrice: string | null;
   insolvencyWinnerId: number | null;
   insolvencyDebtAmount: string | null;
+  cheapStorageLevel: number;
+  standardStorageLevel: number;
+  expensiveStorageLevel: number;
 }
 
 interface GameOwned {
@@ -57,6 +60,7 @@ interface Drink {
   price: string;
   tier: string;
   isAvailable: boolean;
+  stock: number;
 }
 
 interface BetLog {
@@ -686,7 +690,7 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
     }
   };
 
-  const toggleDrink = async (drink: Drink) => {
+  const toggleDrinkVisibility = async (drink: Drink) => {
     const res = await fetch(`${BASE}api/casinos/${casino.id}/drinks/${drink.id}`, {
       method: "PATCH", credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -694,10 +698,66 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
     });
     const data = await res.json();
     if (!res.ok) { toast({ title: data.error || "Failed", variant: "destructive" }); return; }
-    if (data.restockCost) {
-      toast({ title: `${drink.emoji} Restocked!`, description: `Paid ${fmt(data.restockCost)} chips to restock` });
-    }
     onRefresh();
+  };
+
+  const [restockQtys, setRestockQtys] = useState<Record<number, string>>({});
+  const [restocking, setRestocking] = useState<number | null>(null);
+
+  const restockDrink = async (drink: Drink) => {
+    const qty = parseInt(restockQtys[drink.id] ?? "1");
+    if (isNaN(qty) || qty < 1) { toast({ title: "Enter a valid quantity", variant: "destructive" }); return; }
+    setRestocking(drink.id);
+    try {
+      const res = await fetch(`${BASE}api/casinos/${casino.id}/drinks/${drink.id}/restock`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qty }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error || "Failed", variant: "destructive" }); return; }
+      toast({ title: `${drink.emoji} Restocked ×${data.actualQty}!`, description: `Paid ${fmt(data.totalCost)} chips — stock: ${data.newStock}/${data.maxStorage}` });
+      setRestockQtys(prev => ({ ...prev, [drink.id]: "" }));
+      onRefresh();
+    } finally {
+      setRestocking(null);
+    }
+  };
+
+  const [upgradingStorage, setUpgradingStorage] = useState<string | null>(null);
+  const upgradeStorage = async (tier: "cheap" | "standard" | "expensive") => {
+    setUpgradingStorage(tier);
+    try {
+      const res = await fetch(`${BASE}api/casinos/${casino.id}/upgrade-storage`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error || "Failed", variant: "destructive" }); return; }
+      toast({ title: `${tier} storage upgraded!`, description: `Now ${data.newCapacity} slots per drink` });
+      onRefresh();
+    } finally {
+      setUpgradingStorage(null);
+    }
+  };
+
+  const [sellingCasino, setSellingCasino] = useState(false);
+  const sellCasino = async () => {
+    if (!confirm("Are you sure you want to sell this casino? This cannot be undone.")) return;
+    setSellingCasino(true);
+    try {
+      const res = await fetch(`${BASE}api/casinos/${casino.id}/sell`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error || "Failed", variant: "destructive" }); return; }
+      toast({ title: "Casino sold!", description: data.message });
+      onRefresh();
+    } finally {
+      setSellingCasino(false);
+    }
   };
 
   return (
@@ -868,7 +928,7 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] text-amber-400/80 text-center">
-                    Creating this drink costs <span className="font-bold font-mono">{fmt(parseFloat(drinkPrice) || 0)}</span> chips from your balance
+                    Creating this drink costs <span className="font-bold font-mono">{fmt(parseFloat(drinkPrice) || 0)}</span> chips. Drinks start with 0 stock — restock after creating.
                   </p>
                   <Button onClick={addDrink} disabled={addingDrink} className="w-full" size="sm">
                     {addingDrink ? "Adding..." : `Add ${drinkEmoji} ${drinkName || "Drink"} — ${fmt(parseFloat(drinkPrice) || 0)} chips`}
@@ -881,29 +941,112 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
 
         {drinks.length > 0 ? (
           <div className="space-y-2">
-            {drinks.map(d => (
-              <div key={d.id} className="flex items-center justify-between p-3 rounded-lg bg-card/30 border border-white/5">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{d.emoji}</span>
-                  <div>
-                    <p className="text-sm font-medium">{d.name}</p>
-                    <p className="text-xs text-muted-foreground">{fmt(d.price)} chips · {d.tier}</p>
+            {drinks.map(d => {
+              const tierKey = `${d.tier}StorageLevel` as "cheapStorageLevel" | "standardStorageLevel" | "expensiveStorageLevel";
+              const storageLevel = casino[tierKey] ?? 0;
+              const maxStorage = 20 + storageLevel * 5;
+              const costPerUnit = Math.ceil(parseFloat(d.price) * 0.25);
+              const qtyStr = restockQtys[d.id] ?? "1";
+              const qty = parseInt(qtyStr) || 1;
+              const totalCost = costPerUnit * qty;
+              return (
+                <div key={d.id} className="p-3 rounded-lg bg-card/30 border border-white/5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{d.emoji}</span>
+                      <div>
+                        <p className="text-sm font-medium">{d.name}</p>
+                        <p className="text-xs text-muted-foreground">{fmt(d.price)} chips · <span className="capitalize">{d.tier}</span></p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-mono px-2 py-0.5 rounded-full ${d.stock > 0 ? "bg-green-900/30 text-green-400" : "bg-red-900/30 text-red-400"}`}>
+                        {d.stock}/{maxStorage} in stock
+                      </span>
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => toggleDrinkVisibility(d)}>
+                        {d.isAvailable ? "Hide" : "Show"}
+                      </Button>
+                    </div>
+                  </div>
+                  {/* Restock row */}
+                  <div className="flex items-center gap-2 bg-black/20 rounded-lg px-3 py-2">
+                    <span className="text-xs text-muted-foreground shrink-0">Buy stock:</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={maxStorage - d.stock}
+                      value={qtyStr}
+                      onChange={e => setRestockQtys(prev => ({ ...prev, [d.id]: e.target.value }))}
+                      className="h-7 w-16 text-center text-xs bg-black/30 border-white/10"
+                    />
+                    <span className="text-xs text-white/40 shrink-0">units</span>
+                    <span className="text-xs text-amber-400 font-mono shrink-0">{fmt(totalCost)} chips</span>
+                    <Button
+                      size="sm"
+                      className="h-7 px-3 text-xs bg-purple-700 hover:bg-purple-600 ml-auto shrink-0"
+                      disabled={restocking === d.id || d.stock >= maxStorage}
+                      onClick={() => restockDrink(d)}
+                    >
+                      {restocking === d.id ? "..." : d.stock >= maxStorage ? "Full" : "Restock"}
+                    </Button>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-0.5">
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => toggleDrink(d)}>
-                    {d.isAvailable ? "Hide" : "Restock"}
-                  </Button>
-                  {!d.isAvailable && (
-                    <p className="text-[9px] text-amber-400/70 font-mono pr-1">costs {fmt(Math.ceil(parseFloat(d.price) * 0.25))}</p>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">No drinks on the menu yet. Add one above!</p>
         )}
+      </div>
+
+      {/* Storage Upgrades */}
+      <div>
+        <h3 className="font-semibold mb-3 flex items-center gap-2">
+          <ShoppingCart className="w-4 h-4 text-cyan-400" /> Storage Upgrades
+          <span className="text-xs text-muted-foreground font-normal">1,000,000 chips · +5 slots per tier</span>
+        </h3>
+        <div className="grid grid-cols-3 gap-2">
+          {(["cheap", "standard", "expensive"] as const).map(tier => {
+            const levelKey = `${tier}StorageLevel` as "cheapStorageLevel" | "standardStorageLevel" | "expensiveStorageLevel";
+            const level = casino[levelKey] ?? 0;
+            const capacity = 20 + level * 5;
+            return (
+              <div key={tier} className="p-3 rounded-xl border border-white/5 bg-card/20 text-center space-y-2">
+                <p className="text-xs font-medium capitalize text-white/80">{tier}</p>
+                <p className="text-lg font-bold text-cyan-400">{capacity}</p>
+                <p className="text-[10px] text-muted-foreground">slots (Lvl {level})</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs h-7 border-cyan-500/30 text-cyan-300 hover:bg-cyan-900/20"
+                  disabled={upgradingStorage === tier}
+                  onClick={() => upgradeStorage(tier)}
+                >
+                  {upgradingStorage === tier ? "..." : "Upgrade"}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Danger zone — sell casino */}
+      <div className="rounded-xl border border-red-500/20 bg-red-900/10 p-4 space-y-2">
+        <h3 className="font-semibold text-red-300 flex items-center gap-2">
+          <Trash2 className="w-4 h-4" /> Sell Casino
+        </h3>
+        <p className="text-xs text-red-200/60">
+          Permanently delete your casino and receive back <span className="font-bold text-red-100">{fmt(Math.floor(parseFloat(casino.purchasePrice ?? "100000000") * 0.10))} chips</span> (10% of purchase price).
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-red-500/40 text-red-400 hover:bg-red-900/30 text-xs"
+          disabled={sellingCasino}
+          onClick={sellCasino}
+        >
+          {sellingCasino ? "Selling..." : "Sell Casino"}
+        </Button>
       </div>
     </div>
   );

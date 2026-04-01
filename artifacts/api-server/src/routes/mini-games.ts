@@ -97,9 +97,11 @@ async function settleGame(
       if (!casino) throw new Error("Casino not found");
       const bankroll = parseFloat(casino.bankroll);
       const uncappedPayout = betAmount * multiplier;
-      const insolvent = won && uncappedPayout > bankroll && bankroll > 0;
-      // Cap payout at bankroll so casino can never go below 0
-      payout = won ? Math.min(uncappedPayout, bankroll) : uncappedPayout;
+      // Casino funds = current bankroll + the incoming bet (it received the bet before paying out)
+      const totalCasinoFunds = bankroll + betAmount;
+      const insolvent = won && uncappedPayout > totalCasinoFunds;
+      // Cap payout at total casino funds so casino bankroll never goes negative
+      payout = won ? Math.min(uncappedPayout, totalCasinoFunds) : uncappedPayout;
       // If bet was already deducted at session start, only credit payout back; otherwise do full net settlement
       newBalance = betAlreadyDeducted ? currentBalance + payout : currentBalance - betAmount + payout;
       const casinoProfit = betAmount - payout;
@@ -115,7 +117,7 @@ async function settleGame(
       };
       if (insolvent) {
         casinoUpdate.insolvencyWinnerId = userId;
-        casinoUpdate.insolvencyDebtAmount = (uncappedPayout - bankroll).toFixed(2);
+        casinoUpdate.insolvencyDebtAmount = (uncappedPayout - totalCasinoFunds).toFixed(2);
         casinoInsolvent = true;
       }
 

@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { formatCurrency } from "@/lib/utils";
 
 export type PayTableEntry = {
   key: string;
@@ -36,6 +35,10 @@ function parsePayTable(raw: string | null | undefined, defaults: Record<string, 
   }
 }
 
+function stepFor(v: number): number {
+  return Number.isInteger(v) && v >= 5 ? 1 : 0.05;
+}
+
 export function CasinoGameEditor({ casinoId, gameType, payTableEntries = [], onSaved }: CasinoGameEditorProps) {
   const { toast } = useToast();
   const [isOwner, setIsOwner] = useState(false);
@@ -51,7 +54,8 @@ export function CasinoGameEditor({ casinoId, gameType, payTableEntries = [], onS
   const defaults = Object.fromEntries(payTableEntries.map(e => [e.key, e.defaultValue]));
 
   const loadConfig = useCallback(async () => {
-    const res = await fetch(`/api/casinos/${casinoId}/odds`, { credentials: "include" });
+    const BASE = import.meta.env.BASE_URL;
+    const res = await fetch(`${BASE}api/casinos/${casinoId}/odds`, { credentials: "include" });
     if (res.ok) {
       setIsOwner(true);
       const data = await res.json();
@@ -75,9 +79,10 @@ export function CasinoGameEditor({ casinoId, gameType, payTableEntries = [], onS
   async function handleSave() {
     setSaving(true);
     try {
+      const BASE = import.meta.env.BASE_URL;
       const body: Record<string, unknown> = { payoutMultiplier: multiplier };
       if (payTableEntries.length > 0) body.payTableConfig = JSON.stringify(payouts);
-      const res = await fetch(`/api/casinos/${casinoId}/odds/${gameType}`, {
+      const res = await fetch(`${BASE}api/casinos/${casinoId}/odds/${gameType}`, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -99,6 +104,15 @@ export function CasinoGameEditor({ casinoId, gameType, payTableEntries = [], onS
   function updatePayout(key: string, val: string) {
     const n = parseFloat(val);
     if (!isNaN(n)) setPayouts(prev => ({ ...prev, [key]: n }));
+  }
+
+  function nudge(key: string, dir: 1 | -1, entry: PayTableEntry) {
+    setPayouts(prev => {
+      const cur = prev[key] ?? entry.defaultValue;
+      const step = stepFor(cur);
+      const next = parseFloat((cur + dir * step).toFixed(4));
+      return { ...prev, [key]: Math.max(entry.min, Math.min(entry.max, next)) };
+    });
   }
 
   if (!isOwner) return null;
@@ -148,56 +162,94 @@ export function CasinoGameEditor({ casinoId, gameType, payTableEntries = [], onS
                     </button>
                   ))}
                 </div>
-                <input
-                  type="range"
-                  min={0.5}
-                  max={2.0}
-                  step={0.01}
-                  value={multiplier}
-                  onChange={e => setMultiplier(parseFloat(e.target.value))}
-                  className="w-full accent-amber-400 cursor-pointer"
-                />
+                <div className="flex items-center gap-2">
+                  <button
+                    className="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-sm font-bold transition-all shrink-0"
+                    onClick={() => setMultiplier(v => Math.max(0.5, parseFloat((v - 0.05).toFixed(2))))}
+                  >−</button>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={2.0}
+                    step={0.01}
+                    value={multiplier}
+                    onChange={e => setMultiplier(parseFloat(e.target.value))}
+                    className="flex-1 accent-amber-400 cursor-pointer"
+                  />
+                  <button
+                    className="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-sm font-bold transition-all shrink-0"
+                    onClick={() => setMultiplier(v => Math.min(2.0, parseFloat((v + 0.05).toFixed(2))))}
+                  >+</button>
+                  <Input
+                    type="number"
+                    value={multiplier}
+                    min={0.5}
+                    max={2.0}
+                    step={0.05}
+                    onChange={e => setMultiplier(Math.max(0.5, Math.min(2, parseFloat(e.target.value) || 1)))}
+                    className="w-16 h-7 text-center text-sm bg-black/40 border-white/20 text-white shrink-0"
+                  />
+                </div>
                 <p className="text-xs text-white/40">
-                  Affects all payouts — 1.00× is default, higher = more generous to players
+                  Scales all payouts — 1.00× is default, higher = more generous to players
                 </p>
               </div>
 
               {/* Per-symbol pay table */}
               {payTableEntries.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm text-white/80">Symbol Payouts (× bet)</p>
+                <div className="space-y-3">
+                  <p className="text-sm text-white/80">Symbol / Outcome Payouts (× bet)</p>
                   <div className="space-y-2">
-                    {payTableEntries.map(entry => (
-                      <div key={entry.key} className="flex items-center gap-3">
-                        <span className="text-lg w-8 text-center">{entry.emoji}</span>
-                        <span className="text-sm text-white/60 flex-1">{entry.label}</span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            className="w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-xs font-bold transition-all"
-                            onClick={() => setPayouts(prev => ({ ...prev, [entry.key]: Math.max(entry.min, (prev[entry.key] ?? entry.defaultValue) - 1) }))}
-                          >−</button>
-                          <Input
-                            type="number"
-                            value={payouts[entry.key] ?? entry.defaultValue}
-                            min={entry.min}
-                            max={entry.max}
-                            step={1}
-                            onChange={e => updatePayout(entry.key, e.target.value)}
-                            className="w-16 h-7 text-center text-sm bg-black/40 border-white/20 text-white"
-                          />
-                          <button
-                            className="w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-xs font-bold transition-all"
-                            onClick={() => setPayouts(prev => ({ ...prev, [entry.key]: Math.min(entry.max, (prev[entry.key] ?? entry.defaultValue) + 1) }))}
-                          >+</button>
-                          <span className="text-xs text-white/40 w-4">×</span>
+                    {payTableEntries.map(entry => {
+                      const cur = payouts[entry.key] ?? entry.defaultValue;
+                      const step = stepFor(entry.defaultValue);
+                      return (
+                        <div key={entry.key} className="bg-black/20 rounded-lg p-2.5">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-lg w-7 text-center shrink-0">{entry.emoji}</span>
+                            <span className="text-sm text-white/70 flex-1">{entry.label}</span>
+                            <span className="text-[10px] text-white/30">default: {entry.defaultValue}×</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              className="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-sm font-bold transition-all shrink-0"
+                              onClick={() => nudge(entry.key, -1, entry)}
+                            >−</button>
+                            <input
+                              type="range"
+                              min={entry.min}
+                              max={entry.max}
+                              step={step}
+                              value={cur}
+                              onChange={e => updatePayout(entry.key, e.target.value)}
+                              className="flex-1 accent-amber-400 cursor-pointer"
+                            />
+                            <button
+                              className="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-sm font-bold transition-all shrink-0"
+                              onClick={() => nudge(entry.key, 1, entry)}
+                            >+</button>
+                            <Input
+                              type="number"
+                              value={cur}
+                              min={entry.min}
+                              max={entry.max}
+                              step={step}
+                              onChange={e => updatePayout(entry.key, e.target.value)}
+                              className="w-20 h-7 text-center text-sm bg-black/40 border-amber-500/30 text-amber-300 font-mono font-bold shrink-0"
+                            />
+                            <span className="text-xs text-white/40 shrink-0">×</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
-                  <p className="text-xs text-white/40">
-                    Default: {payTableEntries.map(e => `${e.emoji} ${e.defaultValue}×`).join(", ")}
-                  </p>
                 </div>
+              )}
+
+              {payTableEntries.length === 0 && (
+                <p className="text-xs text-white/40">
+                  Use the global multiplier above to scale all payouts for this game.
+                </p>
               )}
 
               <div className="flex gap-2 pt-1">
@@ -218,7 +270,7 @@ export function CasinoGameEditor({ casinoId, gameType, payTableEntries = [], onS
                     setPayouts({ ...defaults });
                   }}
                 >
-                  Reset
+                  Reset to Defaults
                 </Button>
               </div>
             </div>
