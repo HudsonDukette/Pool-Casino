@@ -239,6 +239,16 @@ export default function Admin() {
     } catch {} finally { setAppealsLoading(false); }
   }, [user?.isAdmin]);
 
+  const loadAdminCasinos = React.useCallback(async () => {
+    if (!user?.isAdmin) return;
+    setCasinosLoading(true);
+    try {
+      const r = await fetch(`${BASE}api/admin/casinos`, { credentials: "include" });
+      const data = await r.json();
+      setAdminCasinos(data.casinos ?? []);
+    } catch {} finally { setCasinosLoading(false); }
+  }, [user?.isAdmin]);
+
   useEffect(() => { loadMoneyRequests(); }, [loadMoneyRequests]);
 
   const fulfillRequest = async (id: number, amount: string) => {
@@ -478,16 +488,6 @@ export default function Admin() {
       setAppeals(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     } catch {}
   };
-
-  const loadAdminCasinos = React.useCallback(async () => {
-    if (!user?.isAdmin) return;
-    setCasinosLoading(true);
-    try {
-      const r = await fetch(`${BASE}api/admin/casinos`, { credentials: "include" });
-      const data = await r.json();
-      setAdminCasinos(data.casinos ?? []);
-    } catch {} finally { setCasinosLoading(false); }
-  }, [user?.isAdmin]);
 
   const handleCasinoSell = async (casinoId: number) => {
     setCasinoActionLoading(true);
