@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   MessageSquare, UserPlus, Check, X, Bell, BellOff,
-  ChevronRight, Crown, Hash, Globe, Users, RefreshCw, Banknote,
+  ChevronRight, Hash, Globe, Users, RefreshCw, Ban, AlertTriangle, Clock, ShieldOff,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
@@ -47,6 +47,17 @@ interface UnreadRoom {
   lastMessage: { content: string; username: string | null; createdAt: string } | null;
 }
 
+function formatTimeRemaining(until: string): string {
+  const diff = new Date(until).getTime() - Date.now();
+  if (diff <= 0) return "expired";
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(h / 24);
+  if (d >= 2) return `${d} days`;
+  if (h >= 1) return `${h} hour${h !== 1 ? "s" : ""}`;
+  const m = Math.floor(diff / 60000);
+  return `${m} minute${m !== 1 ? "s" : ""}`;
+}
+
 export default function Notifications() {
   const { data: user, isLoading } = useGetMe({ query: { retry: false } });
   const [, navigate] = useLocation();
@@ -56,6 +67,10 @@ export default function Notifications() {
   const [unreadRooms, setUnreadRooms] = useState<UnreadRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
+  const [appealText, setAppealText] = useState("");
+  const [appealOpen, setAppealOpen] = useState(false);
+  const [appealSubmitting, setAppealSubmitting] = useState(false);
+  const [appealSubmitted, setAppealSubmitted] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -106,6 +121,29 @@ export default function Notifications() {
     navigate("/chat");
   };
 
+  const submitAppeal = async () => {
+    if (appealText.trim().length < 10) {
+      toast({ title: "Too short", description: "Please write at least 10 characters explaining your appeal.", variant: "destructive" });
+      return;
+    }
+    setAppealSubmitting(true);
+    try {
+      await apiFetch("api/user/appeal", { method: "POST", body: JSON.stringify({ message: appealText }) });
+      setAppealSubmitted(true);
+      setAppealOpen(false);
+      toast({ title: "Appeal submitted!", description: "An admin will review your appeal.", className: "bg-success text-success-foreground border-none" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setAppealSubmitting(false); }
+  };
+
+  const u = user as any;
+  const now = new Date();
+  const isPermanentlyBanned = u?.permanentlyBanned === true;
+  const isBanned = !isPermanentlyBanned && u?.bannedUntil && new Date(u.bannedUntil) > now;
+  const isSuspended = !isPermanentlyBanned && !isBanned && u?.suspendedUntil && new Date(u.suspendedUntil) > now;
+  const hasPunishment = isPermanentlyBanned || isBanned || isSuspended;
+
   const total = friendRequests.length + unreadRooms.length;
 
   if (isLoading || loading) {
@@ -151,7 +189,87 @@ export default function Notifications() {
         </Button>
       </div>
 
-      {total === 0 ? (
+      {/* ── Ban / Suspension Notice ────────────────────────────────────────── */}
+      {hasPunishment && (
+        <div className={`rounded-2xl border p-5 space-y-4 ${
+          isPermanentlyBanned ? "border-red-500/40 bg-red-900/20" :
+          isBanned ? "border-orange-500/40 bg-orange-900/20" :
+          "border-yellow-500/30 bg-yellow-900/10"
+        }`}>
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+              isPermanentlyBanned ? "bg-red-500/20" : isBanned ? "bg-orange-500/20" : "bg-yellow-500/20"
+            }`}>
+              {isPermanentlyBanned ? <Ban className="w-5 h-5 text-red-400" /> :
+               isBanned ? <ShieldOff className="w-5 h-5 text-orange-400" /> :
+               <Clock className="w-5 h-5 text-yellow-400" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className={`font-bold text-sm ${
+                isPermanentlyBanned ? "text-red-300" : isBanned ? "text-orange-300" : "text-yellow-300"
+              }`}>
+                {isPermanentlyBanned ? "Account Permanently Banned" :
+                 isBanned ? "Account Banned" :
+                 "Chat Suspended"}
+              </h3>
+              <p className="text-xs text-white/60 mt-0.5">
+                {isPermanentlyBanned
+                  ? "Your account has been permanently banned from PoolCasino."
+                  : isBanned
+                  ? `You are banned from playing games. Time remaining: ${formatTimeRemaining(u.bannedUntil)}.`
+                  : `Your chat access is suspended. Time remaining: ${formatTimeRemaining(u.suspendedUntil)}.`}
+              </p>
+              {u?.banReason && (
+                <p className="text-xs mt-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/70">
+                  <span className="font-medium text-white/50 mr-1">Reason:</span>{u.banReason}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Appeal section */}
+          {appealSubmitted ? (
+            <div className="rounded-xl bg-green-900/20 border border-green-500/30 px-4 py-3 text-xs text-green-300">
+              ✓ Your appeal has been submitted and is under review.
+            </div>
+          ) : appealOpen ? (
+            <div className="space-y-2">
+              <label className="text-xs text-white/50 uppercase tracking-wider">Your appeal message</label>
+              <textarea
+                value={appealText}
+                onChange={e => setAppealText(e.target.value)}
+                rows={3}
+                placeholder="Explain why you believe this action was incorrect or ask for reconsideration..."
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-white/20 resize-none"
+              />
+              <div className="flex gap-2">
+                <Button size="sm" className="bg-primary hover:bg-primary/80 text-black font-bold" disabled={appealSubmitting} onClick={submitAppeal}>
+                  {appealSubmitting ? "Submitting..." : "Submit Appeal"}
+                </Button>
+                <Button size="sm" variant="ghost" className="text-white/40 hover:text-white/60" onClick={() => setAppealOpen(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className={`border-white/20 hover:bg-white/5 text-white/70 gap-2 ${
+                isPermanentlyBanned ? "border-red-500/30 text-red-300 hover:bg-red-900/20" :
+                isBanned ? "border-orange-500/30 text-orange-300 hover:bg-orange-900/20" :
+                "border-yellow-500/30 text-yellow-300 hover:bg-yellow-900/20"
+              }`}
+              onClick={() => setAppealOpen(true)}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Appeal this decision
+            </Button>
+          )}
+        </div>
+      )}
+
+      {total === 0 && !hasPunishment ? (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
             <BellOff className="w-8 h-8 text-muted-foreground/40" />
@@ -159,7 +277,7 @@ export default function Notifications() {
           <p className="text-muted-foreground font-medium">You're all caught up!</p>
           <p className="text-sm text-muted-foreground/60">No pending friend requests or unread messages.</p>
         </div>
-      ) : (
+      ) : total > 0 ? (
         <div className="space-y-4">
           {/* Friend Requests Section */}
           {friendRequests.length > 0 && (
@@ -272,7 +390,7 @@ export default function Notifications() {
             </div>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

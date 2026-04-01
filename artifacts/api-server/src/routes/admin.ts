@@ -354,12 +354,13 @@ router.post("/admin/user/:id/suspend", async (req, res): Promise<void> => {
   const targetId = parseInt(req.params.id);
   const hours = parseFloat(req.body.hours ?? 24);
   if (isNaN(hours) || hours <= 0) { res.status(400).json({ error: "hours must be positive" }); return; }
+  const reason = req.body.reason ? String(req.body.reason).trim().slice(0, 500) : null;
   const until = new Date(Date.now() + hours * 3600 * 1000);
-  await db.update(usersTable).set({ suspendedUntil: until }).where(eq(usersTable.id, targetId));
+  await db.update(usersTable).set({ suspendedUntil: until, banReason: reason }).where(eq(usersTable.id, targetId));
   sendPushToUser(targetId, {
     title: "Account Notice",
-    body: `Your chat privileges have been suspended for ${hours} hour(s).`,
-    url: "/profile",
+    body: `Your chat privileges have been suspended for ${hours} hour(s).${reason ? ` Reason: ${reason}` : ""}`,
+    url: "/notifications",
     tag: "account-suspension",
   }).catch(() => {});
   res.json({ ok: true, message: `User suspended for ${hours}h (until ${until.toISOString()})` });
@@ -371,12 +372,13 @@ router.post("/admin/user/:id/ban", async (req, res): Promise<void> => {
   const targetId = parseInt(req.params.id);
   const hours = parseFloat(req.body.hours ?? 168);
   if (isNaN(hours) || hours <= 0) { res.status(400).json({ error: "hours must be positive" }); return; }
+  const reason = req.body.reason ? String(req.body.reason).trim().slice(0, 500) : null;
   const until = new Date(Date.now() + hours * 3600 * 1000);
-  await db.update(usersTable).set({ bannedUntil: until }).where(eq(usersTable.id, targetId));
+  await db.update(usersTable).set({ bannedUntil: until, banReason: reason }).where(eq(usersTable.id, targetId));
   sendPushToUser(targetId, {
-    title: "Account Notice",
-    body: `Your account has been banned from playing games for ${hours} hour(s). You may appeal this decision.`,
-    url: "/profile",
+    title: "Account Banned",
+    body: `Your account has been banned for ${hours} hour(s). You may appeal this decision.${reason ? ` Reason: ${reason}` : ""}`,
+    url: "/notifications",
     tag: "account-ban",
   }).catch(() => {});
   res.json({ ok: true, message: `User banned for ${hours}h (until ${until.toISOString()})` });
@@ -386,11 +388,12 @@ router.post("/admin/user/:id/perma-ban", async (req, res): Promise<void> => {
   const isAdmin = await requireAdmin(req, res);
   if (!isAdmin) return;
   const targetId = parseInt(req.params.id);
-  await db.update(usersTable).set({ permanentlyBanned: true }).where(eq(usersTable.id, targetId));
+  const reason = req.body.reason ? String(req.body.reason).trim().slice(0, 500) : null;
+  await db.update(usersTable).set({ permanentlyBanned: true, banReason: reason }).where(eq(usersTable.id, targetId));
   sendPushToUser(targetId, {
-    title: "Account Notice",
-    body: "Your account has been permanently banned. You may submit a ban appeal.",
-    url: "/profile",
+    title: "Account Permanently Banned",
+    body: `Your account has been permanently banned.${reason ? ` Reason: ${reason}` : ""} You may submit a ban appeal.`,
+    url: "/notifications",
     tag: "account-ban",
   }).catch(() => {});
   res.json({ ok: true, message: "User permanently banned" });
@@ -400,7 +403,7 @@ router.post("/admin/user/:id/unban", async (req, res): Promise<void> => {
   const isAdmin = await requireAdmin(req, res);
   if (!isAdmin) return;
   const targetId = parseInt(req.params.id);
-  await db.update(usersTable).set({ suspendedUntil: null, bannedUntil: null, permanentlyBanned: false }).where(eq(usersTable.id, targetId));
+  await db.update(usersTable).set({ suspendedUntil: null, bannedUntil: null, permanentlyBanned: false, banReason: null }).where(eq(usersTable.id, targetId));
   sendPushToUser(targetId, {
     title: "Account Notice",
     body: "Your account restrictions have been lifted. You can chat and play again.",

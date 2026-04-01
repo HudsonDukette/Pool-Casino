@@ -107,6 +107,13 @@ router.get("/casinos/:id", async (req, res): Promise<void> => {
       ownerId: casinosTable.ownerId,
       ownerUsername: usersTable.username,
       ownerAvatarUrl: usersTable.avatarUrl,
+      purchasePrice: casinosTable.purchasePrice,
+      imageUrl: casinosTable.imageUrl,
+      insolvencyWinnerId: casinosTable.insolvencyWinnerId,
+      insolvencyDebtAmount: casinosTable.insolvencyDebtAmount,
+      cheapStorageLevel: casinosTable.cheapStorageLevel,
+      standardStorageLevel: casinosTable.standardStorageLevel,
+      expensiveStorageLevel: casinosTable.expensiveStorageLevel,
     })
     .from(casinosTable)
     .leftJoin(usersTable, eq(casinosTable.ownerId, usersTable.id))
@@ -115,8 +122,14 @@ router.get("/casinos/:id", async (req, res): Promise<void> => {
 
   if (!casino) { res.status(404).json({ error: "Casino not found" }); return; }
 
+  // Authenticate to decide whether to return all drinks or only available ones
+  const requestUserId = (req as Request & { session?: { userId?: number } }).session?.userId;
+  const isOwner = requestUserId === casino.ownerId;
   const games = await db.select().from(casinoGamesOwnedTable).where(eq(casinoGamesOwnedTable.casinoId, casinoId));
-  const drinks = await db.select().from(casinoDrinksTable).where(and(eq(casinoDrinksTable.casinoId, casinoId), eq(casinoDrinksTable.isAvailable, true)));
+  const drinksQuery = isOwner
+    ? db.select().from(casinoDrinksTable).where(eq(casinoDrinksTable.casinoId, casinoId))
+    : db.select().from(casinoDrinksTable).where(and(eq(casinoDrinksTable.casinoId, casinoId), eq(casinoDrinksTable.isAvailable, true)));
+  const drinks = await drinksQuery;
 
   res.json({ casino, games, drinks });
 });

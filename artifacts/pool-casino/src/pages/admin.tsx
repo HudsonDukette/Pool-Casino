@@ -187,6 +187,7 @@ export default function Admin() {
   const [newAvatarUrl, setNewAvatarUrl] = useState("");
   const [suspendHours, setSuspendHours] = useState("24");
   const [banHours, setBanHours] = useState("168");
+  const [banReason, setBanReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -440,6 +441,7 @@ export default function Admin() {
       setManagedAction(null);
       setManagedPlayer(null);
       setConfirmDelete(false);
+      setBanReason("");
       refetchPlayers();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -979,7 +981,7 @@ export default function Admin() {
                   </div>
                 )}
                 {managedAction === "suspend" && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <label className="text-xs text-muted-foreground uppercase tracking-wider">Suspend for how many hours?</label>
                     <div className="flex gap-2 flex-wrap">
                       {["1", "6", "24", "72", "168"].map(h => (
@@ -991,14 +993,19 @@ export default function Admin() {
                       <input type="number" min="1" value={suspendHours} onChange={e => setSuspendHours(e.target.value)}
                         className="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs font-mono focus:outline-none focus:border-orange-500/50" />
                     </div>
-                    <Button onClick={() => adminAction(`/admin/user/${managedPlayer.id}/suspend`, "POST", { hours: parseFloat(suspendHours) })} disabled={actionLoading}
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground uppercase tracking-wider">Reason (shown to player)</label>
+                      <input type="text" value={banReason} onChange={e => setBanReason(e.target.value)} placeholder="Optional reason..."
+                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500/50" />
+                    </div>
+                    <Button onClick={() => adminAction(`/admin/user/${managedPlayer.id}/suspend`, "POST", { hours: parseFloat(suspendHours), reason: banReason || undefined })} disabled={actionLoading}
                       className="bg-orange-600 hover:bg-orange-500 text-white font-bold">
                       {actionLoading ? "Suspending..." : `Suspend ${managedPlayer.username} for ${suspendHours}h`}
                     </Button>
                   </div>
                 )}
                 {managedAction === "ban" && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <label className="text-xs text-muted-foreground uppercase tracking-wider">Ban for how many hours?</label>
                     <div className="flex gap-2 flex-wrap">
                       {["24", "72", "168", "720", "2160"].map(h => (
@@ -1010,7 +1017,12 @@ export default function Admin() {
                       <input type="number" min="1" value={banHours} onChange={e => setBanHours(e.target.value)}
                         className="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs font-mono focus:outline-none focus:border-red-500/50" />
                     </div>
-                    <Button onClick={() => adminAction(`/admin/user/${managedPlayer.id}/ban`, "POST", { hours: parseFloat(banHours) })} disabled={actionLoading}
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground uppercase tracking-wider">Reason (shown to player)</label>
+                      <input type="text" value={banReason} onChange={e => setBanReason(e.target.value)} placeholder="Optional reason..."
+                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-red-500/50" />
+                    </div>
+                    <Button onClick={() => adminAction(`/admin/user/${managedPlayer.id}/ban`, "POST", { hours: parseFloat(banHours), reason: banReason || undefined })} disabled={actionLoading}
                       className="bg-red-600 hover:bg-red-500 text-white font-bold">
                       {actionLoading ? "Banning..." : `Ban ${managedPlayer.username} for ${banHours}h`}
                     </Button>
@@ -1020,7 +1032,12 @@ export default function Admin() {
                   <div className="bg-red-950/30 border border-red-500/30 rounded-xl p-4 space-y-3">
                     <p className="text-sm text-red-300 font-semibold">Permanently ban {managedPlayer.username}?</p>
                     <p className="text-xs text-muted-foreground">This will permanently block the account. It can only be undone by an admin lifting the ban.</p>
-                    <Button onClick={() => adminAction(`/admin/user/${managedPlayer.id}/perma-ban`, "POST")} disabled={actionLoading}
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground uppercase tracking-wider">Reason (shown to player)</label>
+                      <input type="text" value={banReason} onChange={e => setBanReason(e.target.value)} placeholder="Optional reason..."
+                        className="w-full bg-black/40 border border-red-500/20 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-red-500/50" />
+                    </div>
+                    <Button onClick={() => adminAction(`/admin/user/${managedPlayer.id}/perma-ban`, "POST", { reason: banReason || undefined })} disabled={actionLoading}
                       className="bg-red-600 hover:bg-red-500 text-white font-bold">
                       {actionLoading ? "Banning..." : "Permanently Ban Account"}
                     </Button>
