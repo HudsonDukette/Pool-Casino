@@ -341,12 +341,12 @@ export default function Plinko() {
                   <div className="flex items-center gap-2">
                     <button
                       className="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-sm font-bold transition-all shrink-0"
-                      onClick={() => setDropDelay(v => Math.max(50, v - 50))}
+                      onClick={() => setDropDelay(v => Math.max(150, v - 50))}
                       disabled={isDropping}
                     >−</button>
                     <input
                       type="range"
-                      min={50}
+                      min={150}
                       max={2000}
                       step={50}
                       value={dropDelay}
@@ -361,7 +361,7 @@ export default function Plinko() {
                     >+</button>
                   </div>
                   <div className="flex justify-between text-[10px] text-muted-foreground/50 px-1">
-                    <span>0.05s (fast)</span>
+                    <span>0.15s (fast)</span>
                     <span>2.00s (slow)</span>
                   </div>
                 </div>
