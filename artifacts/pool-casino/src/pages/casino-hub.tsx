@@ -716,7 +716,8 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
       });
       const data = await res.json();
       if (!res.ok) { toast({ title: data.error || "Failed", variant: "destructive" }); return; }
-      toast({ title: `${drink.emoji} Restocked ×${data.actualQty}!`, description: `Paid ${fmt(data.totalCost)} chips — stock: ${data.newStock}/${data.maxStorage}` });
+      const poolInfo = data.tierUsed !== undefined ? ` · pool: ${data.tierUsed}/${data.maxStorage}` : "";
+      toast({ title: `${drink.emoji} Restocked ×${data.actualQty}!`, description: `Paid ${fmt(data.totalCost)} chips — stock: ${data.newStock}${poolInfo}` });
       setRestockQtys(prev => ({ ...prev, [drink.id]: "" }));
       onRefresh();
     } finally {
@@ -939,62 +940,97 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
           )}
         </AnimatePresence>
 
-        {drinks.length > 0 ? (
-          <div className="space-y-2">
-            {drinks.map(d => {
-              const tierKey = `${d.tier}StorageLevel` as "cheapStorageLevel" | "standardStorageLevel" | "expensiveStorageLevel";
-              const storageLevel = casino[tierKey] ?? 0;
-              const maxStorage = 20 + storageLevel * 5;
-              const costPerUnit = Math.ceil(parseFloat(d.price) * 0.25);
-              const qtyStr = restockQtys[d.id] ?? "1";
-              const qty = parseInt(qtyStr) || 1;
-              const totalCost = costPerUnit * qty;
-              return (
-                <div key={d.id} className="p-3 rounded-lg bg-card/30 border border-white/5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{d.emoji}</span>
-                      <div>
-                        <p className="text-sm font-medium">{d.name}</p>
-                        <p className="text-xs text-muted-foreground">{fmt(d.price)} chips · <span className="capitalize">{d.tier}</span></p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-mono px-2 py-0.5 rounded-full ${d.stock > 0 ? "bg-green-900/30 text-green-400" : "bg-red-900/30 text-red-400"}`}>
-                        {d.stock}/{maxStorage} in stock
+        {drinks.length > 0 ? (() => {
+          // Compute total tier stock across all drinks (shared pool)
+          const tierTotals: Record<string, number> = {};
+          const tierMax: Record<string, number> = {};
+          for (const d of drinks) {
+            tierTotals[d.tier] = (tierTotals[d.tier] ?? 0) + d.stock;
+            const lk = `${d.tier}StorageLevel` as "cheapStorageLevel" | "standardStorageLevel" | "expensiveStorageLevel";
+            tierMax[d.tier] = 20 + (casino[lk] ?? 0) * 5;
+          }
+
+          return (
+            <div className="space-y-4">
+              {(["cheap", "standard", "expensive"] as const).map(tier => {
+                const tierDrinks = drinks.filter(d => d.tier === tier);
+                if (tierDrinks.length === 0) return null;
+                const used = tierTotals[tier] ?? 0;
+                const cap = tierMax[tier] ?? 20;
+                const tierAvail = cap - used;
+                const pct = Math.min(100, Math.round((used / cap) * 100));
+                return (
+                  <div key={tier} className="space-y-2">
+                    {/* Tier header with shared pool bar */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold capitalize text-white/70">{tier} storage pool</span>
+                      <span className={`text-xs font-mono ${tierAvail === 0 ? "text-red-400" : tierAvail < 5 ? "text-yellow-400" : "text-green-400"}`}>
+                        {used}/{cap} used
                       </span>
-                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => toggleDrinkVisibility(d)}>
-                        {d.isAvailable ? "Hide" : "Show"}
-                      </Button>
                     </div>
+                    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-yellow-500" : "bg-green-500"}`}
+                        style={{ width: `${pct}%` }} />
+                    </div>
+
+                    {/* Drinks in this tier */}
+                    {tierDrinks.map(d => {
+                      const costPerUnit = Math.ceil(parseFloat(d.price) * 0.25);
+                      const qtyStr = restockQtys[d.id] ?? "1";
+                      const qty = parseInt(qtyStr) || 1;
+                      const totalCost = costPerUnit * qty;
+                      const tierFull = tierAvail <= 0;
+                      return (
+                        <div key={d.id} className="p-3 rounded-lg bg-card/30 border border-white/5 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl">{d.emoji}</span>
+                              <div>
+                                <p className="text-sm font-medium">{d.name}</p>
+                                <p className="text-xs text-muted-foreground">{fmt(d.price)} chips</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-mono px-2 py-0.5 rounded-full ${d.stock > 0 ? "bg-green-900/30 text-green-400" : "bg-red-900/30 text-red-400"}`}>
+                                {d.stock} in stock
+                              </span>
+                              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => toggleDrinkVisibility(d)}>
+                                {d.isAvailable ? "Hide" : "Show"}
+                              </Button>
+                            </div>
+                          </div>
+                          {/* Restock row */}
+                          <div className="flex items-center gap-2 bg-black/20 rounded-lg px-3 py-2">
+                            <span className="text-xs text-muted-foreground shrink-0">Buy stock:</span>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={tierAvail}
+                              value={qtyStr}
+                              onChange={e => setRestockQtys(prev => ({ ...prev, [d.id]: e.target.value }))}
+                              className="h-7 w-16 text-center text-xs bg-black/30 border-white/10"
+                              disabled={tierFull}
+                            />
+                            <span className="text-xs text-white/40 shrink-0">units</span>
+                            <span className="text-xs text-amber-400 font-mono shrink-0">{fmt(totalCost)} chips</span>
+                            <Button
+                              size="sm"
+                              className="h-7 px-3 text-xs bg-purple-700 hover:bg-purple-600 ml-auto shrink-0"
+                              disabled={restocking === d.id || tierFull}
+                              onClick={() => restockDrink(d)}
+                            >
+                              {restocking === d.id ? "..." : tierFull ? "Pool Full" : "Restock"}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  {/* Restock row */}
-                  <div className="flex items-center gap-2 bg-black/20 rounded-lg px-3 py-2">
-                    <span className="text-xs text-muted-foreground shrink-0">Buy stock:</span>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={maxStorage - d.stock}
-                      value={qtyStr}
-                      onChange={e => setRestockQtys(prev => ({ ...prev, [d.id]: e.target.value }))}
-                      className="h-7 w-16 text-center text-xs bg-black/30 border-white/10"
-                    />
-                    <span className="text-xs text-white/40 shrink-0">units</span>
-                    <span className="text-xs text-amber-400 font-mono shrink-0">{fmt(totalCost)} chips</span>
-                    <Button
-                      size="sm"
-                      className="h-7 px-3 text-xs bg-purple-700 hover:bg-purple-600 ml-auto shrink-0"
-                      disabled={restocking === d.id || d.stock >= maxStorage}
-                      onClick={() => restockDrink(d)}
-                    >
-                      {restocking === d.id ? "..." : d.stock >= maxStorage ? "Full" : "Restock"}
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
+                );
+              })}
+            </div>
+          );
+        })() : (
           <p className="text-sm text-muted-foreground text-center py-4">No drinks on the menu yet. Add one above!</p>
         )}
       </div>

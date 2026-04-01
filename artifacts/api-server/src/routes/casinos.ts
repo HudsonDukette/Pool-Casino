@@ -503,16 +503,32 @@ router.post("/casinos/:id/drinks/:drinkId/restock", async (req, res): Promise<vo
   const storageLevelKey = `${tier}StorageLevel` as "cheapStorageLevel" | "standardStorageLevel" | "expensiveStorageLevel";
   const casinoStorageLevel = parseInt(String(casino[storageLevelKey] ?? 0));
   const maxStorage = 20 + casinoStorageLevel * 5;
+
+  // Shared pool: sum all stock for this tier across all drinks in the casino
+  const tierDrinks = await db.select({ stock: casinoDrinksTable.stock })
+    .from(casinoDrinksTable)
+    .where(and(eq(casinoDrinksTable.casinoId, casinoId), eq(casinoDrinksTable.tier, tier)));
+  const totalTierStock = tierDrinks.reduce((sum, d) => sum + parseInt(String(d.stock ?? 0)), 0);
   const currentStock = parseInt(String(drink.stock ?? 0));
 
-  const available = maxStorage - currentStock;
-  if (available <= 0) { res.status(400).json({ error: `Storage full (${maxStorage} max). Upgrade your ${tier} storage first.` }); return; }
+  const tierAvailable = maxStorage - totalTierStock;
+  if (tierAvailable <= 0) {
+    res.status(400).json({ error: `${tier} storage pool full (${totalTierStock}/${maxStorage} used across all ${tier} drinks). Upgrade ${tier} storage or reduce other drink stocks first.` });
+    return;
+  }
 
-  const actualQty = Math.min(qty, available);
+  const actualQty = Math.min(qty, tierAvailable);
   const costPerUnit = Math.ceil(parseFloat(drink.price) * 0.25);
   const totalCost = costPerUnit * actualQty;
 
   const result = await db.transaction(async (tx) => {
+    // Re-check tier total inside transaction to avoid race conditions
+    const txTierDrinks = await tx.select({ stock: casinoDrinksTable.stock, id: casinoDrinksTable.id })
+      .from(casinoDrinksTable)
+      .where(and(eq(casinoDrinksTable.casinoId, casinoId), eq(casinoDrinksTable.tier, tier)));
+    const txTierTotal = txTierDrinks.reduce((sum, d) => sum + parseInt(String(d.stock ?? 0)), 0);
+    if (txTierTotal + actualQty > maxStorage) throw new Error(`${tier} storage pool would be exceeded. Only ${maxStorage - txTierTotal} slots available.`);
+
     const [freshUser] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     if (!freshUser) throw new Error("User not found");
     const ownerBal = parseFloat(freshUser.balance);
@@ -530,7 +546,8 @@ router.post("/casinos/:id/drinks/:drinkId/restock", async (req, res): Promise<vo
       description: `${drink.emoji} ${drink.name} ×${actualQty} restocked — ${totalCost} chips`,
     });
 
-    return { drink: updated, totalCost, actualQty, newStock, maxStorage };
+    const newTierTotal = txTierTotal + actualQty;
+    return { drink: updated, totalCost, actualQty, newStock, maxStorage, tierUsed: newTierTotal };
   });
 
   res.json(result);
