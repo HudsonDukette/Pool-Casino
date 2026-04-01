@@ -283,7 +283,7 @@ export default function Mines() {
   }
 
   return (
-    <GameShell title="Mines" description="Reveal safe tiles to grow your multiplier. Hit a mine and lose everything." accentColor="text-orange-400">
+    <GameShell casinoId={casinoId} gameType="mines" title="Mines" description="Reveal safe tiles to grow your multiplier. Hit a mine and lose everything." accentColor="text-orange-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Grid */}
         <Card className="bg-black/70 border-white/10">

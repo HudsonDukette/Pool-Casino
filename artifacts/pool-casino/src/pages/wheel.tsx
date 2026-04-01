@@ -138,7 +138,7 @@ export default function Wheel() {
   }
 
   return (
-    <GameShell title="Fortune Wheel" description="Spin the wheel. Higher multipliers are rarer." accentColor="text-purple-400">
+    <GameShell casinoId={casinoId} gameType="wheel" title="Fortune Wheel" description="Spin the wheel. Higher multipliers are rarer." accentColor="text-purple-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Wheel */}
         <Card className="bg-black/70 border-white/10">

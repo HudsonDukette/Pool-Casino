@@ -59,7 +59,7 @@ async function validateCasinoPlay(casinoId: number, gameType: string, betAmount:
   if (betAmount < minBet) { res.status(400).json({ error: `Minimum bet at this casino is ${minBet}` }); return false; }
   if (betAmount > maxBet) { res.status(400).json({ error: `Maximum bet at this casino is ${maxBet}` }); return false; }
   const bankroll = parseFloat(casino.bankroll);
-  if (bankroll < betAmount * 2) { res.status(400).json({ error: "Casino bankroll is too low to cover potential payouts for this bet" }); return false; }
+  if (bankroll <= 0) { res.status(400).json({ error: "Casino bankroll is empty — the owner needs to deposit chips first" }); return false; }
   return true;
 }
 

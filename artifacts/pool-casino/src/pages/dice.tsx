@@ -114,7 +114,7 @@ export default function Dice() {
   }
 
   return (
-    <GameShell title="Dice Roll" description="Pick exact or high/low — exact pays 5×, high/low pays 1.9×." accentColor="text-yellow-400">
+    <GameShell casinoId={casinoId} gameType="dice" title="Dice Roll" description="Pick exact or high/low — exact pays 5×, high/low pays 1.9×." accentColor="text-yellow-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Controls */}
         <Card className="bg-card/40 border-white/10">

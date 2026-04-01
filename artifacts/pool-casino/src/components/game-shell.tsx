@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, ChevronUp, ChevronDown } from "lucide-react";
 import { useGetMe, useGetPool } from "@workspace/api-client-react";
 import { formatCurrency } from "@/lib/utils";
+import { CasinoGameEditor, type PayTableEntry } from "@/components/casino-game-editor";
 
 interface GameShellProps {
   title: string;
@@ -15,9 +16,14 @@ interface GameShellProps {
   backHref?: string;
   backLabel?: string;
   children: React.ReactNode;
+  casinoId?: number;
+  gameType?: string;
+  payTableEntries?: PayTableEntry[];
+  onEditorSaved?: (payouts: Record<string, number>, multiplier: number) => void;
+  skipOwnerEditor?: boolean;
 }
 
-export function GameShell({ title, description, accentColor = "text-primary", heroImage, backHref = "/games", backLabel, children }: GameShellProps) {
+export function GameShell({ title, description, accentColor = "text-primary", heroImage, backHref = "/games", backLabel, children, casinoId, gameType, payTableEntries, onEditorSaved, skipOwnerEditor }: GameShellProps) {
   const label = backLabel ?? (backHref === "/games" ? "All Games" : "Back to Casino");
   return (
     <div className="max-w-3xl mx-auto space-y-6 pt-4">
@@ -46,6 +52,14 @@ export function GameShell({ title, description, accentColor = "text-primary", he
         </div>
       )}
       {children}
+      {!skipOwnerEditor && casinoId && gameType && (
+        <CasinoGameEditor
+          casinoId={casinoId}
+          gameType={gameType}
+          payTableEntries={payTableEntries}
+          onSaved={onEditorSaved}
+        />
+      )}
     </div>
   );
 }

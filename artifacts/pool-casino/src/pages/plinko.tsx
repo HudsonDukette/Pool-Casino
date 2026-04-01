@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { CasinoGameEditor } from "@/components/casino-game-editor";
 import { Coins, Info, StopCircle, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -375,8 +376,11 @@ export default function Plinko() {
             </CardContent>
           </Card>
         </div>
-
       </div>
+
+      {casinoId && (
+        <CasinoGameEditor casinoId={casinoId} gameType="plinko" />
+      )}
     </div>
   );
 }

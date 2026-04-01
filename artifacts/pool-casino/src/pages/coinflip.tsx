@@ -120,7 +120,7 @@ export default function CoinFlip() {
   }
 
   return (
-    <GameShell title="Coin Flip" description="Pick heads or tails. Win 1.95× your bet." accentColor="text-yellow-400">
+    <GameShell casinoId={casinoId} gameType="coinflip" title="Coin Flip" description="Pick heads or tails. Win 1.95× your bet." accentColor="text-yellow-400">
       <Card className="bg-card/40 border-white/10">
         <CardContent className="p-8 space-y-8">
           <div className="flex flex-col items-center gap-8">

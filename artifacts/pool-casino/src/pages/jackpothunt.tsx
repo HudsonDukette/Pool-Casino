@@ -56,7 +56,7 @@ export default function JackpotHunt() {
   };
 
   return (
-    <GameShell title="Jackpot Hunt" description="Hunt through 12 mystery boxes. Pick 3 — one might hold the jackpot! Average multiplier of your picks determines your payout." accentColor="text-yellow-400">
+    <GameShell casinoId={casinoId} gameType="jackpothunt" title="Jackpot Hunt" description="Hunt through 12 mystery boxes. Pick 3 — one might hold the jackpot! Average multiplier of your picks determines your payout." accentColor="text-yellow-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

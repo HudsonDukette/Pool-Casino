@@ -78,7 +78,7 @@ export default function ReverseCrash() {
   const multColor = currentMult > 6 ? "text-emerald-400" : currentMult > 3 ? "text-yellow-400" : currentMult > 1.5 ? "text-orange-400" : "text-red-400";
 
   return (
-    <GameShell title="Reverse Crash" description="The multiplier starts HIGH and crashes DOWN to 1×. Cash out before it hits the hidden crash point!" accentColor="text-red-400">
+    <GameShell casinoId={casinoId} gameType="reversecrash" title="Reverse Crash" description="The multiplier starts HIGH and crashes DOWN to 1×. Cash out before it hits the hidden crash point!" accentColor="text-red-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

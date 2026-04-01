@@ -100,6 +100,7 @@ export const casinoGameOddsTable = pgTable("casino_game_odds", {
   casinoId: integer("casino_id").notNull().references(() => casinosTable.id),
   gameType: text("game_type").notNull(),
   payoutMultiplier: numeric("payout_multiplier", { precision: 5, scale: 4 }).notNull().default("1.0000"),
+  payTableConfig: text("pay_table_config"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

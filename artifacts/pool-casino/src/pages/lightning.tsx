@@ -74,7 +74,7 @@ export default function Lightning() {
   const totalCost = bet * rounds;
 
   return (
-    <GameShell heroImage={heroImg} title="Lightning Round" description="N rapid-fire 50/50 flips at 1.9×. Each round is independent — win as many as you can." accentColor="text-yellow-300" backHref={casinoId !== undefined ? `/casino/${casinoId}` : "/games"}>
+    <GameShell casinoId={casinoId} gameType="lightning" heroImage={heroImg} title="Lightning Round" description="N rapid-fire 50/50 flips at 1.9×. Each round is independent — win as many as you can." accentColor="text-yellow-300" backHref={casinoId !== undefined ? `/casino/${casinoId}` : "/games"}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

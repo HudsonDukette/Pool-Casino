@@ -199,7 +199,7 @@ export default function Blackjack() {
   const currentGame = gameState;
 
   return (
-    <GameShell title="Blackjack" description="Beat the dealer to 21. Blackjack pays 2.5×. Dealer stands on 17." accentColor="text-green-400">
+    <GameShell casinoId={casinoId} gameType="blackjack" title="Blackjack" description="Beat the dealer to 21. Blackjack pays 2.5×. Dealer stands on 17." accentColor="text-green-400">
       <div className="space-y-6">
         {/* Table */}
         <Card className="bg-[#0a1f0a] border-green-900/50 min-h-[400px] shadow-[0_0_40px_rgba(34,197,94,0.05)]">

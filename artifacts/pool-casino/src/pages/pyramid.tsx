@@ -134,7 +134,7 @@ export default function Pyramid() {
   const displayLevel = failedAtLevel ?? currentLevel;
 
   return (
-    <GameShell heroImage={heroImg} title="Pyramid Climb" description="Scale 10 levels — each a 50/50 coin flip. Cash out any time or push your luck to the summit for 960×!" accentColor="text-amber-400">
+    <GameShell casinoId={casinoId} gameType="pyramid" heroImage={heroImg} title="Pyramid Climb" description="Scale 10 levels — each a 50/50 coin flip. Cash out any time or push your luck to the summit for 960×!" accentColor="text-amber-400">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
 
         {/* Pyramid Visual */}

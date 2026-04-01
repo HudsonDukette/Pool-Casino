@@ -92,7 +92,7 @@ export default function ElimWheel() {
   const currentEst = MULT_TABLE[Math.min(round, MULT_TABLE.length - 1)];
 
   return (
-    <GameShell title="Elimination Wheel" description="Spin the wheel — each spin eliminates one segment. Last segment standing wins the jackpot! Cash out early for smaller rewards." accentColor="text-pink-400">
+    <GameShell casinoId={casinoId} gameType="elimwheel" title="Elimination Wheel" description="Spin the wheel — each spin eliminates one segment. Last segment standing wins the jackpot! Cash out early for smaller rewards." accentColor="text-pink-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

@@ -609,20 +609,40 @@ router.put("/casinos/:id/odds/:gameType", async (req, res): Promise<void> => {
   if (isNaN(payoutMultiplier) || payoutMultiplier < 0.5 || payoutMultiplier > 2.0) {
     res.status(400).json({ error: "payoutMultiplier must be between 0.5 and 2.0" }); return;
   }
+  const payTableConfigRaw = req.body?.payTableConfig;
+  let payTableConfig: string | null = null;
+  if (payTableConfigRaw !== undefined && payTableConfigRaw !== null) {
+    if (typeof payTableConfigRaw === "string") {
+      try { JSON.parse(payTableConfigRaw); payTableConfig = payTableConfigRaw; } catch { res.status(400).json({ error: "payTableConfig must be valid JSON" }); return; }
+    } else if (typeof payTableConfigRaw === "object") {
+      payTableConfig = JSON.stringify(payTableConfigRaw);
+    }
+  }
   const [existing] = await db.select().from(casinoGameOddsTable)
     .where(and(eq(casinoGameOddsTable.casinoId, casinoId), eq(casinoGameOddsTable.gameType, gameType))).limit(1);
   if (existing) {
-    const [updated] = await db.update(casinoGameOddsTable)
-      .set({ payoutMultiplier: payoutMultiplier.toFixed(4), updatedAt: new Date() })
+    const updateSet = payTableConfig !== null
+      ? { payoutMultiplier: payoutMultiplier.toFixed(4), payTableConfig, updatedAt: new Date() }
+      : { payoutMultiplier: payoutMultiplier.toFixed(4), updatedAt: new Date() };
+    const [updated] = await db.update(casinoGameOddsTable).set(updateSet)
       .where(and(eq(casinoGameOddsTable.casinoId, casinoId), eq(casinoGameOddsTable.gameType, gameType)))
       .returning();
     res.json({ odds: updated });
   } else {
     const [created] = await db.insert(casinoGameOddsTable)
-      .values({ casinoId, gameType, payoutMultiplier: payoutMultiplier.toFixed(4) })
+      .values({ casinoId, gameType, payoutMultiplier: payoutMultiplier.toFixed(4), ...(payTableConfig !== null ? { payTableConfig } : {}) })
       .returning();
     res.json({ odds: created });
   }
+});
+
+// ─── Public: get game config for display ──────────────────────────────────────
+router.get("/casinos/:id/game-config/:gameType", async (req, res): Promise<void> => {
+  const casinoId = parseInt(req.params.id);
+  if (isNaN(casinoId)) { res.status(400).json({ error: "Invalid casino ID" }); return; }
+  const [config] = await db.select().from(casinoGameOddsTable)
+    .where(and(eq(casinoGameOddsTable.casinoId, casinoId), eq(casinoGameOddsTable.gameType, req.params.gameType))).limit(1);
+  res.json({ config: config || null });
 });
 
 export default router;

@@ -85,7 +85,7 @@ export default function SafeSteps() {
   }
 
   return (
-    <GameShell title="Safe Steps" description="Take steps forward — each one is harder to survive but multiplies your reward. Cash out before you fall!" accentColor="text-teal-400">
+    <GameShell casinoId={casinoId} gameType="safesteps" title="Safe Steps" description="Take steps forward — each one is harder to survive but multiplies your reward. Cash out before you fall!" accentColor="text-teal-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

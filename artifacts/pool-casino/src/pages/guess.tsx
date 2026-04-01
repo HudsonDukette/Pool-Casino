@@ -109,7 +109,7 @@ export default function Guess() {
   }
 
   return (
-    <GameShell title="Number Guess" description="Pick 1–100. Closer to the secret number = bigger payout!" accentColor="text-cyan-400">
+    <GameShell casinoId={casinoId} gameType="guess" title="Number Guess" description="Pick 1–100. Closer to the secret number = bigger payout!" accentColor="text-cyan-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Controls */}
         <Card className="bg-card/40 border-white/10">

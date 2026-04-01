@@ -8,6 +8,7 @@ import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { useGameApi } from "@/lib/game-api";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { CasinoGameEditor, type PayTableEntry } from "@/components/casino-game-editor";
 
 const SYMBOLS: Record<string, { emoji: string; color: string; payout: number }> = {
   seven:   { emoji: "7️⃣",  color: "text-red-400",    payout: 20 },
@@ -94,17 +95,29 @@ function Reel({ symbol, spinning, delay, stopDelay }: { symbol: string; spinning
   );
 }
 
+const SLOTS_PAY_TABLE_ENTRIES: PayTableEntry[] = [
+  { key: "seven",   label: "Seven",   emoji: "7️⃣",  defaultValue: 20, min: 2,  max: 100 },
+  { key: "diamond", label: "Diamond", emoji: "💎",  defaultValue: 10, min: 2,  max: 50  },
+  { key: "bell",    label: "Bell",    emoji: "🔔",  defaultValue: 5,  min: 1,  max: 25  },
+  { key: "orange",  label: "Orange",  emoji: "🍊",  defaultValue: 3,  min: 1,  max: 15  },
+  { key: "cherry",  label: "Cherry",  emoji: "🍒",  defaultValue: 2,  min: 1,  max: 10  },
+  { key: "lemon",   label: "Lemon",   emoji: "🍋",  defaultValue: 2,  min: 1,  max: 10  },
+];
+
 export default function Slots() {
   const { data: user } = useGetMe({ query: { retry: false } });
   const qc = useQueryClient();
   const { toast } = useToast();
-  const api = useGameApi<SlotsResult>();
+  const api = useGameApi<SlotsResult & { slotPayouts?: Record<string, number> }>();
   const casinoId = useCasinoId();
 
   const [betAmount, setBetAmount] = useState("10");
   const [spinning, setSpinning] = useState(false);
   const [reels, setReels] = useState<string[]>(["cherry", "lemon", "orange"]);
-  const [result, setResult] = useState<SlotsResult | null>(null);
+  const [result, setResult] = useState<(SlotsResult & { slotPayouts?: Record<string, number> }) | null>(null);
+  const [livePayouts, setLivePayouts] = useState<Record<string, number>>({
+    seven: 20, diamond: 10, bell: 5, orange: 3, cherry: 2, lemon: 2,
+  });
 
   const bet = parseFloat(betAmount) || 0;
 
@@ -122,6 +135,7 @@ export default function Slots() {
       return;
     }
     if (data) {
+      if (data.slotPayouts) setLivePayouts(data.slotPayouts);
       // Keep spinning visible, then stop reels one by one
       setTimeout(() => {
         setReels(data.reels);
@@ -132,7 +146,7 @@ export default function Slots() {
           qc.invalidateQueries({ queryKey: ["/api/pool"] });
           toast({
             title: data.won ? `${data.reels.map(r => SYMBOLS[r]?.emoji).join("")} Jackpot!` : "No match this time",
-            description: data.won ? `${data.multiplier}× — Won ${formatCurrency(data.payout)}!` : "Keep spinning!",
+            description: data.won ? `${data.multiplier.toFixed(1)}× — Won ${formatCurrency(data.payout)}!` : "Keep spinning!",
             variant: data.won ? "default" : "destructive",
           });
         }, 600);
@@ -142,17 +156,31 @@ export default function Slots() {
     }
   }
 
-  const payouts = [
-    { sym: "seven",   label: "7️⃣ 7️⃣ 7️⃣", mult: "20×", color: "text-red-400" },
-    { sym: "diamond", label: "💎 💎 💎", mult: "10×", color: "text-cyan-400" },
-    { sym: "bell",    label: "🔔 🔔 🔔", mult: "5×",  color: "text-yellow-400" },
-    { sym: "orange",  label: "🍊 🍊 🍊", mult: "3×",  color: "text-orange-400" },
-    { sym: "cherry",  label: "🍒 🍒 🍒", mult: "2×",  color: "text-pink-400" },
-    { sym: "lemon",   label: "🍋 🍋 🍋", mult: "2×",  color: "text-yellow-300" },
-  ];
+  // Fetch live payouts from public config when in a casino
+  useEffect(() => {
+    if (!casinoId) return;
+    fetch(`/api/casinos/${casinoId}/game-config/slots`, { credentials: "include" })
+      .then(r => r.json())
+      .then(data => {
+        if (data.config?.payTableConfig) {
+          try {
+            const custom = JSON.parse(data.config.payTableConfig) as Record<string, number>;
+            setLivePayouts(prev => ({ ...prev, ...custom }));
+          } catch { /* ignore */ }
+        }
+      })
+      .catch(() => {});
+  }, [casinoId]);
+
+  const payouts = SLOTS_PAY_TABLE_ENTRIES.map(e => ({
+    sym: e.key,
+    label: `${e.emoji} ${e.emoji} ${e.emoji}`,
+    mult: `${livePayouts[e.key] ?? e.defaultValue}×`,
+    color: SYMBOLS[e.key]?.color ?? "text-white",
+  }));
 
   return (
-    <GameShell title="Neon Slots" description="Match all 3 reels to win. Higher symbols = bigger payouts!" accentColor="text-pink-400">
+    <GameShell title="Neon Slots" description="Match all 3 reels to win. Higher symbols = bigger payouts!" accentColor="text-pink-400" casinoId={casinoId} gameType="slots" payTableEntries={SLOTS_PAY_TABLE_ENTRIES} onEditorSaved={(newPayouts) => setLivePayouts(prev => ({ ...prev, ...newPayouts }))} skipOwnerEditor={true}>
       <div className="space-y-6">
         {/* Slot Machine */}
         <Card className="bg-black/70 border-white/10">
@@ -240,7 +268,9 @@ export default function Slots() {
           {/* Paytable */}
           <Card className="bg-card/40 border-white/10">
             <CardContent className="p-6 space-y-3">
-              <p className="text-sm text-muted-foreground font-medium">Paytable</p>
+              <p className="text-sm text-muted-foreground font-medium">
+                Paytable {casinoId && <span className="text-amber-400/60 text-xs ml-1">(this casino)</span>}
+              </p>
               <div className="space-y-2">
                 {payouts.map(p => (
                   <div key={p.sym} className="flex items-center justify-between text-sm">
@@ -249,6 +279,14 @@ export default function Slots() {
                   </div>
                 ))}
               </div>
+              {casinoId && (
+                <CasinoGameEditor
+                  casinoId={casinoId}
+                  gameType="slots"
+                  payTableEntries={SLOTS_PAY_TABLE_ENTRIES}
+                  onSaved={(newPayouts) => setLivePayouts(prev => ({ ...prev, ...newPayouts }))}
+                />
+              )}
             </CardContent>
           </Card>
         </div>

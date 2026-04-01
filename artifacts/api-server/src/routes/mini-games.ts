@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { db, usersTable, poolTable, betsTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable } from "@workspace/db";
+import { db, usersTable, poolTable, betsTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable, casinoGameOddsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { calculateWinChance } from "../lib/gambling";
 
@@ -207,8 +207,7 @@ async function validateCasinoPlay(
   if (betAmount > maxBet) { res.status(400).json({ error: `Maximum bet at this casino is ${maxBet}` }); return false; }
 
   const bankroll = parseFloat(casino.bankroll);
-  // Require bankroll to cover at least 2× the bet (enough to pay a minimum win)
-  if (bankroll < betAmount * 2) { res.status(400).json({ error: "Casino bankroll is too low to cover potential payouts for this bet" }); return false; }
+  if (bankroll <= 0) { res.status(400).json({ error: "Casino bankroll is empty — the owner needs to deposit chips first" }); return false; }
 
   return true;
 }
@@ -397,18 +396,33 @@ router.post("/games/slots", async (req, res): Promise<void> => {
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
 
+  let slotPayouts: Record<SlotSymbol, number> = { ...SLOT_PAYOUTS };
+  let casinoOddsMultiplier = 1;
+
   if (casinoId !== undefined) {
     const ok = await validateCasinoPlay(casinoId, "slots", betAmount, res);
     if (!ok) return;
+    const [oddsRow] = await db.select().from(casinoGameOddsTable)
+      .where(and(eq(casinoGameOddsTable.casinoId, casinoId), eq(casinoGameOddsTable.gameType, "slots"))).limit(1);
+    if (oddsRow) {
+      casinoOddsMultiplier = parseFloat(oddsRow.payoutMultiplier);
+      if (oddsRow.payTableConfig) {
+        try {
+          const custom = JSON.parse(oddsRow.payTableConfig) as Partial<Record<SlotSymbol, number>>;
+          slotPayouts = { ...SLOT_PAYOUTS, ...custom };
+        } catch { /* ignore parse error */ }
+      }
+    }
   }
 
   const winChance = casinoId !== undefined ? 0.5 : calculateWinChance(betAmount, parseFloat(pool.totalAmount));
   const doWin = Math.random() < winChance;
   const reels = pickSlots(doWin);
   const allMatch = reels[0] === reels[1] && reels[1] === reels[2];
-  const multiplier = allMatch ? SLOT_PAYOUTS[reels[0]] : 0;
+  const rawMultiplier = allMatch ? slotPayouts[reels[0]] : 0;
+  const multiplier = rawMultiplier * casinoOddsMultiplier;
   const result = await settleGame(userId, "slots", betAmount, multiplier, user, pool, casinoId);
-  res.json({ ...result, reels });
+  res.json({ ...result, reels, slotPayouts });
 });
 
 // ─── 5. Wheel Spin ────────────────────────────────────────────────────────────

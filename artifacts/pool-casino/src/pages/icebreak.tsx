@@ -193,7 +193,7 @@ export default function IceBreak() {
   }
 
   return (
-    <GameShell heroImage={heroImg} title="Ice Break" description="A 4×4 grid hides 4 cracked tiles. Click to reveal safe ice — cash out before you crack through!" accentColor="text-cyan-400">
+    <GameShell casinoId={casinoId} gameType="icebreak" heroImage={heroImg} title="Ice Break" description="A 4×4 grid hides 4 cracked tiles. Click to reveal safe ice — cash out before you crack through!" accentColor="text-cyan-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Tile Grid */}

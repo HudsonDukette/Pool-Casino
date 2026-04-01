@@ -76,7 +76,7 @@ export default function PredChain() {
   }
 
   return (
-    <GameShell title="Prediction Chain" description="Predict a series of coin flips. All correct = huge multiplier! One wrong = lose everything." accentColor="text-indigo-400">
+    <GameShell casinoId={casinoId} gameType="predchain" title="Prediction Chain" description="Predict a series of coin flips. All correct = huge multiplier! One wrong = lose everything." accentColor="text-indigo-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

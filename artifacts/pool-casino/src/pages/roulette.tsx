@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { CasinoGameEditor } from "@/components/casino-game-editor";
 import { Coins, AlertCircle, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -349,6 +350,10 @@ export default function Roulette() {
           )}
         </div>
       </div>
+
+      {casinoId && (
+        <CasinoGameEditor casinoId={casinoId} gameType="roulette" />
+      )}
     </div>
   );
 }

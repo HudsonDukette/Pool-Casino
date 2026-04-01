@@ -44,7 +44,7 @@ export default function BlindDraw() {
   }
 
   return (
-    <GameShell title="Blind Draw" description="Pick a face-down card from 8 shuffled cards. Each card has a different multiplier — or nothing." accentColor="text-purple-400">
+    <GameShell casinoId={casinoId} gameType="blinddraw" title="Blind Draw" description="Pick a face-down card from 8 shuffled cards. Each card has a different multiplier — or nothing." accentColor="text-purple-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

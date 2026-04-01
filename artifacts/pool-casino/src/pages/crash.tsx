@@ -136,7 +136,7 @@ export default function Crash() {
   const colorClass = crashed ? "text-destructive" : running ? "text-green-400" : result?.won ? "text-primary" : "text-white/40";
 
   return (
-    <GameShell title="Crash" description="Set your auto-cashout, then watch the rocket. Cash out before it crashes!" accentColor="text-red-400">
+    <GameShell casinoId={casinoId} gameType="crash" title="Crash" description="Set your auto-cashout, then watch the rocket. Cash out before it crashes!" accentColor="text-red-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Display */}
         <Card className={`bg-black/60 border-2 transition-all duration-500 ${crashed ? "border-destructive/50 shadow-[0_0_30px_rgba(239,68,68,0.2)]" : running ? "border-green-500/30 shadow-[0_0_30px_rgba(34,197,94,0.1)]" : "border-white/10"}`}>

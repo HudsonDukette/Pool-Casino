@@ -72,7 +72,7 @@ export default function TargetHit() {
   const barPct = (elapsed / 5) * 100;
 
   return (
-    <GameShell title="Target Hit" description="A hidden target is set at a random moment in a 5-second window. Click exactly when the bar hits your timing sweet spot!" accentColor="text-red-400">
+    <GameShell casinoId={casinoId} gameType="targethit" title="Target Hit" description="A hidden target is set at a random moment in a 5-second window. Click exactly when the bar hits your timing sweet spot!" accentColor="text-red-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">
