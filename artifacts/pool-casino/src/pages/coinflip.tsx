@@ -8,6 +8,7 @@ import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { useGameApi } from "@/lib/game-api";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
 interface FlipResult {
   won: boolean;
@@ -120,7 +121,7 @@ export default function CoinFlip() {
   }
 
   return (
-    <GameShell casinoId={casinoId} gameType="coinflip" title="Coin Flip" description="Pick heads or tails. Win 1.95× your bet." accentColor="text-yellow-400">
+    <GameShell casinoId={casinoId} gameType="coinflip" payTableEntries={GAME_PAY_TABLES.coinflip} title="Coin Flip" description="Pick heads or tails. Win 1.95× your bet." accentColor="text-yellow-400">
       <Card className="bg-card/40 border-white/10">
         <CardContent className="p-8 space-y-8">
           <div className="flex flex-col items-center gap-8">

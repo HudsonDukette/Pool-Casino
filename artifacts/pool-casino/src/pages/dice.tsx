@@ -8,6 +8,7 @@ import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { useGameApi } from "@/lib/game-api";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
 // Dot positions for each face [row][col] grid (3x3, center position index = 4)
 const DICE_LAYOUTS: Record<number, boolean[]> = {
@@ -114,7 +115,7 @@ export default function Dice() {
   }
 
   return (
-    <GameShell casinoId={casinoId} gameType="dice" title="Dice Roll" description="Pick exact or high/low — exact pays 5×, high/low pays 1.9×." accentColor="text-yellow-400">
+    <GameShell casinoId={casinoId} gameType="dice" payTableEntries={GAME_PAY_TABLES.dice} title="Dice Roll" description="Pick exact or high/low — exact pays 5×, high/low pays 1.9×." accentColor="text-yellow-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Controls */}
         <Card className="bg-card/40 border-white/10">

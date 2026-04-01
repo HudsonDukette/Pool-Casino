@@ -9,6 +9,7 @@ import { GameShell, BetInput } from "@/components/game-shell";
 import heroImg from "@/assets/game-pyramid.png";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
 import { ChevronUp, TrendingUp, Trophy } from "lucide-react";
+import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -134,7 +135,7 @@ export default function Pyramid() {
   const displayLevel = failedAtLevel ?? currentLevel;
 
   return (
-    <GameShell casinoId={casinoId} gameType="pyramid" heroImage={heroImg} title="Pyramid Climb" description="Scale 10 levels — each a 50/50 coin flip. Cash out any time or push your luck to the summit for 960×!" accentColor="text-amber-400">
+    <GameShell casinoId={casinoId} gameType="pyramid" payTableEntries={GAME_PAY_TABLES.pyramid} heroImage={heroImg} title="Pyramid Climb" description="Scale 10 levels — each a 50/50 coin flip. Cash out any time or push your luck to the summit for 960×!" accentColor="text-amber-400">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
 
         {/* Pyramid Visual */}

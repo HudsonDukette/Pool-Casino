@@ -149,6 +149,7 @@ router.post("/casinos", async (req, res): Promise<void> => {
       name: name.trim(),
       description: (description ?? "").trim(),
       emoji: emoji ?? "🏦",
+      purchasePrice: CASINO_CREATION_COST.toString(),
     }).returning();
     return { casino: newCasino, newBalance: updatedBalance };
   });
@@ -643,6 +644,78 @@ router.get("/casinos/:id/game-config/:gameType", async (req, res): Promise<void>
   const [config] = await db.select().from(casinoGameOddsTable)
     .where(and(eq(casinoGameOddsTable.casinoId, casinoId), eq(casinoGameOddsTable.gameType, req.params.gameType))).limit(1);
   res.json({ config: config || null });
+});
+
+// ─── Insolvency Resolution ─────────────────────────────────────────────────────
+router.post("/casinos/:id/resolve-insolvency", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const casinoId = parseInt(req.params.id);
+  if (isNaN(casinoId)) { res.status(400).json({ error: "Invalid casino ID" }); return; }
+
+  const { action } = req.body as { action: "pay" | "sell" | "transfer" };
+  if (!["pay", "sell", "transfer"].includes(action)) {
+    res.status(400).json({ error: "Invalid action. Use pay, sell, or transfer." }); return;
+  }
+
+  const [casino] = await db.select().from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
+  if (!casino) { res.status(404).json({ error: "Casino not found" }); return; }
+  if (casino.ownerId !== userId) { res.status(403).json({ error: "You are not the owner of this casino" }); return; }
+  if (!casino.insolvencyWinnerId || !casino.insolvencyDebtAmount) {
+    res.status(400).json({ error: "This casino is not insolvent" }); return;
+  }
+
+  const debtAmount = parseFloat(casino.insolvencyDebtAmount);
+  const winnerId = casino.insolvencyWinnerId;
+
+  if (action === "pay") {
+    const [owner] = await db.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!owner) { res.status(404).json({ error: "User not found" }); return; }
+    const ownerBalance = parseFloat(owner.balance);
+    if (ownerBalance < debtAmount) {
+      res.status(400).json({ error: `Insufficient balance. Need ${debtAmount.toFixed(2)} chips.` }); return;
+    }
+    await db.transaction(async (tx) => {
+      await tx.update(usersTable).set({ balance: (ownerBalance - debtAmount).toFixed(2) }).where(eq(usersTable.id, userId));
+      const [winner] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, winnerId)).limit(1);
+      if (winner) {
+        await tx.update(usersTable).set({ balance: (parseFloat(winner.balance) + debtAmount).toFixed(2) }).where(eq(usersTable.id, winnerId));
+      }
+      await tx.update(casinosTable).set({ insolvencyWinnerId: null, insolvencyDebtAmount: null, isActive: true }).where(eq(casinosTable.id, casinoId));
+    });
+    res.json({ resolved: true, action: "pay", message: "Debt paid. Casino is back in operation." });
+
+  } else if (action === "sell") {
+    const purchasePrice = parseFloat(casino.purchasePrice ?? "100000000");
+    const sellback = Math.floor(purchasePrice * 0.05);
+    await db.transaction(async (tx) => {
+      const [winner] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, winnerId)).limit(1);
+      if (winner) {
+        await tx.update(usersTable).set({ balance: (parseFloat(winner.balance) + debtAmount).toFixed(2) }).where(eq(usersTable.id, winnerId));
+      }
+      const [owner] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+      if (owner) {
+        await tx.update(usersTable).set({ balance: (parseFloat(owner.balance) + sellback).toFixed(2) }).where(eq(usersTable.id, userId));
+      }
+      await tx.delete(casinosTable).where(eq(casinosTable.id, casinoId));
+    });
+    res.json({ resolved: true, action: "sell", sellback, message: `Casino sold for ${sellback.toLocaleString()} chips. Debt paid to winner.` });
+
+  } else {
+    // transfer
+    await db.transaction(async (tx) => {
+      const [winner] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, winnerId)).limit(1);
+      if (winner) {
+        await tx.update(usersTable).set({ balance: (parseFloat(winner.balance) + debtAmount).toFixed(2) }).where(eq(usersTable.id, winnerId));
+      }
+      await tx.update(casinosTable).set({
+        ownerId: winnerId,
+        insolvencyWinnerId: null,
+        insolvencyDebtAmount: null,
+        isActive: true,
+      }).where(eq(casinosTable.id, casinoId));
+    });
+    res.json({ resolved: true, action: "transfer", message: "Casino ownership transferred to winner. Debt paid from casino funds." });
+  }
 });
 
 export default router;

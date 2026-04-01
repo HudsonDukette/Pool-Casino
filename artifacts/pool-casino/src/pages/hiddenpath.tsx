@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -48,7 +49,7 @@ export default function HiddenPath() {
   }
 
   return (
-    <GameShell casinoId={casinoId} gameType="hiddenpath" title="Hidden Path" description="Navigate 5 hidden junctions. Go left or right — the correct path is revealed after your choices." accentColor="text-green-400">
+    <GameShell casinoId={casinoId} gameType="hiddenpath" payTableEntries={GAME_PAY_TABLES.hiddenpath} title="Hidden Path" description="Navigate 5 hidden junctions. Go left or right — the correct path is revealed after your choices." accentColor="text-green-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

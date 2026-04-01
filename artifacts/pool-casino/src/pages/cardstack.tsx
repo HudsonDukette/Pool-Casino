@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
 const BASE = import.meta.env.BASE_URL;
 type Phase = "idle" | "playing" | "done";
@@ -82,7 +83,7 @@ export default function CardStack() {
   const totalColor = total > 18 ? "text-emerald-400" : total > 15 ? "text-yellow-400" : total > 10 ? "text-blue-400" : "text-muted-foreground";
 
   return (
-    <GameShell casinoId={casinoId} gameType="cardstack" title="Card Stack" description="Draw cards to get as close to 21 as possible without busting. Higher totals = bigger multipliers. Stand to cash out!" accentColor="text-purple-400">
+    <GameShell casinoId={casinoId} gameType="cardstack" payTableEntries={GAME_PAY_TABLES.cardstack} title="Card Stack" description="Draw cards to get as close to 21 as possible without busting. Higher totals = bigger multipliers. Stand to cash out!" accentColor="text-purple-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

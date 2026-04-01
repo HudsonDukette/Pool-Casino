@@ -8,6 +8,7 @@ import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { useGameApi } from "@/lib/game-api";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
 const SEGMENTS = [
   { label: "0.2×", multiplier: 0.2, color: "#ef4444", bg: "rgba(239,68,68,0.2)"   },
@@ -138,7 +139,7 @@ export default function Wheel() {
   }
 
   return (
-    <GameShell casinoId={casinoId} gameType="wheel" title="Fortune Wheel" description="Spin the wheel. Higher multipliers are rarer." accentColor="text-purple-400">
+    <GameShell casinoId={casinoId} gameType="wheel" payTableEntries={GAME_PAY_TABLES.wheel} title="Fortune Wheel" description="Spin the wheel. Higher multipliers are rarer." accentColor="text-purple-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Wheel */}
         <Card className="bg-black/70 border-white/10">

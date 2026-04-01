@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
 const BASE = import.meta.env.BASE_URL;
 const TOTAL_TILES = 25;
@@ -283,7 +284,7 @@ export default function Mines() {
   }
 
   return (
-    <GameShell casinoId={casinoId} gameType="mines" title="Mines" description="Reveal safe tiles to grow your multiplier. Hit a mine and lose everything." accentColor="text-orange-400">
+    <GameShell casinoId={casinoId} gameType="mines" payTableEntries={GAME_PAY_TABLES.mines} title="Mines" description="Reveal safe tiles to grow your multiplier. Hit a mine and lose everything." accentColor="text-orange-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Grid */}
         <Card className="bg-black/70 border-white/10">

@@ -8,6 +8,7 @@ import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import heroImg from "@/assets/game-icebreak.png";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
 const BASE = import.meta.env.BASE_URL;
 const TOTAL_TILES = 16;
@@ -193,7 +194,7 @@ export default function IceBreak() {
   }
 
   return (
-    <GameShell casinoId={casinoId} gameType="icebreak" heroImage={heroImg} title="Ice Break" description="A 4×4 grid hides 4 cracked tiles. Click to reveal safe ice — cash out before you crack through!" accentColor="text-cyan-400">
+    <GameShell casinoId={casinoId} gameType="icebreak" payTableEntries={GAME_PAY_TABLES.icebreak} heroImage={heroImg} title="Ice Break" description="A 4×4 grid hides 4 cracked tiles. Click to reveal safe ice — cash out before you crack through!" accentColor="text-cyan-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Tile Grid */}

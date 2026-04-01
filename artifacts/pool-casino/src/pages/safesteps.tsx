@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
 const BASE = import.meta.env.BASE_URL;
 const STEP_MULTS = [0, 1.2, 1.5, 1.9, 2.5, 3.2, 4.0, 5.0, 6.5, 8.5, 12];
@@ -85,7 +86,7 @@ export default function SafeSteps() {
   }
 
   return (
-    <GameShell casinoId={casinoId} gameType="safesteps" title="Safe Steps" description="Take steps forward — each one is harder to survive but multiplies your reward. Cash out before you fall!" accentColor="text-teal-400">
+    <GameShell casinoId={casinoId} gameType="safesteps" payTableEntries={GAME_PAY_TABLES.safesteps} title="Safe Steps" description="Take steps forward — each one is harder to survive but multiplies your reward. Cash out before you fall!" accentColor="text-teal-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">

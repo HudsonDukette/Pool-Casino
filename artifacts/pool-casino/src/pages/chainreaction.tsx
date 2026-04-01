@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
 const BASE = import.meta.env.BASE_URL;
 type Phase = "idle" | "playing" | "bust" | "cashed";
@@ -82,7 +83,7 @@ export default function ChainReaction() {
   }
 
   return (
-    <GameShell casinoId={casinoId} gameType="chainreaction" title="Chain Reaction" description="Start a chain — each reaction grows your multiplier. But each reaction is riskier. Cash out before the chain breaks!" accentColor="text-orange-400">
+    <GameShell casinoId={casinoId} gameType="chainreaction" payTableEntries={GAME_PAY_TABLES.chainreaction} title="Chain Reaction" description="Start a chain — each reaction grows your multiplier. But each reaction is riskier. Cash out before the chain breaks!" accentColor="text-orange-400">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Card className="bg-card/40 border-white/10">
           <CardContent className="p-6 space-y-5">
