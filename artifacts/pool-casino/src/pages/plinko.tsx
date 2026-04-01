@@ -52,6 +52,7 @@ export default function Plinko() {
 
   // Multi-ball state
   const [ballCount, setBallCount] = useState<string>("1");
+  const [dropDelay, setDropDelay] = useState(DEFAULT_BALL_SPAWN_DELAY);
   const [isDropping, setIsDropping] = useState(false);
   const droppingRef = useRef(false);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -171,11 +172,11 @@ export default function Plinko() {
             droppingRef.current = false;
             setIsDropping(false);
           }
-        }, i * BALL_SPAWN_DELAY);
+        }, i * dropDelay);
         timeoutsRef.current.push(t);
       }
     }
-  }, [user, numericBet, numericCount, risk, displayBalance, totalCost, dropOneBall, stopDropping, toast]);
+  }, [user, numericBet, numericCount, risk, dropDelay, displayBalance, totalCost, dropOneBall, stopDropping, toast]);
 
   // Render pegs
   const pegs: React.ReactNode[] = [];
@@ -304,10 +305,7 @@ export default function Plinko() {
 
               {/* Ball Count */}
               <div className="space-y-3">
-                <label className="text-sm font-medium text-muted-foreground flex justify-between">
-                  Balls to Drop
-                  <span className="text-xs text-secondary/70">0.4s delay each</span>
-                </label>
+                <label className="text-sm font-medium text-muted-foreground">Balls to Drop</label>
                 <div className="flex gap-2">
                   {[1, 3, 5, 10].map(n => (
                     <Button key={n} variant={numericCount === n && !isDropping ? "default" : "outline"}
@@ -332,6 +330,42 @@ export default function Plinko() {
                   </div>
                 )}
               </div>
+
+              {/* Drop Delay */}
+              {numericCount > 1 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground flex justify-between">
+                    Drop Delay
+                    <span className="font-mono text-secondary/80 text-xs">{(dropDelay / 1000).toFixed(2)}s</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-sm font-bold transition-all shrink-0"
+                      onClick={() => setDropDelay(v => Math.max(50, v - 50))}
+                      disabled={isDropping}
+                    >−</button>
+                    <input
+                      type="range"
+                      min={50}
+                      max={2000}
+                      step={50}
+                      value={dropDelay}
+                      disabled={isDropping}
+                      onChange={e => setDropDelay(parseInt(e.target.value))}
+                      className="flex-1 accent-secondary cursor-pointer"
+                    />
+                    <button
+                      className="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-sm font-bold transition-all shrink-0"
+                      onClick={() => setDropDelay(v => Math.min(2000, v + 50))}
+                      disabled={isDropping}
+                    >+</button>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-muted-foreground/50 px-1">
+                    <span>0.05s (fast)</span>
+                    <span>2.00s (slow)</span>
+                  </div>
+                </div>
+              )}
 
               {/* Stats */}
               {pool && (
