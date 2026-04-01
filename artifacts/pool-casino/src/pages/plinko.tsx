@@ -30,7 +30,7 @@ interface BallState {
 const ROWS = 8;
 const ROW_HEIGHT = 44;
 const PEG_SPACING = 42;
-const BALL_SPAWN_DELAY = 400;
+const DEFAULT_BALL_SPAWN_DELAY = 400;
 
 export default function Plinko() {
   const { data: pool } = useGetPool();
