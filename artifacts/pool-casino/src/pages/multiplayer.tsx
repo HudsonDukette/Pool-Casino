@@ -82,7 +82,7 @@ export default function Multiplayer() {
         </div>
         <h1 className="text-4xl font-black text-white">Multiplayer Arena</h1>
         <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-          15 PvP games. No house edge — winner takes all.
+          21 PvP games. No house edge — winner takes all.
         </p>
       </motion.div>
 

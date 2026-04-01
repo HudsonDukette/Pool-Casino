@@ -80,6 +80,9 @@ const GAME_SPECIFIC_EVENTS = [
   "cardrace:start",
   "cardrace:update",
   "highlow:waiting_guess",
+  "quickdraw:waiting",
+  "quickdraw:decoy",
+  "quickdraw:draw",
 ];
 
 export function MultiplayerProvider({ children }: { children: React.ReactNode }) {

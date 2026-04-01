@@ -4,6 +4,78 @@ A full-stack browser casino where every bet affects a shared global pool. Built 
 
 ---
 
+## Games — 34 Total
+
+### Solo Games (20)
+Classic house-vs-player games that use the global shared pool:
+
+| Game | Description |
+|------|-------------|
+| Neon Roulette | Classic red/black with dynamic odds based on the global pool |
+| Drop Plinko | Physics ball through pegs — pick your risk level |
+| Blackjack | Hit or stand vs. the dealer. Blackjack pays 2.5× |
+| Crash | Watch the multiplier climb and cash out before it crashes |
+| Neon Slots | Match 3 reels — sevens pay 20×, diamonds 10× |
+| Dice Roll | Guess exact (5×) or high/low (1.9×) |
+| Coin Flip | Pick heads or tails — 1.95× |
+| Fortune Wheel | Spin for multipliers from 0.2× to 10× |
+| Number Guess | Guess a number 1–10 — correct pays 8× |
+| Mines | Pick tiles on a grid while dodging hidden mines |
+| High-Low | Guess the second card — consecutive streaks add up |
+| Double Dice | Bet on sum ranges of two dice |
+| Risk Ladder | Climb rungs for bigger payouts — one mistake loses it all |
+| War | Draw a card — beat the dealer to win |
+| Ice Break | Click the cracking ice before it breaks |
+| Advanced Wheel | More segments, more strategy |
+| Target Multiplier | Land on the exact target segment for max payout |
+| Range Bet | Bet on a number range across a rolling die |
+| Pyramid | Choose your row — top row pays the most |
+| Lightning Round | Speed-round multiplier surprises |
+
+### New Solo Games (14)
+Extra fast-paced solo games with AI-generated banner art:
+
+| Game | Description |
+|------|-------------|
+| Blind Draw | Draw a mystery face-down card — pure fate |
+| Hidden Path | Navigate 3 hidden forks — all safe = 8× |
+| Jackpot Hunt | Open 1 of 5 boxes — one holds a 10× jackpot |
+| Target Hit | Click the moving target for up to 5× payout |
+| Chain Reaction | Win streaks chain multipliers — cash out before you bust |
+| Timed Safe | Safe opens over 10 seconds — cash out early or wait |
+| Reverse Crash | Multiplier falls from 10× — cash out before it collapses |
+| Countdown Gamble | Multiplier grows as timer ticks — cash out before zero |
+| Card Stack | Draw cards without going over 21 — push your luck |
+| Power Grid | Pick tiles on a 4×4 grid — hit a trap and lose all |
+| Elimination Wheel | Each spin removes the worst segment — last one wins big |
+| Combo Builder | Win streaks stack your combo — one loss resets to zero |
+| Safe Steps | Step forward for higher rewards — each step raises fail risk |
+| Prediction Chain | Predict 3 coin flips in a row — all correct = 6.5× |
+
+### PvP Multiplayer Games (21)
+Real-time head-to-head via WebSocket. Winner takes the pot — no house edge:
+
+**Original 15:** War, High-Low, Coin Flip, RPS, Dice Battle, Blackjack PvP, Poker, Memory, Speed Click, Number Guess, Reaction, Tug of War, Quick Math, Card Race, Last Man
+
+**New 6:** Split or Steal, Risk Dice, Duel Flip, Risk Auction, Quick Draw, Balance Battle
+
+---
+
+## Player-Owned Casinos
+
+Users can create their own casinos and invite other players to gamble in them. Casino owners get:
+- Full control over games offered (purchase from a library of 32 solo games)
+- Custom payout multipliers per game (0.5× to 2.0×)
+- Enable/disable games per casino
+- Custom name, description, emoji, and drag-and-drop banner image
+- Bar menu — sell virtual drinks for chips
+- Bankroll management — deposit and withdraw from your casino pool
+- Pause/resume your casino at any time
+- Real-time stats: profit, house edge, bankroll trend chart, transaction history
+- Monthly tax to keep the economy balanced
+
+---
+
 ## Project Structure
 
 ```

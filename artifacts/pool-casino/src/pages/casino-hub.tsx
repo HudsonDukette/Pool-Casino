@@ -569,9 +569,10 @@ function LogsTab({ casinoId }: { casinoId: number }) {
 }
 
 // ─── Owner Controls Tab ────────────────────────────────────────────────────────
-function OwnerTab({ casino, drinks, onRefresh }: {
+function OwnerTab({ casino, drinks, games, onRefresh }: {
   casino: Casino;
   drinks: Drink[];
+  games: GameOwned[];
   onRefresh: () => void;
 }) {
   const { toast } = useToast();
@@ -584,33 +585,51 @@ function OwnerTab({ casino, drinks, onRefresh }: {
   const [minBet, setMinBet] = useState(casino.minBet);
   const [maxBet, setMaxBet] = useState(casino.maxBet);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [draggingImage, setDraggingImage] = useState(false);
 
-  // Game odds
-  const GAME_TYPES = ["plinko", "roulette", "highlow", "doubledice", "ladder", "war", "lightning"] as const;
-  type GameType = typeof GAME_TYPES[number];
-  const GAME_LABELS: Record<GameType, string> = {
-    plinko: "Plinko", roulette: "Roulette", highlow: "High-Low",
-    doubledice: "Double Dice", ladder: "Risk Ladder", war: "War", lightning: "Lightning",
-  };
+  // Game odds — dynamic based on owned games
   const [odds, setOdds] = useState<Record<string, string>>({});
   const [oddsLoaded, setOddsLoaded] = useState(false);
   const [savingOdds, setSavingOdds] = useState<string | null>(null);
+  const [togglingGame, setTogglingGame] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`${BASE}api/casinos/${casino.id}/odds`, { credentials: "include" })
       .then(r => r.json())
       .then(data => {
-        if (Array.isArray(data)) {
-          const map: Record<string, string> = {};
-          data.forEach((row: { gameType: string; payoutMultiplier: string }) => {
-            map[row.gameType] = row.payoutMultiplier;
-          });
-          setOdds(map);
-        }
+        const list = Array.isArray(data) ? data : (data?.odds ?? []);
+        const map: Record<string, string> = {};
+        list.forEach((row: { gameType: string; payoutMultiplier: string }) => {
+          map[row.gameType] = row.payoutMultiplier;
+        });
+        setOdds(map);
         setOddsLoaded(true);
       })
       .catch(() => setOddsLoaded(true));
   }, [casino.id]);
+
+  const handleImageFile = (file: File) => {
+    if (!file.type.startsWith("image/")) { toast({ title: "Please drop an image file", variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "Image must be under 5 MB", variant: "destructive" }); return; }
+    const reader = new FileReader();
+    reader.onload = e => setImageUrl(e.target?.result as string ?? "");
+    reader.readAsDataURL(file);
+  };
+
+  const toggleGameEnabled = async (gameType: string, isEnabled: boolean) => {
+    setTogglingGame(gameType);
+    try {
+      const res = await fetch(`${BASE}api/casinos/${casino.id}/games/${gameType}`, {
+        method: "PATCH", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isEnabled }),
+      });
+      if (!res.ok) { toast({ title: "Failed to update game", variant: "destructive" }); return; }
+      onRefresh();
+    } finally {
+      setTogglingGame(null);
+    }
+  };
 
   const saveOdds = async (gameType: string) => {
     const val = parseFloat(odds[gameType] ?? "1");
@@ -795,19 +814,31 @@ function OwnerTab({ casino, drinks, onRefresh }: {
             />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Banner Image URL <span className="text-white/30">(optional)</span></label>
-            <Input
-              type="url"
-              placeholder="https://example.com/your-casino-banner.jpg"
-              value={imageUrl}
-              onChange={e => setImageUrl(e.target.value)}
-              className="bg-background/50"
-            />
-            {imageUrl.trim() && (
-              <div className="mt-2 rounded-lg overflow-hidden border border-white/10 h-20">
-                <img src={imageUrl.trim()} alt="Banner preview" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-              </div>
-            )}
+            <label className="text-xs text-muted-foreground mb-1 block">Banner Image <span className="text-white/30">(optional)</span></label>
+            <div
+              className={`relative rounded-lg border-2 border-dashed transition-colors cursor-pointer ${draggingImage ? "border-primary bg-primary/10" : "border-white/15 hover:border-white/30"}`}
+              onDragOver={e => { e.preventDefault(); setDraggingImage(true); }}
+              onDragLeave={() => setDraggingImage(false)}
+              onDrop={e => { e.preventDefault(); setDraggingImage(false); const f = e.dataTransfer.files[0]; if (f) handleImageFile(f); }}
+              onClick={() => { const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.onchange = ev => { const f = (ev.target as HTMLInputElement).files?.[0]; if (f) handleImageFile(f); }; inp.click(); }}
+            >
+              {imageUrl ? (
+                <div className="relative h-24">
+                  <img src={imageUrl} alt="Banner preview" className="w-full h-24 object-cover rounded-lg" onError={() => setImageUrl("")} />
+                  <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <p className="text-xs text-white font-medium">Click or drop to replace</p>
+                  </div>
+                  <button className="absolute top-1.5 right-1.5 bg-black/60 rounded-full p-1 hover:bg-black/80" onClick={e => { e.stopPropagation(); setImageUrl(""); }}>
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-6 gap-1.5">
+                  <p className="text-2xl">🖼️</p>
+                  <p className="text-xs text-muted-foreground text-center">Drag & drop or click to upload<br /><span className="text-white/30">JPG, PNG, GIF · max 5 MB</span></p>
+                </div>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -825,39 +856,66 @@ function OwnerTab({ casino, drinks, onRefresh }: {
         </div>
       </div>
 
-      {/* Game Odds */}
+      {/* Game Library — enable/disable + custom odds */}
       <div>
         <h3 className="font-semibold mb-1 flex items-center gap-2">
-          <Gamepad2 className="w-4 h-4 text-emerald-400" /> Game House Edge
+          <Gamepad2 className="w-4 h-4 text-emerald-400" /> Game Library & Multipliers
         </h3>
-        <p className="text-xs text-muted-foreground mb-3">Set custom payout multipliers for each game. Lower values give the house a bigger edge. Leave blank to use default odds.</p>
-        {!oddsLoaded ? (
-          <p className="text-xs text-muted-foreground">Loading odds…</p>
+        <p className="text-xs text-muted-foreground mb-3">
+          Toggle games on/off and set custom payout multipliers. Lower multipliers give the house a bigger edge.
+        </p>
+        {games.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-4">No games yet — purchase some from the Games tab!</p>
+        ) : !oddsLoaded ? (
+          <p className="text-xs text-muted-foreground">Loading…</p>
         ) : (
           <div className="space-y-2">
-            {GAME_TYPES.map(gt => (
-              <div key={gt} className="flex items-center gap-2">
-                <span className="text-sm text-white/80 w-28 shrink-0">{GAME_LABELS[gt]}</span>
-                <Input
-                  type="number"
-                  min={0.01}
-                  step={0.01}
-                  placeholder="Default"
-                  value={odds[gt] ?? ""}
-                  onChange={e => setOdds(prev => ({ ...prev, [gt]: e.target.value }))}
-                  className="bg-background/50 h-8 text-sm font-mono"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={savingOdds === gt}
-                  onClick={() => saveOdds(gt)}
-                  className="h-8 px-3 text-xs shrink-0"
-                >
-                  {savingOdds === gt ? "…" : <Save className="w-3 h-3" />}
-                </Button>
-              </div>
-            ))}
+            {games.map(g => {
+              const meta = PURCHASABLE_GAMES.find(p => p.type === g.gameType);
+              const label = meta?.name ?? g.gameType;
+              const emoji = meta?.emoji ?? "🎮";
+              return (
+                <div key={g.gameType} className={`rounded-lg border p-2.5 transition-colors ${g.isEnabled ? "border-primary/20 bg-primary/5" : "border-white/5 bg-card/20"}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-base">{emoji}</span>
+                    <span className="text-sm font-medium flex-1">{label}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${g.isEnabled ? "bg-green-500/20 text-green-400" : "bg-white/5 text-muted-foreground"}`}>
+                      {g.isEnabled ? "Live" : "Off"}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant={g.isEnabled ? "outline" : "ghost"}
+                      className="h-6 px-2 text-[10px] shrink-0"
+                      disabled={togglingGame === g.gameType}
+                      onClick={() => toggleGameEnabled(g.gameType, !g.isEnabled)}
+                    >
+                      {togglingGame === g.gameType ? "…" : (g.isEnabled ? "Disable" : "Enable")}
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-20 shrink-0">Payout mult.</span>
+                    <Input
+                      type="number"
+                      min={0.01}
+                      step={0.01}
+                      placeholder="Default"
+                      value={odds[g.gameType] ?? ""}
+                      onChange={e => setOdds(prev => ({ ...prev, [g.gameType]: e.target.value }))}
+                      className="bg-background/50 h-7 text-xs font-mono"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={savingOdds === g.gameType}
+                      onClick={() => saveOdds(g.gameType)}
+                      className="h-7 px-2 text-[10px] shrink-0"
+                    >
+                      {savingOdds === g.gameType ? "…" : <Save className="w-3 h-3" />}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -1086,7 +1144,7 @@ export default function CasinoHub() {
           {activeTab === "stats" && <StatsTab casino={casino} />}
           {activeTab === "logs" && <LogsTab casinoId={casino.id} />}
           {activeTab === "owner" && (
-            <OwnerTab casino={casino} drinks={drinks} onRefresh={load} />
+            <OwnerTab casino={casino} drinks={drinks} games={games} onRefresh={load} />
           )}
         </motion.div>
       </AnimatePresence>

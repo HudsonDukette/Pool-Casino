@@ -25,6 +25,20 @@ import advwheelImg from "@/assets/game-advwheel.png";
 import rangeImg from "@/assets/game-range.png";
 import pyramidImg from "@/assets/game-pyramid.png";
 import lightningImg from "@/assets/game-lightning.png";
+import blinddrawImg from "@/assets/game-blinddraw.png";
+import hiddenpathImg from "@/assets/game-hiddenpath.png";
+import jackpothuntImg from "@/assets/game-jackpothunt.png";
+import targethitImg from "@/assets/game-targethit.png";
+import chainreactionImg from "@/assets/game-chainreaction.png";
+import timedsafeImg from "@/assets/game-timedsafe.png";
+import reversecrashImg from "@/assets/game-reversecrash.png";
+import countdownImg from "@/assets/game-countdown.png";
+import cardstackImg from "@/assets/game-cardstack.png";
+import powergridImg from "@/assets/game-powergrid.png";
+import elimwheelImg from "@/assets/game-elimwheel.png";
+import combobuilderImg from "@/assets/game-combobuilder.png";
+import safestepsImg from "@/assets/game-safesteps.png";
+import predchainImg from "@/assets/game-predchain.png";
 
 const games = [
   {
@@ -252,8 +266,7 @@ const games = [
   {
     id: "blinddraw",
     name: "Blind Draw",
-    emoji: "🃏",
-    emojiGradient: "from-indigo-900/60 to-purple-900/40",
+    image: blinddrawImg,
     description: "Draw a face-down card — it's a mystery multiplier or a loss. Pure fate.",
     href: "/games/blinddraw",
     accentClass: "group-hover:border-indigo-500/50 group-hover:shadow-[0_0_30px_rgba(99,102,241,0.2)]",
@@ -264,8 +277,7 @@ const games = [
   {
     id: "hiddenpath",
     name: "Hidden Path",
-    emoji: "🌿",
-    emojiGradient: "from-green-900/60 to-emerald-900/40",
+    image: hiddenpathImg,
     description: "Pick a path through 3 hidden forks. All safe = 8× win. One wrong turn = bust.",
     href: "/games/hiddenpath",
     accentClass: "group-hover:border-emerald-500/50 group-hover:shadow-[0_0_30px_rgba(16,185,129,0.2)]",
@@ -276,8 +288,7 @@ const games = [
   {
     id: "jackpothunt",
     name: "Jackpot Hunt",
-    emoji: "📦",
-    emojiGradient: "from-amber-900/60 to-yellow-900/40",
+    image: jackpothuntImg,
     description: "Open 1 of 5 boxes. One hides a 10× jackpot. Others give small wins or losses.",
     href: "/games/jackpothunt",
     accentClass: "group-hover:border-amber-500/50 group-hover:shadow-[0_0_30px_rgba(245,158,11,0.2)]",
@@ -288,8 +299,7 @@ const games = [
   {
     id: "targethit",
     name: "Target Hit",
-    emoji: "🎯",
-    emojiGradient: "from-red-900/60 to-rose-900/40",
+    image: targethitImg,
     description: "Click the moving target. A perfect hit pays up to 5×. Narrow window, big reward.",
     href: "/games/targethit",
     accentClass: "group-hover:border-rose-500/50 group-hover:shadow-[0_0_30px_rgba(244,63,94,0.2)]",
@@ -300,8 +310,7 @@ const games = [
   {
     id: "chainreaction",
     name: "Chain Reaction",
-    emoji: "⛓️",
-    emojiGradient: "from-orange-900/60 to-red-900/40",
+    image: chainreactionImg,
     description: "Each win chains a bigger multiplier. One loss wipes your chain. Cash out anytime.",
     href: "/games/chainreaction",
     accentClass: "group-hover:border-orange-500/50 group-hover:shadow-[0_0_30px_rgba(249,115,22,0.2)]",
@@ -312,8 +321,7 @@ const games = [
   {
     id: "timedsafe",
     name: "Timed Safe",
-    emoji: "🔐",
-    emojiGradient: "from-slate-900/60 to-zinc-900/40",
+    image: timedsafeImg,
     description: "A safe opens over 10 seconds. Cash out early for less, or wait for a bigger prize.",
     href: "/games/timedsafe",
     accentClass: "group-hover:border-slate-400/50 group-hover:shadow-[0_0_30px_rgba(148,163,184,0.2)]",
@@ -324,8 +332,7 @@ const games = [
   {
     id: "reversecrash",
     name: "Reverse Crash",
-    emoji: "📉",
-    emojiGradient: "from-red-900/60 to-pink-900/40",
+    image: reversecrashImg,
     description: "Multiplier starts at 10× and falls fast. Cash out before it crashes below 1×.",
     href: "/games/reversecrash",
     accentClass: "group-hover:border-pink-500/50 group-hover:shadow-[0_0_30px_rgba(236,72,153,0.2)]",
@@ -336,8 +343,7 @@ const games = [
   {
     id: "countdown",
     name: "Countdown Gamble",
-    emoji: "⏱️",
-    emojiGradient: "from-yellow-900/60 to-amber-900/40",
+    image: countdownImg,
     description: "Multiplier grows as the timer ticks down. Cash out before it hits zero or lose it all.",
     href: "/games/countdown",
     accentClass: "group-hover:border-yellow-500/50 group-hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]",
@@ -348,8 +354,7 @@ const games = [
   {
     id: "cardstack",
     name: "Card Stack",
-    emoji: "🃏",
-    emojiGradient: "from-blue-900/60 to-indigo-900/40",
+    image: cardstackImg,
     description: "Draw cards to build your stack without going over 21. Push your luck, one card at a time.",
     href: "/games/cardstack",
     accentClass: "group-hover:border-blue-500/50 group-hover:shadow-[0_0_30px_rgba(59,130,246,0.2)]",
@@ -360,8 +365,7 @@ const games = [
   {
     id: "powergrid",
     name: "Power Grid",
-    emoji: "⚡",
-    emojiGradient: "from-yellow-900/60 to-lime-900/40",
+    image: powergridImg,
     description: "A 4×4 grid of multipliers — pick tiles strategically. Hit a trap and lose everything.",
     href: "/games/powergrid",
     accentClass: "group-hover:border-lime-500/50 group-hover:shadow-[0_0_30px_rgba(132,204,22,0.2)]",
@@ -372,8 +376,7 @@ const games = [
   {
     id: "elimwheel",
     name: "Elimination Wheel",
-    emoji: "🎡",
-    emojiGradient: "from-violet-900/60 to-purple-900/40",
+    image: elimwheelImg,
     description: "Each spin removes the worst segment. 5 rounds, last segment wins a massive payout.",
     href: "/games/elimwheel",
     accentClass: "group-hover:border-violet-500/50 group-hover:shadow-[0_0_30px_rgba(139,92,246,0.2)]",
@@ -384,8 +387,7 @@ const games = [
   {
     id: "combobuilder",
     name: "Combo Builder",
-    emoji: "🔥",
-    emojiGradient: "from-red-900/60 to-orange-900/40",
+    image: combobuilderImg,
     description: "Win streaks stack your combo multiplier. One loss resets it to zero. How high can you go?",
     href: "/games/combobuilder",
     accentClass: "group-hover:border-red-500/50 group-hover:shadow-[0_0_30px_rgba(239,68,68,0.2)]",
@@ -396,8 +398,7 @@ const games = [
   {
     id: "safesteps",
     name: "Safe Steps",
-    emoji: "🪜",
-    emojiGradient: "from-teal-900/60 to-cyan-900/40",
+    image: safestepsImg,
     description: "Step forward for higher rewards. Each step raises the fail chance. Cash out or climb.",
     href: "/games/safesteps",
     accentClass: "group-hover:border-teal-500/50 group-hover:shadow-[0_0_30px_rgba(20,184,166,0.2)]",
@@ -408,8 +409,7 @@ const games = [
   {
     id: "predchain",
     name: "Prediction Chain",
-    emoji: "🔮",
-    emojiGradient: "from-purple-900/60 to-fuchsia-900/40",
+    image: predchainImg,
     description: "Predict 3 coin flips in a row. Each correct adds to your chain. Get all 3 for 6.5× payout.",
     href: "/games/predchain",
     accentClass: "group-hover:border-fuchsia-500/50 group-hover:shadow-[0_0_30px_rgba(217,70,239,0.2)]",
