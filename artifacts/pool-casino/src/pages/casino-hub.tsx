@@ -209,10 +209,13 @@ function GamesTab({ casino, games, drinks, isOwner, onRefresh }: {
   const [, navigate] = useLocation();
   const [buying, setBuying] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [editingGame, setEditingGame] = useState<string | null>(null);
+  const [editMultiplier, setEditMultiplier] = useState<string>("");
+  const [loadingOdds, setLoadingOdds] = useState(false);
+  const [savingOdds, setSavingOdds] = useState(false);
   const GAME_COST = 1_000_000;
 
   const ownedTypes = new Set(games.map(g => g.gameType));
-  const enabledTypes = new Set(games.filter(g => g.isEnabled).map(g => g.gameType));
 
   const purchase = async (gameType: string) => {
     setBuying(gameType);
@@ -246,6 +249,45 @@ function GamesTab({ casino, games, drinks, isOwner, onRefresh }: {
     }
   };
 
+  const openEdit = async (gameType: string) => {
+    if (editingGame === gameType) { setEditingGame(null); return; }
+    setEditingGame(gameType);
+    setEditMultiplier("");
+    setLoadingOdds(true);
+    try {
+      const res = await fetch(`${BASE}api/casinos/${casino.id}/odds`, { credentials: "include" });
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : (data?.odds ?? []);
+      const existing = list.find((r: { gameType: string; payoutMultiplier: string }) => r.gameType === gameType);
+      setEditMultiplier(existing ? existing.payoutMultiplier : "1.00");
+    } catch {
+      setEditMultiplier("1.00");
+    } finally {
+      setLoadingOdds(false);
+    }
+  };
+
+  const saveMultiplier = async (gameType: string) => {
+    const val = parseFloat(editMultiplier);
+    if (isNaN(val) || val < 0.5 || val > 2.0) {
+      toast({ title: "Multiplier must be between 0.5 and 2.0", variant: "destructive" }); return;
+    }
+    setSavingOdds(true);
+    try {
+      const res = await fetch(`${BASE}api/casinos/${casino.id}/odds/${gameType}`, {
+        method: "PUT", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payoutMultiplier: val }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error || "Failed to save", variant: "destructive" }); return; }
+      toast({ title: "Multiplier saved!", description: `${gameType} now pays ${val}×` });
+      setEditingGame(null);
+    } finally {
+      setSavingOdds(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Current game library */}
@@ -254,41 +296,120 @@ function GamesTab({ casino, games, drinks, isOwner, onRefresh }: {
           <h3 className="font-semibold mb-3 flex items-center gap-2">
             <Gamepad2 className="w-4 h-4 text-primary" /> Game Library ({games.length})
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex flex-col gap-2">
             {games.map(g => {
               const meta = PURCHASABLE_GAMES.find(p => p.type === g.gameType);
+              const isEditing = editingGame === g.gameType;
               return (
-                <div key={g.id} className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${g.isEnabled ? "bg-primary/5 border-primary/20" : "bg-card/30 border-white/5"}`}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{meta?.emoji ?? "🎮"}</span>
-                    <div>
-                      <p className="text-sm font-medium">{meta?.name ?? g.gameType}</p>
-                      <p className="text-[10px] text-muted-foreground">{g.isEnabled ? "Live" : "Disabled"}</p>
+                <div key={g.id} className={`rounded-lg border transition-colors ${g.isEnabled ? "bg-primary/5 border-primary/20" : "bg-card/30 border-white/5"} ${isEditing ? "border-amber-500/30 bg-amber-500/5" : ""}`}>
+                  {/* Main game row */}
+                  <div className="flex items-center justify-between p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{meta?.emoji ?? "🎮"}</span>
+                      <div>
+                        <p className="text-sm font-medium">{meta?.name ?? g.gameType}</p>
+                        <p className="text-[10px] text-muted-foreground">{g.isEnabled ? "Live" : "Disabled"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {g.isEnabled && meta?.route && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => navigate(`${BASE}games/${meta.route}?casinoId=${casino.id}`)}
+                        >
+                          <ExternalLink className="w-3 h-3 mr-1" /> Play
+                        </Button>
+                      )}
+                      {isOwner && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant={isEditing ? "default" : "ghost"}
+                            className={`h-7 px-2 text-xs ${isEditing ? "bg-amber-500 hover:bg-amber-600 text-black" : ""}`}
+                            onClick={() => openEdit(g.gameType)}
+                          >
+                            <Pencil className="w-3 h-3 mr-1" /> Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={g.isEnabled ? "outline" : "ghost"}
+                            className="h-7 px-2 text-xs"
+                            disabled={toggling === g.gameType}
+                            onClick={() => toggle(g.gameType, !g.isEnabled)}
+                          >
+                            {g.isEnabled ? "Disable" : "Enable"}
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {g.isEnabled && meta?.route && (
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => navigate(`${BASE}games/${meta.route}?casinoId=${casino.id}`)}
+
+                  {/* Inline editor — owner only */}
+                  <AnimatePresence>
+                    {isOwner && isEditing && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
                       >
-                        <ExternalLink className="w-3 h-3 mr-1" /> Play
-                      </Button>
+                        <div className="border-t border-amber-500/20 px-3 pb-3 pt-3 space-y-3">
+                          <div>
+                            <p className="text-xs font-semibold text-amber-400 mb-1">Payout Multiplier</p>
+                            <p className="text-[10px] text-muted-foreground mb-2">
+                              Controls how much players receive on a win. Default is 1.0×. Range: 0.5× (house advantage) to 2.0× (player advantage).
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <div className="relative flex-1">
+                                <Input
+                                  type="number"
+                                  min={0.5}
+                                  max={2.0}
+                                  step={0.05}
+                                  value={loadingOdds ? "" : editMultiplier}
+                                  placeholder={loadingOdds ? "Loading..." : "1.00"}
+                                  disabled={loadingOdds}
+                                  onChange={e => setEditMultiplier(e.target.value)}
+                                  className="bg-background/70 font-mono text-sm pr-8"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">×</span>
+                              </div>
+                              <div className="flex gap-1">
+                                {[0.75, 0.9, 1.0, 1.1, 1.25].map(v => (
+                                  <button
+                                    key={v}
+                                    onClick={() => setEditMultiplier(v.toString())}
+                                    className={`px-2 py-1 text-[10px] rounded border transition-colors font-mono ${parseFloat(editMultiplier) === v ? "border-amber-400 bg-amber-500/20 text-amber-300" : "border-white/10 text-muted-foreground hover:border-white/20"}`}
+                                  >
+                                    {v}×
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground/50 mt-1.5">
+                              Example: 0.95× means players get back 95% of their potential win. 1.0× = no house edge.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 justify-end">
+                            <Button size="sm" variant="ghost" className="h-7 px-3 text-xs" onClick={() => setEditingGame(null)}>
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-7 px-3 text-xs bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+                              disabled={savingOdds || loadingOdds}
+                              onClick={() => saveMultiplier(g.gameType)}
+                            >
+                              <Save className="w-3 h-3 mr-1" />
+                              {savingOdds ? "Saving..." : "Save Multiplier"}
+                            </Button>
+                          </div>
+                        </div>
+                      </motion.div>
                     )}
-                    {isOwner && (
-                      <Button
-                        size="sm"
-                        variant={g.isEnabled ? "outline" : "ghost"}
-                        className="h-7 px-2 text-xs"
-                        disabled={toggling === g.gameType}
-                        onClick={() => toggle(g.gameType, !g.isEnabled)}
-                      >
-                        {g.isEnabled ? "Disable" : "Enable"}
-                      </Button>
-                    )}
-                  </div>
+                  </AnimatePresence>
                 </div>
               );
             })}
