@@ -36,7 +36,7 @@ function parsePayTable(raw: string | null | undefined, defaults: Record<string, 
 }
 
 function stepFor(v: number): number {
-  return Number.isInteger(v) && v >= 5 ? 1 : 0.05;
+  return v >= 10 ? 1 : 0.1;
 }
 
 export function CasinoGameEditor({ casinoId, gameType, payTableEntries = [], onSaved }: CasinoGameEditorProps) {
@@ -233,9 +233,9 @@ export function CasinoGameEditor({ casinoId, gameType, payTableEntries = [], onS
                               value={cur}
                               min={entry.min}
                               max={entry.max}
-                              step={step}
+                              step={0.1}
                               onChange={e => updatePayout(entry.key, e.target.value)}
-                              className="w-20 h-7 text-center text-sm bg-black/40 border-amber-500/30 text-amber-300 font-mono font-bold shrink-0"
+                              className="w-24 h-7 text-center text-sm bg-black/40 border-amber-500/30 text-amber-300 font-mono font-bold shrink-0"
                             />
                             <span className="text-xs text-white/40 shrink-0">×</span>
                           </div>

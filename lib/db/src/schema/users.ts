@@ -30,6 +30,7 @@ export const usersTable = pgTable("users", {
   suspendedUntil: timestamp("suspended_until", { withTimezone: true }),
   bannedUntil: timestamp("banned_until", { withTimezone: true }),
   permanentlyBanned: boolean("permanently_banned").notNull().default(false),
+  isOwner: boolean("is_owner").notNull().default(false),
 });
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({

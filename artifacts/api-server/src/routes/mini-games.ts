@@ -763,20 +763,29 @@ router.post("/games/mines/cashout", async (req, res): Promise<void> => {
   if (game.casinoId !== undefined) {
     const [casino] = await db.select().from(casinosTable).where(eq(casinosTable.id, game.casinoId)).limit(1);
     const bankroll = parseFloat(casino?.bankroll ?? "0");
-    payout = Math.min(uncappedPayout, bankroll);
+    // Bet was already deducted from player at game start but not yet added to bankroll
+    const totalCasinoFunds = bankroll + game.betAmount;
+    const insolvent = won && uncappedPayout > totalCasinoFunds;
+    payout = won ? Math.min(uncappedPayout, totalCasinoFunds) : uncappedPayout;
     newBalance = currentBalance + payout;
     const casinoProfit = game.betAmount - payout;
     const newBankroll = Math.max(0, bankroll + casinoProfit);
 
+    const casinoUpdate: Record<string, unknown> = {
+      bankroll: newBankroll.toFixed(2),
+      totalBets: sql`${casinosTable.totalBets} + 1`,
+      totalWagered: sql`${casinosTable.totalWagered} + ${game.betAmount}`,
+      totalPaidOut: sql`${casinosTable.totalPaidOut} + ${payout}`,
+      isPaused: newBankroll <= 0 || insolvent,
+      updatedAt: new Date(),
+    };
+    if (insolvent) {
+      casinoUpdate.insolvencyWinnerId = userId;
+      casinoUpdate.insolvencyDebtAmount = (uncappedPayout - totalCasinoFunds).toFixed(2);
+    }
+
     await Promise.all([
-      db.update(casinosTable).set({
-        bankroll: newBankroll.toFixed(2),
-        totalBets: sql`${casinosTable.totalBets} + 1`,
-        totalWagered: sql`${casinosTable.totalWagered} + ${game.betAmount}`,
-        totalPaidOut: sql`${casinosTable.totalPaidOut} + ${payout}`,
-        isPaused: newBankroll <= 0,
-        updatedAt: new Date(),
-      }).where(eq(casinosTable.id, game.casinoId)),
+      db.update(casinosTable).set(casinoUpdate).where(eq(casinosTable.id, game.casinoId)),
       db.insert(casinoBetsTable).values({
         casinoId: game.casinoId, userId, gameType: "mines",
         betAmount: game.betAmount.toFixed(2), result: won ? "win" : "loss",

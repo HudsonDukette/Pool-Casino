@@ -74,7 +74,7 @@ interface BetInputProps {
 export function BetInput({ value, onChange, max, disabled }: BetInputProps) {
   const { data: user } = useGetMe({ query: { retry: false } });
   const balance = user ? parseFloat(String(user.balance)) : 0;
-  const effectiveMax = max ?? balance;
+  const effectiveMax = Math.min(max ?? balance, balance);
 
   const presets = [1, 5, 10, 50, 100, 500];
 

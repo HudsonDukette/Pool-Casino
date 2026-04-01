@@ -144,7 +144,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
     { href: "/chat", label: "", icon: <MessageSquare className="w-4 h-4" />, title: "Chat" },
     { href: "/leaderboard", label: "Leaderboards", icon: <Crown className="w-4 h-4" /> },
-    ...(u?.isAdmin ? [{ href: "/admin", label: "Admin", icon: <ShieldAlert className="w-4 h-4" />, badge: pendingAdminCount || null }] : []),
+    ...(u?.isAdmin ? [{ href: "/admin", label: (u as any)?.isOwner ? "Owner" : "Admin", icon: <ShieldAlert className="w-4 h-4" />, badge: pendingAdminCount || null }] : []),
   ];
 
   const isGamesActive = location.startsWith("/games") || location === "/multiplayer" || location === "/casinos";

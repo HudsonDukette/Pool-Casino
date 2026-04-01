@@ -33,6 +33,7 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     email: user.email ?? null,
     balance: parseFloat(user.balance),
     isAdmin: user.isAdmin,
+    isOwner: user.isOwner,
     isGuest: user.isGuest,
     isCrazyGamesLinked: user.isCrazyGamesLinked,
     referralCode: user.referralCode ?? null,

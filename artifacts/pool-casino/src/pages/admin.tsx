@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
 import {
   ShieldAlert, ShieldCheck, RefreshCw, Users, X, Plus, ArrowRight,
-  Settings, Gamepad2, Power, PowerOff, Megaphone,
+  Settings, Gamepad2, Power, PowerOff, Megaphone, Building2,
   CheckCircle2, XCircle, Clock, BanknoteIcon, ChevronDown,
   Flag, Trash2, UserX, UserCheck, Edit2, AlertTriangle, Eye, Link2,
   Ban, MicOff, MessageCircle,
@@ -85,26 +85,40 @@ function MoneyRequestRow({ req, onFulfill, onDismiss, loading }: { req: any; onF
 }
 
 const ALL_GAMES = [
-  { id: "roulette",   name: "Neon Roulette",      emoji: "🎡" },
-  { id: "plinko",     name: "Drop Plinko",         emoji: "🔮" },
-  { id: "blackjack",  name: "Blackjack",           emoji: "🃏" },
-  { id: "crash",      name: "Crash",               emoji: "📈" },
-  { id: "slots",      name: "Neon Slots",          emoji: "🎰" },
-  { id: "dice",       name: "Dice Roll",           emoji: "🎲" },
-  { id: "coinflip",   name: "Coin Flip",           emoji: "🪙" },
-  { id: "wheel",      name: "Fortune Wheel",       emoji: "🎡" },
-  { id: "guess",      name: "Number Guess",        emoji: "🔢" },
-  { id: "mines",      name: "Mines",               emoji: "💣" },
-  { id: "highlow",    name: "High-Low",            emoji: "🃏" },
-  { id: "doubledice", name: "Double Dice",         emoji: "🎲" },
-  { id: "ladder",     name: "Risk Ladder",         emoji: "🪜" },
-  { id: "war",        name: "War",                 emoji: "⚔️" },
-  { id: "target",     name: "Target Multiplier",   emoji: "🎯" },
-  { id: "icebreak",   name: "Ice Break",           emoji: "❄️" },
-  { id: "advwheel",   name: "Advanced Wheel",      emoji: "🎡" },
-  { id: "range",      name: "Range Bet",           emoji: "📊" },
-  { id: "pyramid",    name: "Pyramid Pick",        emoji: "🔺" },
-  { id: "lightning",  name: "Lightning Round",     emoji: "⚡" },
+  { id: "roulette",      name: "Neon Roulette",      emoji: "🎡" },
+  { id: "plinko",        name: "Drop Plinko",         emoji: "🔮" },
+  { id: "blackjack",     name: "Blackjack",           emoji: "🃏" },
+  { id: "crash",         name: "Crash",               emoji: "📈" },
+  { id: "slots",         name: "Neon Slots",          emoji: "🎰" },
+  { id: "dice",          name: "Dice Roll",           emoji: "🎲" },
+  { id: "coinflip",      name: "Coin Flip",           emoji: "🪙" },
+  { id: "wheel",         name: "Fortune Wheel",       emoji: "🎡" },
+  { id: "guess",         name: "Number Guess",        emoji: "🔢" },
+  { id: "mines",         name: "Mines",               emoji: "💣" },
+  { id: "highlow",       name: "High-Low",            emoji: "🃏" },
+  { id: "doubledice",    name: "Double Dice",         emoji: "🎲" },
+  { id: "ladder",        name: "Risk Ladder",         emoji: "🪜" },
+  { id: "war",           name: "War",                 emoji: "⚔️" },
+  { id: "target",        name: "Target Multiplier",   emoji: "🎯" },
+  { id: "icebreak",      name: "Ice Break",           emoji: "❄️" },
+  { id: "advwheel",      name: "Advanced Wheel",      emoji: "🎡" },
+  { id: "range",         name: "Range Bet",           emoji: "📊" },
+  { id: "pyramid",       name: "Pyramid Pick",        emoji: "🔺" },
+  { id: "lightning",     name: "Lightning Round",     emoji: "⚡" },
+  { id: "blinddraw",     name: "Blind Draw",          emoji: "🎴" },
+  { id: "hiddenpath",    name: "Hidden Path",         emoji: "🔍" },
+  { id: "jackpothunt",   name: "Jackpot Hunt",        emoji: "🏆" },
+  { id: "targethit",     name: "Target Hit",          emoji: "🎯" },
+  { id: "countdown",     name: "Countdown",           emoji: "⏱️" },
+  { id: "cardstack",     name: "Card Stack",          emoji: "🃏" },
+  { id: "powergrid",     name: "Power Grid",          emoji: "⚡" },
+  { id: "elimwheel",     name: "Elimination Wheel",   emoji: "🎰" },
+  { id: "combobuilder",  name: "Combo Builder",       emoji: "🎰" },
+  { id: "chainreaction", name: "Chain Reaction",      emoji: "💥" },
+  { id: "reversecrash",  name: "Reverse Crash",       emoji: "📉" },
+  { id: "safesteps",     name: "Safe Steps",          emoji: "🪜" },
+  { id: "predchain",     name: "Prediction Chain",    emoji: "🔮" },
+  { id: "timedsafe",     name: "Timed Safe",          emoji: "⏰" },
 ];
 
 function SectionHeader({
@@ -182,6 +196,18 @@ export default function Admin() {
   const [chatsLoading, setChatsLoading] = useState(false);
   const [appeals, setAppeals] = useState<any[]>([]);
   const [appealsLoading, setAppealsLoading] = useState(false);
+
+  const [adminCasinos, setAdminCasinos] = useState<any[]>([]);
+  const [casinosLoading, setCasinosLoading] = useState(false);
+  const [casinoAction, setCasinoAction] = useState<{ id: number; type: "sell" | "delete" } | null>(null);
+  const [casinoActionLoading, setCasinoActionLoading] = useState(false);
+
+  const [ownerStartingBalance, setOwnerStartingBalance] = useState("10000");
+  const [ownerResetConfirm, setOwnerResetConfirm] = useState(false);
+  const [ownerResetPending, setOwnerResetPending] = useState(false);
+  const [ownerResetOptions, setOwnerResetOptions] = useState({ resetPool: true, deleteCasinos: true, deleteStats: true });
+
+  const isOwner = (user as any)?.isOwner === true;
 
   const loadMoneyRequests = React.useCallback(async () => {
     if (!user?.isAdmin) return;
@@ -451,6 +477,66 @@ export default function Admin() {
     } catch {}
   };
 
+  const loadAdminCasinos = React.useCallback(async () => {
+    if (!user?.isAdmin) return;
+    setCasinosLoading(true);
+    try {
+      const r = await fetch(`${BASE}api/admin/casinos`, { credentials: "include" });
+      const data = await r.json();
+      setAdminCasinos(data.casinos ?? []);
+    } catch {} finally { setCasinosLoading(false); }
+  }, [user?.isAdmin]);
+
+  const handleCasinoSell = async (casinoId: number) => {
+    setCasinoActionLoading(true);
+    try {
+      const r = await fetch(`${BASE}api/admin/casinos/${casinoId}/sell`, { method: "POST", credentials: "include" });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error);
+      toast({ title: "Casino sold!", description: data.message, className: "bg-success text-success-foreground border-none" });
+      setCasinoAction(null);
+      loadAdminCasinos();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setCasinoActionLoading(false); }
+  };
+
+  const handleCasinoDelete = async (casinoId: number) => {
+    setCasinoActionLoading(true);
+    try {
+      const r = await fetch(`${BASE}api/admin/casinos/${casinoId}`, { method: "DELETE", credentials: "include" });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error);
+      toast({ title: "Casino deleted!", description: data.message, className: "bg-success text-success-foreground border-none" });
+      setCasinoAction(null);
+      loadAdminCasinos();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setCasinoActionLoading(false); }
+  };
+
+  const handleOwnerReset = async () => {
+    setOwnerResetPending(true);
+    try {
+      const startingBalance = parseFloat(ownerStartingBalance) || 10000;
+      const r = await fetch(`${BASE}api/admin/owner/reset`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startingBalance, ...ownerResetOptions }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error);
+      toast({ title: "Server Reset!", description: data.message, className: "bg-success text-success-foreground border-none" });
+      setOwnerResetConfirm(false);
+      qc.invalidateQueries({ queryKey: ["/api/pool"] });
+      qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      refetchPlayers();
+      loadAdminCasinos();
+    } catch (err: any) {
+      toast({ title: "Reset Failed", description: err.message, variant: "destructive" });
+    } finally { setOwnerResetPending(false); }
+  };
+
   const pendingReports = reports.filter(r => r.status === "pending").length;
   const pendingMr = moneyRequests.filter(r => r.status === "pending").length;
   const pendingAppeals = appeals.filter(a => a.status === "pending").length;
@@ -463,7 +549,7 @@ export default function Admin() {
           <ShieldAlert className="w-5 h-5 text-yellow-400" />
         </div>
         <div>
-          <h1 className="text-3xl font-display font-bold text-yellow-400">Admin Panel</h1>
+          <h1 className="text-3xl font-display font-bold text-yellow-400">{isOwner ? "Owner Panel" : "Admin Panel"}</h1>
           <p className="text-sm text-muted-foreground">Manage games, economy, and players</p>
         </div>
         <div className="ml-auto">
@@ -1245,6 +1331,129 @@ export default function Admin() {
           </CardContent>
         )}
       </Card>
+
+      {/* ── Casino Management ─────────────────────────────────────────────────── */}
+      <Card className="bg-blue-950/20 border-blue-500/20 overflow-hidden">
+        <SectionHeader
+          title="Casino Management"
+          icon={<Building2 className="w-5 h-5" />}
+          badge={adminCasinos.length > 0 ? <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 border ml-1">{adminCasinos.length}</Badge> : undefined}
+          accent="text-blue-300"
+          isOpen={isOpen("casinoMgmt")}
+          onToggle={() => { toggle("casinoMgmt"); if (!isOpen("casinoMgmt")) loadAdminCasinos(); }}
+        />
+        {isOpen("casinoMgmt") && (
+          <CardContent className="px-6 pb-6 pt-2 border-t border-blue-500/10 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">Sell (10% refund to owner) or force-delete player casinos.</p>
+              <Button variant="ghost" size="sm" onClick={loadAdminCasinos} disabled={casinosLoading} className="text-muted-foreground hover:text-blue-300 text-xs gap-1.5">
+                <RefreshCw className={`w-3.5 h-3.5 ${casinosLoading ? "animate-spin" : ""}`} /> Refresh
+              </Button>
+            </div>
+            {adminCasinos.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">
+                <Building2 className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                <p className="text-sm">No player casinos found.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {adminCasinos.map((casino: any) => (
+                  <div key={casino.id} className="rounded-xl border border-white/5 bg-card/20 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-lg">{casino.emoji}</span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{casino.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            by <span className="text-white/70">{casino.ownerUsername ?? "Unknown"}</span> · {formatCurrency(parseFloat(casino.bankroll ?? "0"))} bankroll
+                            {casino.insolvencyWinnerId && <span className="text-red-400 ml-1">⚠ Insolvent</span>}
+                            {casino.isPaused && <span className="text-yellow-400 ml-1">⏸ Paused</span>}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        {casinoAction?.id === casino.id ? (
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-white/50">{casinoAction.type === "sell" ? "Sell for 10% refund?" : "Delete with no refund?"}</p>
+                            <Button size="sm" className={`h-7 px-3 text-xs ${casinoAction.type === "sell" ? "bg-blue-700 hover:bg-blue-600" : "bg-red-700 hover:bg-red-600"}`}
+                              disabled={casinoActionLoading}
+                              onClick={() => casinoAction.type === "sell" ? handleCasinoSell(casino.id) : handleCasinoDelete(casino.id)}>
+                              {casinoActionLoading ? "..." : "Confirm"}
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setCasinoAction(null)}>Cancel</Button>
+                          </div>
+                        ) : (
+                          <>
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-blue-500/30 text-blue-300 hover:bg-blue-900/30"
+                              onClick={() => setCasinoAction({ id: casino.id, type: "sell" })}>
+                              Sell
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-red-500/30 text-red-300 hover:bg-red-900/30"
+                              onClick={() => setCasinoAction({ id: casino.id, type: "delete" })}>
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        )}
+      </Card>
+
+      {/* ── Owner Panel (owner only) ───────────────────────────────────────────── */}
+      {isOwner && (
+        <Card className="bg-red-950/20 border-red-500/30 overflow-hidden">
+          <SectionHeader title="Owner Controls" icon={<ShieldCheck className="w-5 h-5" />} accent="text-red-300" isOpen={isOpen("owner")} onToggle={() => toggle("owner")} />
+          {isOpen("owner") && (
+            <CardContent className="px-6 pb-6 pt-2 border-t border-red-500/20 space-y-6">
+              <div className="rounded-xl border border-red-500/20 bg-red-900/10 p-4 space-y-4">
+                <h3 className="text-sm font-bold text-red-300 uppercase tracking-widest">⚠ Full Server Reset</h3>
+                <p className="text-xs text-red-200/70">This will reset player balances, and optionally wipe the pool, all casinos, and all gameplay stats. This cannot be undone.</p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <label className="text-xs text-muted-foreground w-40">Starting balance per player:</label>
+                    <div className="relative flex-1 max-w-xs">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                      <Input type="number" min="0" value={ownerStartingBalance} onChange={e => setOwnerStartingBalance(e.target.value)}
+                        className="pl-7 bg-black/40 border-red-500/20 focus:border-red-500/50 font-mono h-8 text-sm" />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-4">
+                    {(["resetPool", "deleteCasinos", "deleteStats"] as const).map(opt => (
+                      <label key={opt} className="flex items-center gap-2 text-xs text-white/70 cursor-pointer">
+                        <input type="checkbox" checked={ownerResetOptions[opt]}
+                          onChange={e => setOwnerResetOptions(prev => ({ ...prev, [opt]: e.target.checked }))}
+                          className="accent-red-500" />
+                        {opt === "resetPool" ? "Reset global pool" : opt === "deleteCasinos" ? "Delete all casinos" : "Delete all stats & bets"}
+                      </label>
+                    ))}
+                  </div>
+                  {!ownerResetConfirm ? (
+                    <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-900/30 w-full" onClick={() => setOwnerResetConfirm(true)}>
+                      Reset Server…
+                    </Button>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-xs text-red-300 text-center font-bold">Are you sure? This will affect all players.</p>
+                      <div className="flex gap-3">
+                        <Button className="flex-1 bg-red-700 hover:bg-red-600 text-white font-bold" disabled={ownerResetPending}
+                          onClick={handleOwnerReset}>
+                          {ownerResetPending ? "Resetting..." : "Yes, Reset Everything"}
+                        </Button>
+                        <Button variant="ghost" className="flex-1" onClick={() => setOwnerResetConfirm(false)}>Cancel</Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       {/* ── Settings ──────────────────────────────────────────────────────────── */}
       <Card className="bg-yellow-950/20 border-yellow-500/20 overflow-hidden">

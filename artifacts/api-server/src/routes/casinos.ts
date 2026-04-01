@@ -28,6 +28,17 @@ async function getCasinoOwned(casinoId: number, ownerId: number) {
   return casino ?? null;
 }
 
+async function deleteCasinoData(tx: typeof db, casinoId: number) {
+  await tx.delete(userDrinksTable).where(eq(userDrinksTable.casinoId, casinoId));
+  await tx.delete(casinoGameOddsTable).where(eq(casinoGameOddsTable.casinoId, casinoId));
+  await tx.delete(casinoTransactionsTable).where(eq(casinoTransactionsTable.casinoId, casinoId));
+  await tx.delete(casinoBetsTable).where(eq(casinoBetsTable.casinoId, casinoId));
+  await tx.delete(casinoGamesOwnedTable).where(eq(casinoGamesOwnedTable.casinoId, casinoId));
+  await tx.delete(monthlyTaxLogsTable).where(eq(monthlyTaxLogsTable.casinoId, casinoId));
+  await tx.delete(casinoDrinksTable).where(eq(casinoDrinksTable.casinoId, casinoId));
+  await tx.delete(casinosTable).where(eq(casinosTable.id, casinoId));
+}
+
 // ─── List all casinos ─────────────────────────────────────────────────────────
 router.get("/casinos", async (req, res): Promise<void> => {
   const casinos = await db
@@ -572,7 +583,7 @@ router.post("/casinos/:id/sell", async (req, res): Promise<void> => {
         await tx.update(usersTable).set({ balance: (parseFloat(owner.balance) + refund).toFixed(2) }).where(eq(usersTable.id, userId));
       }
     }
-    await tx.delete(casinosTable).where(eq(casinosTable.id, casinoId));
+    await deleteCasinoData(tx, casinoId);
   });
 
   res.json({ sold: true, refund, message: refund > 0 ? `Casino sold for ${refund.toLocaleString()} chips refunded.` : "Casino sold." });
@@ -798,7 +809,7 @@ router.post("/casinos/:id/resolve-insolvency", async (req, res): Promise<void> =
       if (owner) {
         await tx.update(usersTable).set({ balance: (parseFloat(owner.balance) + sellback).toFixed(2) }).where(eq(usersTable.id, userId));
       }
-      await tx.delete(casinosTable).where(eq(casinosTable.id, casinoId));
+      await deleteCasinoData(tx, casinoId);
     });
     res.json({ resolved: true, action: "sell", sellback, message: `Casino sold for ${sellback.toLocaleString()} chips. Debt paid to winner.` });
 

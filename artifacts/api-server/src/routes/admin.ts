@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, poolTable, settingsTable, chatMessagesTable, moneyRequestsTable, reportsTable, banAppealsTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { db, usersTable, poolTable, settingsTable, chatMessagesTable, moneyRequestsTable, reportsTable, banAppealsTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable, casinoDrinksTable, userDrinksTable, monthlyTaxLogsTable, casinoGameOddsTable, betsTable } from "@workspace/db";
+import { eq, sql, and } from "drizzle-orm";
 import { sendPushToUser } from "../lib/push";
 import {
   AdminRefillPoolBody,
@@ -511,6 +511,125 @@ router.delete("/admin/guests", async (req, res): Promise<void> => {
   const deleted = await db.delete(usersTable).where(eq(usersTable.isGuest, true)).returning({ id: usersTable.id });
   const count = deleted.length;
   res.json({ ok: true, count, message: `Deleted ${count} guest account${count !== 1 ? "s" : ""}` });
+});
+
+// ─── Admin: casino management ─────────────────────────────────────────────────
+router.get("/admin/casinos", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const casinos = await db
+    .select({
+      id: casinosTable.id,
+      name: casinosTable.name,
+      emoji: casinosTable.emoji,
+      bankroll: casinosTable.bankroll,
+      purchasePrice: casinosTable.purchasePrice,
+      isPaused: casinosTable.isPaused,
+      insolvencyWinnerId: casinosTable.insolvencyWinnerId,
+      ownerId: casinosTable.ownerId,
+      ownerUsername: usersTable.username,
+      createdAt: casinosTable.createdAt,
+    })
+    .from(casinosTable)
+    .leftJoin(usersTable, eq(casinosTable.ownerId, usersTable.id))
+    .orderBy(casinosTable.createdAt);
+  res.json({ casinos });
+});
+
+async function adminDeleteCasino(casinoId: number): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(userDrinksTable).where(eq(userDrinksTable.casinoId, casinoId));
+    await tx.delete(casinoGameOddsTable).where(eq(casinoGameOddsTable.casinoId, casinoId));
+    await tx.delete(casinoTransactionsTable).where(eq(casinoTransactionsTable.casinoId, casinoId));
+    await tx.delete(casinoBetsTable).where(eq(casinoBetsTable.casinoId, casinoId));
+    await tx.delete(casinoGamesOwnedTable).where(eq(casinoGamesOwnedTable.casinoId, casinoId));
+    await tx.delete(monthlyTaxLogsTable).where(eq(monthlyTaxLogsTable.casinoId, casinoId));
+    await tx.delete(casinoDrinksTable).where(eq(casinoDrinksTable.casinoId, casinoId));
+    await tx.delete(casinosTable).where(eq(casinosTable.id, casinoId));
+  });
+}
+
+router.post("/admin/casinos/:id/sell", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const casinoId = parseInt(req.params.id);
+  const [casino] = await db.select().from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
+  if (!casino) { res.status(404).json({ error: "Casino not found" }); return; }
+  const purchasePrice = parseFloat(casino.purchasePrice ?? "100000000");
+  const refund = Math.floor(purchasePrice * 0.10);
+  await db.transaction(async (tx) => {
+    if (refund > 0) {
+      const [owner] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, casino.ownerId)).limit(1);
+      if (owner) {
+        await tx.update(usersTable).set({ balance: (parseFloat(owner.balance) + refund).toFixed(2) }).where(eq(usersTable.id, casino.ownerId));
+      }
+    }
+    await tx.delete(userDrinksTable).where(eq(userDrinksTable.casinoId, casinoId));
+    await tx.delete(casinoGameOddsTable).where(eq(casinoGameOddsTable.casinoId, casinoId));
+    await tx.delete(casinoTransactionsTable).where(eq(casinoTransactionsTable.casinoId, casinoId));
+    await tx.delete(casinoBetsTable).where(eq(casinoBetsTable.casinoId, casinoId));
+    await tx.delete(casinoGamesOwnedTable).where(eq(casinoGamesOwnedTable.casinoId, casinoId));
+    await tx.delete(monthlyTaxLogsTable).where(eq(monthlyTaxLogsTable.casinoId, casinoId));
+    await tx.delete(casinoDrinksTable).where(eq(casinoDrinksTable.casinoId, casinoId));
+    await tx.delete(casinosTable).where(eq(casinosTable.id, casinoId));
+  });
+  res.json({ ok: true, refund, message: `Casino "${casino.name}" sold. Owner refunded ${refund.toLocaleString()} chips.` });
+});
+
+router.delete("/admin/casinos/:id", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const casinoId = parseInt(req.params.id);
+  const [casino] = await db.select({ id: casinosTable.id, name: casinosTable.name }).from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
+  if (!casino) { res.status(404).json({ error: "Casino not found" }); return; }
+  await adminDeleteCasino(casinoId);
+  res.json({ ok: true, message: `Casino "${casino.name}" deleted (no refund).` });
+});
+
+// ─── Owner-only reset endpoint ────────────────────────────────────────────────
+async function requireOwner(req: any, res: any): Promise<boolean> {
+  const userId = req.session?.userId;
+  if (!userId) { res.status(401).json({ error: "Not authenticated" }); return false; }
+  const [user] = await db.select({ isOwner: usersTable.isOwner }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user?.isOwner) { res.status(403).json({ error: "Owner access required" }); return false; }
+  return true;
+}
+
+router.post("/admin/owner/reset", async (req, res): Promise<void> => {
+  const isOwner = await requireOwner(req, res);
+  if (!isOwner) return;
+  const { startingBalance = 10000, resetPool = true, deleteCasinos = true, deleteStats = true } = req.body ?? {};
+
+  await db.transaction(async (tx) => {
+    if (deleteCasinos) {
+      const allCasinos = await tx.select({ id: casinosTable.id }).from(casinosTable);
+      for (const c of allCasinos) {
+        await tx.delete(userDrinksTable).where(eq(userDrinksTable.casinoId, c.id));
+        await tx.delete(casinoGameOddsTable).where(eq(casinoGameOddsTable.casinoId, c.id));
+        await tx.delete(casinoTransactionsTable).where(eq(casinoTransactionsTable.casinoId, c.id));
+        await tx.delete(casinoBetsTable).where(eq(casinoBetsTable.casinoId, c.id));
+        await tx.delete(casinoGamesOwnedTable).where(eq(casinoGamesOwnedTable.casinoId, c.id));
+        await tx.delete(monthlyTaxLogsTable).where(eq(monthlyTaxLogsTable.casinoId, c.id));
+        await tx.delete(casinoDrinksTable).where(eq(casinoDrinksTable.casinoId, c.id));
+        await tx.delete(casinosTable).where(eq(casinosTable.id, c.id));
+      }
+    }
+    if (deleteStats) {
+      await tx.delete(betsTable);
+      if (!deleteCasinos) await tx.delete(casinoBetsTable);
+      await tx.update(usersTable).set({
+        totalProfit: "0.00", biggestWin: "0.00", biggestBet: "0.00",
+        gamesPlayed: "0", winStreak: "0", currentStreak: "0",
+        totalWins: "0", totalLosses: "0",
+      });
+    }
+    await tx.update(usersTable).set({ balance: startingBalance.toFixed(2) }).where(eq(usersTable.isAdmin, false));
+    if (resetPool) {
+      await tx.update(poolTable).set({ totalAmount: "0.00" });
+    }
+  });
+
+  res.json({ ok: true, message: `Server reset complete. Balances set to ${startingBalance.toLocaleString()}.` });
 });
 
 function formatCurrency(n: number) {

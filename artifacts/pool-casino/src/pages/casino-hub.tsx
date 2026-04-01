@@ -1191,7 +1191,7 @@ export default function CasinoHub() {
             <div>
               <h2 className="text-base font-bold text-red-300">Casino Insolvent</h2>
               <p className="text-sm text-red-200/80 mt-1">
-                A player won <span className="font-semibold text-red-100">{fmt(parseFloat(casino.insolvencyDebtAmount))} chips</span> — more than the casino bankroll could cover.
+                A player won <span className="font-semibold text-red-100">{fmt(parseFloat(casino.insolvencyDebtAmount ?? "0") || 0)} chips</span> — more than the casino bankroll could cover.
                 The casino is now paused. You must resolve this debt to continue operating.
               </p>
             </div>
@@ -1202,7 +1202,7 @@ export default function CasinoHub() {
               disabled={resolvingInsolvency}
               className="bg-emerald-700 hover:bg-emerald-600 text-white text-sm"
             >
-              {resolvingInsolvency ? "Working..." : `Pay Debt (${fmt(parseFloat(casino.insolvencyDebtAmount))} chips)`}
+              {resolvingInsolvency ? "Working..." : `Pay Debt (${fmt(parseFloat(casino.insolvencyDebtAmount ?? "0") || 0)} chips)`}
             </Button>
             <Button
               onClick={() => resolveInsolvency("transfer")}
