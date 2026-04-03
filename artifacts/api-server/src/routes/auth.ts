@@ -129,14 +129,29 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     return;
   }
 
+  // Check if the current session belongs to a guest — if so, inherit their balance
+  const prevGuestId = req.session.userId ?? null;
+  let guestData: typeof usersTable.$inferSelect | null = null;
+  if (prevGuestId) {
+    const [guestCheck] = await db.select().from(usersTable).where(eq(usersTable.id, prevGuestId)).limit(1);
+    if (guestCheck?.isGuest) {
+      guestData = guestCheck;
+    }
+  }
+
+  // Starting balance: guest's current balance if converting, otherwise fresh $10,000
+  const guestBalance = guestData ? parseFloat(guestData.balance) : null;
+  let startingBalance = guestBalance ?? 10000;
+
   let referrerId: number | null = null;
-  let bonusBalance = 10000;
+  let referralBonusAmount = 0;
 
   if (referralCode) {
     const referrer = await db.select().from(usersTable).where(eq(usersTable.referralCode, referralCode.toUpperCase())).limit(1);
     if (referrer.length > 0) {
       referrerId = referrer[0].id;
-      bonusBalance += 20000;
+      referralBonusAmount = guestData ? 20000 : 20000;
+      startingBalance += referralBonusAmount;
       const referrerNewBalance = parseFloat(referrer[0].balance) + 10000;
       await db.update(usersTable).set({ balance: referrerNewBalance.toFixed(2) }).where(eq(usersTable.id, referrerId));
       await addLedgerEntry({
@@ -158,33 +173,55 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       username,
       passwordHash,
       email: email ?? null,
-      balance: bonusBalance.toFixed(2),
+      balance: startingBalance.toFixed(2),
       referralCode: newReferralCode,
       referredBy: referrerId ?? undefined,
+      // Carry over guest stats if converting
+      gamesPlayed: guestData?.gamesPlayed ?? "0",
+      totalWins: guestData?.totalWins ?? "0",
+      totalLosses: guestData?.totalLosses ?? "0",
+      totalProfit: guestData?.totalProfit ?? "0.00",
+      biggestWin: guestData?.biggestWin ?? "0.00",
+      biggestBet: guestData?.biggestBet ?? "0.00",
     })
     .returning();
 
-  await addLedgerEntry({
-    eventType: "account_creation",
-    direction: "in",
-    amount: bonusBalance,
-    description: `New account created: ${username} received ${bonusBalance.toFixed(2)} starting balance`,
-    targetUserId: user.id,
-  });
-
-  const prevGuestId = req.session.userId;
-  req.session.userId = user.id;
-  if (prevGuestId && prevGuestId !== user.id) {
-    await mergeGuestIntoUser(prevGuestId, user.id).catch(() => {});
+  if (guestData) {
+    // Guest is converting — no new base money created (the pool already funded the guest account).
+    // Only log if a referral bonus was also applied on top.
+    if (referralBonusAmount > 0) {
+      await addLedgerEntry({
+        eventType: "referral_bonus",
+        direction: "in",
+        amount: referralBonusAmount,
+        description: `Referral signup bonus: ${username} received $${referralBonusAmount.toFixed(2)} on top of guest balance`,
+        targetUserId: user.id,
+      });
+    }
+    // Delete the guest — balance has moved to the new account, nothing returned to pool
+    await db.delete(usersTable).where(eq(usersTable.id, guestData.id));
+  } else {
+    // Fresh registration — log the new money entering the system
+    await addLedgerEntry({
+      eventType: "account_creation",
+      direction: "in",
+      amount: startingBalance,
+      description: `New account created: ${username} received $${startingBalance.toFixed(2)} starting balance`,
+      targetUserId: user.id,
+    });
   }
 
-  const [merged] = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).limit(1);
+  req.session.userId = user.id;
+
+  const [fresh] = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).limit(1);
 
   const response = RegisterResponse.parse({
-    user: formatUser(merged ?? user),
+    user: formatUser(fresh ?? user),
     message: referrerId
       ? `Registration successful! You received a $20,000 referral bonus!`
-      : "Registration successful",
+      : guestData
+        ? `Welcome! Your guest balance of $${guestBalance!.toFixed(2)} has been carried over.`
+        : "Registration successful",
   });
 
   res.json(response);
