@@ -27,7 +27,7 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
-packages = ["mailutils", "zip"]
+packages = ["mailutils", "zip", "supabase-cli"]
 
 [userenv]
 

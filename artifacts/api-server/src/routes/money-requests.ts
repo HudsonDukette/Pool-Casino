@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, moneyRequestsTable } from "@workspace/db";
+import { db, usersTable, moneyRequestsTable, moneyLedgerTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 
@@ -68,6 +68,7 @@ router.post("/admin/money-requests/:id/fulfill", async (req, res): Promise<void>
   const isAdmin = await requireAdmin(req, res);
   if (!isAdmin) return;
 
+  const adminId = req.session?.userId!;
   const reqId = parseInt(req.params.id);
   const [mr] = await db.select().from(moneyRequestsTable).where(eq(moneyRequestsTable.id, reqId)).limit(1);
   if (!mr) { res.status(404).json({ error: "Request not found" }); return; }
@@ -84,6 +85,16 @@ router.post("/admin/money-requests/:id/fulfill", async (req, res): Promise<void>
     .where(eq(moneyRequestsTable.id, reqId));
 
   const [updated] = await db.select({ username: usersTable.username }).from(usersTable).where(eq(usersTable.id, mr.userId)).limit(1);
+
+  await db.insert(moneyLedgerTable).values({
+    eventType: "money_request_fulfilled",
+    direction: "in",
+    amount: giveAmount.toFixed(2),
+    description: `Money request fulfilled: $${giveAmount.toLocaleString()} given to ${updated?.username ?? "user"}`,
+    actorUserId: adminId,
+    targetUserId: mr.userId,
+  });
+
   res.json({ message: `Fulfilled $${giveAmount.toLocaleString()} to ${updated?.username ?? "user"}` });
 });
 

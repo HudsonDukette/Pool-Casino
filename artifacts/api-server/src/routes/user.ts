@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, settingsTable, banAppealsTable } from "@workspace/db";
+import { db, usersTable, settingsTable, banAppealsTable, poolTable, moneyLedgerTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import {
   GetUserStatsResponse,
@@ -17,6 +17,25 @@ async function getSetting(key: string, defaultValue: number): Promise<number> {
   const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, key)).limit(1);
   if (!row) return defaultValue;
   return parseFloat(row.value) || defaultValue;
+}
+
+async function addLedgerEntry(opts: {
+  eventType: string;
+  direction: "in" | "out";
+  amount: number;
+  description: string;
+  actorUserId?: number | null;
+  targetUserId?: number | null;
+}): Promise<void> {
+  if (opts.amount <= 0) return;
+  await db.insert(moneyLedgerTable).values({
+    eventType: opts.eventType,
+    direction: opts.direction,
+    amount: opts.amount.toFixed(2),
+    description: opts.description,
+    actorUserId: opts.actorUserId ?? null,
+    targetUserId: opts.targetUserId ?? null,
+  });
 }
 
 router.get("/user/stats", async (req, res): Promise<void> => {
@@ -90,6 +109,14 @@ router.post("/user/claim-daily", async (req, res): Promise<void> => {
     })
     .where(eq(usersTable.id, userId));
 
+  await addLedgerEntry({
+    eventType: "daily_reward",
+    direction: "in",
+    amount: reward,
+    description: `Daily reward claimed by ${user.username}`,
+    targetUserId: userId,
+  });
+
   res.json(
     ClaimDailyRewardResponse.parse({
       reward,
@@ -149,6 +176,13 @@ router.post("/user/change-username", async (req, res): Promise<void> => {
     .set({ username: newUsername, balance: newBalance.toFixed(2) })
     .where(eq(usersTable.id, userId));
 
+  const [pool] = await db.select().from(poolTable).limit(1);
+  if (pool && cost > 0) {
+    await db.update(poolTable)
+      .set({ totalAmount: (parseFloat(pool.totalAmount) + cost).toFixed(2) })
+      .where(eq(poolTable.id, pool.id));
+  }
+
   res.json(
     ChangeUsernameResponse.parse({
       message: `Username changed to "${newUsername}"`,
@@ -193,6 +227,13 @@ router.post("/user/change-avatar", async (req, res): Promise<void> => {
     .update(usersTable)
     .set({ avatarUrl, balance: newBalance.toFixed(2) })
     .where(eq(usersTable.id, userId));
+
+  const [pool] = await db.select().from(poolTable).limit(1);
+  if (pool && cost > 0) {
+    await db.update(poolTable)
+      .set({ totalAmount: (parseFloat(pool.totalAmount) + cost).toFixed(2) })
+      .where(eq(poolTable.id, pool.id));
+  }
 
   res.json(
     ChangeAvatarResponse.parse({

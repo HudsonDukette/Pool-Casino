@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, poolTable, moneyLedgerTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { RegisterBody, LoginBody, RegisterResponse, LoginResponse, GetMeResponse, LogoutResponse } from "@workspace/api-zod";
@@ -24,6 +24,25 @@ async function makeUniqueReferralCode(): Promise<string> {
     if (existing.length === 0) return code;
   }
   return generateReferralCode() + Date.now().toString(36).slice(-4).toUpperCase();
+}
+
+async function addLedgerEntry(opts: {
+  eventType: string;
+  direction: "in" | "out";
+  amount: number;
+  description: string;
+  actorUserId?: number | null;
+  targetUserId?: number | null;
+}): Promise<void> {
+  if (opts.amount <= 0) return;
+  await db.insert(moneyLedgerTable).values({
+    eventType: opts.eventType,
+    direction: opts.direction,
+    amount: opts.amount.toFixed(2),
+    description: opts.description,
+    actorUserId: opts.actorUserId ?? null,
+    targetUserId: opts.targetUserId ?? null,
+  });
 }
 
 function formatUser(user: typeof usersTable.$inferSelect) {
@@ -49,7 +68,12 @@ function formatUser(user: typeof usersTable.$inferSelect) {
 async function mergeGuestIntoUser(guestId: number, userId: number): Promise<void> {
   const [guest] = await db.select().from(usersTable).where(eq(usersTable.id, guestId)).limit(1);
   if (!guest || !guest.isGuest) return;
-  const earned = Math.max(0, parseFloat(guest.balance) - 10000);
+
+  const guestBalance = parseFloat(guest.balance);
+  const guestStartingBalance = 10000;
+  const earned = Math.max(0, guestBalance - guestStartingBalance);
+  const remainingBase = guestBalance - earned;
+
   if (earned > 0 || parseInt(guest.gamesPlayed) > 0) {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     if (!user) return;
@@ -70,7 +94,24 @@ async function mergeGuestIntoUser(guestId: number, userId: number): Promise<void
       biggestBet: newBiggestBet.toFixed(2),
     }).where(eq(usersTable.id, userId));
   }
+
   await db.delete(usersTable).where(eq(usersTable.id, guestId));
+
+  if (remainingBase > 0) {
+    const [pool] = await db.select().from(poolTable).limit(1);
+    if (pool) {
+      await db.update(poolTable)
+        .set({ totalAmount: (parseFloat(pool.totalAmount) + remainingBase).toFixed(2) })
+        .where(eq(poolTable.id, pool.id));
+    }
+    await addLedgerEntry({
+      eventType: "account_deletion_returned",
+      direction: "out",
+      amount: remainingBase,
+      description: `Guest account merged: ${remainingBase.toFixed(2)} base balance returned to pool`,
+      targetUserId: null,
+    });
+  }
 }
 
 router.post("/auth/register", async (req, res): Promise<void> => {
@@ -98,6 +139,13 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       bonusBalance += 20000;
       const referrerNewBalance = parseFloat(referrer[0].balance) + 10000;
       await db.update(usersTable).set({ balance: referrerNewBalance.toFixed(2) }).where(eq(usersTable.id, referrerId));
+      await addLedgerEntry({
+        eventType: "referral_bonus",
+        direction: "in",
+        amount: 10000,
+        description: `Referral bonus: ${referrer[0].username} received $10,000 for referring ${username}`,
+        targetUserId: referrerId,
+      });
     }
   }
 
@@ -115,6 +163,14 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       referredBy: referrerId ?? undefined,
     })
     .returning();
+
+  await addLedgerEntry({
+    eventType: "account_creation",
+    direction: "in",
+    amount: bonusBalance,
+    description: `New account created: ${username} received ${bonusBalance.toFixed(2)} starting balance`,
+    targetUserId: user.id,
+  });
 
   const prevGuestId = req.session.userId;
   req.session.userId = user.id;
@@ -244,6 +300,14 @@ router.post("/auth/crazygames", async (req, res): Promise<void> => {
         isCrazyGamesLinked: true,
       })
       .returning();
+
+    await addLedgerEntry({
+      eventType: "account_creation",
+      direction: "in",
+      amount: 10000,
+      description: `New CrazyGames account: ${finalUsername} received $10,000 starting balance`,
+      targetUserId: user.id,
+    });
   } else {
     const updates: Record<string, unknown> = { isCrazyGamesLinked: true };
     if (profilePictureUrl && user.avatarUrl !== profilePictureUrl) updates.avatarUrl = profilePictureUrl;
@@ -293,6 +357,14 @@ router.post("/auth/guest/init", async (req, res): Promise<void> => {
         balance: "10000.00",
       })
       .returning();
+
+    await addLedgerEntry({
+      eventType: "account_creation",
+      direction: "in",
+      amount: 10000,
+      description: `New guest account: ${guestUsername} received $10,000 starting balance`,
+      targetUserId: guest.id,
+    });
   }
 
   req.session.userId = guest.id;

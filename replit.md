@@ -60,11 +60,24 @@ artifacts-monorepo/
 19. **Monthly Challenges**: 6 rotating challenges per month; progress tracking; reward payout on claim
 20. **Player-Owned Casino Hub**: Players spend 100M chips to open a casino; purchase game licenses for 1M chips each (32 games available); set bankroll/bet limits; earn from player bets; 10% monthly tax to the pool; bar menu with purchasable drinks; drag-and-drop banner image upload; enable/disable games; per-game custom payout multipliers (0.5×–2.0×); comprehensive owner edit panel with bankroll management; leaderboard tab for top casinos
 
+## Money Supply Integrity
+
+The system enforces strict money conservation. Money is only **created** by:
+- Account creation (10,000 starting balance per account, 20,000 with referral + 10,000 to referrer)
+- Daily reward claims ($500)
+- Admin: refill pool / refill player / fulfill money request
+- Owner: reset database
+
+All other operations are **circulation** (money moves between pool ↔ users ↔ casinos) and never disappear. When accounts are deleted, their balance + any casino bankroll they owned is automatically returned to the pool. Username/avatar change fees are routed to the pool. The `money_ledger` table logs every creation event.
+
+Admins can view the full money supply audit at `GET /api/admin/money-supply`.
+
 ## Database Tables
 
 - `users` - accounts with balance, stats, last_daily_claim, suspendedUntil, bannedUntil, permanentlyBanned
 - `pool` - single-row global pool with biggest win/bet tracking
 - `bets` - full bet transaction history
+- `money_ledger` - immutable log of all money creation/destruction events (account_creation, daily_reward, admin_refill_pool, admin_refill_player, money_request_fulfilled, account_deletion_returned, admin_reset_balances, owner_reset_database, system_init)
 - `chat_rooms` - general + game rooms + DM rooms
 - `chat_messages` - all messages with room association
 - `friends` - friend relationships

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, poolTable, settingsTable, chatMessagesTable, moneyRequestsTable, reportsTable, banAppealsTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable, casinoDrinksTable, userDrinksTable, monthlyTaxLogsTable, casinoGameOddsTable, betsTable } from "@workspace/db";
+import { db, usersTable, poolTable, settingsTable, chatMessagesTable, moneyRequestsTable, reportsTable, banAppealsTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable, casinoDrinksTable, userDrinksTable, monthlyTaxLogsTable, casinoGameOddsTable, betsTable, moneyLedgerTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
 import { sendPushToUser } from "../lib/push";
 import {
@@ -39,11 +39,31 @@ async function getSetting(key: string, defaultValue: number): Promise<number> {
   return parseFloat(row.value) || defaultValue;
 }
 
-async function upsertSetting(key: string, value: number): Promise<void> {
+async function upsertSetting(key: string, value: number | string): Promise<void> {
+  const strValue = typeof value === "number" ? value.toString() : value;
   await db
     .insert(settingsTable)
-    .values({ key, value: value.toString() })
-    .onConflictDoUpdate({ target: settingsTable.key, set: { value: value.toString() } });
+    .values({ key, value: strValue })
+    .onConflictDoUpdate({ target: settingsTable.key, set: { value: strValue } });
+}
+
+async function addLedgerEntry(opts: {
+  eventType: string;
+  direction: "in" | "out";
+  amount: number;
+  description: string;
+  actorUserId?: number | null;
+  targetUserId?: number | null;
+}): Promise<void> {
+  if (opts.amount <= 0) return;
+  await db.insert(moneyLedgerTable).values({
+    eventType: opts.eventType,
+    direction: opts.direction,
+    amount: opts.amount.toFixed(2),
+    description: opts.description,
+    actorUserId: opts.actorUserId ?? null,
+    targetUserId: opts.targetUserId ?? null,
+  });
 }
 
 router.post("/admin/refill-pool", async (req, res): Promise<void> => {
@@ -57,6 +77,7 @@ router.post("/admin/refill-pool", async (req, res): Promise<void> => {
   }
 
   const { amount } = parsed.data;
+  const adminId = req.session.userId!;
 
   const [pool] = await db.select().from(poolTable).limit(1);
   if (!pool) {
@@ -70,6 +91,14 @@ router.post("/admin/refill-pool", async (req, res): Promise<void> => {
   await db.update(poolTable).set({
     totalAmount: newPoolAmount.toFixed(2),
   }).where(eq(poolTable.id, pool.id));
+
+  await addLedgerEntry({
+    eventType: "admin_refill_pool",
+    direction: "in",
+    amount,
+    description: `Admin refilled pool by ${formatCurrency(amount)}`,
+    actorUserId: adminId,
+  });
 
   res.json(
     AdminRefillPoolResponse.parse({
@@ -90,6 +119,7 @@ router.post("/admin/refill-player", async (req, res): Promise<void> => {
   }
 
   const { userId: targetUserId, amount } = parsed.data;
+  const adminId = req.session.userId!;
 
   const [targetUser] = await db.select().from(usersTable).where(eq(usersTable.id, targetUserId)).limit(1);
   if (!targetUser) {
@@ -103,6 +133,15 @@ router.post("/admin/refill-player", async (req, res): Promise<void> => {
   await db.update(usersTable).set({
     balance: newBalance.toFixed(2),
   }).where(eq(usersTable.id, targetUserId));
+
+  await addLedgerEntry({
+    eventType: "admin_refill_player",
+    direction: "in",
+    amount,
+    description: `Admin gave ${formatCurrency(amount)} to ${targetUser.username}`,
+    actorUserId: adminId,
+    targetUserId,
+  });
 
   res.json(
     AdminRefillPlayerResponse.parse({
@@ -190,11 +229,16 @@ router.post("/admin/reset-all-balances", async (req, res): Promise<void> => {
   }
 
   const resetBalance = parsed.data.newBalance ?? 10000;
+  const adminId = req.session.userId!;
 
-  const allUsers = await db.select({ id: usersTable.id, isAdmin: usersTable.isAdmin })
+  const allUsers = await db.select({ id: usersTable.id, isAdmin: usersTable.isAdmin, balance: usersTable.balance })
     .from(usersTable);
 
   const nonAdminUsers = allUsers.filter((u) => !u.isAdmin);
+
+  const totalOldBalance = nonAdminUsers.reduce((sum, u) => sum + parseFloat(u.balance), 0);
+  const totalNewBalance = nonAdminUsers.length * resetBalance;
+  const netDelta = totalNewBalance - totalOldBalance;
 
   await Promise.all(
     nonAdminUsers.map((u) =>
@@ -203,6 +247,24 @@ router.post("/admin/reset-all-balances", async (req, res): Promise<void> => {
         .where(eq(usersTable.id, u.id))
     )
   );
+
+  if (netDelta > 0) {
+    await addLedgerEntry({
+      eventType: "admin_reset_balances",
+      direction: "in",
+      amount: netDelta,
+      description: `Admin reset ${nonAdminUsers.length} balances to ${formatCurrency(resetBalance)}, net created ${formatCurrency(netDelta)}`,
+      actorUserId: adminId,
+    });
+  } else if (netDelta < 0) {
+    await addLedgerEntry({
+      eventType: "admin_reset_balances",
+      direction: "out",
+      amount: Math.abs(netDelta),
+      description: `Admin reset ${nonAdminUsers.length} balances to ${formatCurrency(resetBalance)}, net destroyed ${formatCurrency(Math.abs(netDelta))}`,
+      actorUserId: adminId,
+    });
+  }
 
   res.json(
     AdminResetAllBalancesResponse.parse({
@@ -499,21 +561,87 @@ router.post("/admin/user/:id/promote", async (req, res): Promise<void> => {
 router.delete("/admin/user/:id", async (req, res): Promise<void> => {
   const isAdmin = await requireAdmin(req, res);
   if (!isAdmin) return;
+  const adminId = req.session.userId!;
   const targetId = parseInt(req.params.id);
-  const [target] = await db.select({ id: usersTable.id, isAdmin: usersTable.isAdmin, username: usersTable.username })
-    .from(usersTable).where(eq(usersTable.id, targetId)).limit(1);
+  const [target] = await db.select().from(usersTable).where(eq(usersTable.id, targetId)).limit(1);
   if (!target) { res.status(404).json({ error: "User not found" }); return; }
   if (target.isAdmin) { res.status(403).json({ error: "Cannot delete admin accounts" }); return; }
-  await db.delete(usersTable).where(eq(usersTable.id, targetId));
-  res.json({ ok: true, message: `User ${target.username} deleted` });
+
+  const userBalance = parseFloat(target.balance);
+
+  const [casino] = await db.select({ id: casinosTable.id, bankroll: casinosTable.bankroll, name: casinosTable.name })
+    .from(casinosTable).where(eq(casinosTable.ownerId, targetId)).limit(1);
+  const casinoBankroll = casino ? parseFloat(casino.bankroll) : 0;
+
+  const totalReturned = userBalance + casinoBankroll;
+
+  await db.transaction(async (tx) => {
+    if (casino) {
+      await tx.delete(userDrinksTable).where(eq(userDrinksTable.casinoId, casino.id));
+      await tx.delete(casinoGameOddsTable).where(eq(casinoGameOddsTable.casinoId, casino.id));
+      await tx.delete(casinoTransactionsTable).where(eq(casinoTransactionsTable.casinoId, casino.id));
+      await tx.delete(casinoBetsTable).where(eq(casinoBetsTable.casinoId, casino.id));
+      await tx.delete(casinoGamesOwnedTable).where(eq(casinoGamesOwnedTable.casinoId, casino.id));
+      await tx.delete(monthlyTaxLogsTable).where(eq(monthlyTaxLogsTable.casinoId, casino.id));
+      await tx.delete(casinoDrinksTable).where(eq(casinoDrinksTable.casinoId, casino.id));
+      await tx.delete(casinosTable).where(eq(casinosTable.id, casino.id));
+    }
+    await tx.delete(usersTable).where(eq(usersTable.id, targetId));
+
+    if (totalReturned > 0) {
+      const [pool] = await tx.select().from(poolTable).limit(1);
+      if (pool) {
+        await tx.update(poolTable)
+          .set({ totalAmount: (parseFloat(pool.totalAmount) + totalReturned).toFixed(2) })
+          .where(eq(poolTable.id, pool.id));
+      }
+    }
+  });
+
+  if (totalReturned > 0) {
+    await addLedgerEntry({
+      eventType: "account_deletion_returned",
+      direction: "out",
+      amount: totalReturned,
+      description: `Deleted account ${target.username}: ${formatCurrency(userBalance)} balance + ${formatCurrency(casinoBankroll)} casino bankroll returned to pool`,
+      actorUserId: adminId,
+      targetUserId: null,
+    });
+  }
+
+  res.json({ ok: true, message: `User ${target.username} deleted. ${formatCurrency(totalReturned)} returned to pool.` });
 });
 
 router.delete("/admin/guests", async (req, res): Promise<void> => {
   const isAdmin = await requireAdmin(req, res);
   if (!isAdmin) return;
+  const adminId = req.session.userId!;
+
+  const guests = await db.select({ id: usersTable.id, balance: usersTable.balance })
+    .from(usersTable).where(eq(usersTable.isGuest, true));
+
+  const totalBalance = guests.reduce((sum, g) => sum + parseFloat(g.balance), 0);
+
   const deleted = await db.delete(usersTable).where(eq(usersTable.isGuest, true)).returning({ id: usersTable.id });
   const count = deleted.length;
-  res.json({ ok: true, count, message: `Deleted ${count} guest account${count !== 1 ? "s" : ""}` });
+
+  if (totalBalance > 0) {
+    const [pool] = await db.select().from(poolTable).limit(1);
+    if (pool) {
+      await db.update(poolTable)
+        .set({ totalAmount: (parseFloat(pool.totalAmount) + totalBalance).toFixed(2) })
+        .where(eq(poolTable.id, pool.id));
+    }
+    await addLedgerEntry({
+      eventType: "account_deletion_returned",
+      direction: "out",
+      amount: totalBalance,
+      description: `Deleted ${count} guest accounts, ${formatCurrency(totalBalance)} returned to pool`,
+      actorUserId: adminId,
+    });
+  }
+
+  res.json({ ok: true, count, message: `Deleted ${count} guest account${count !== 1 ? "s" : ""}. ${formatCurrency(totalBalance)} returned to pool.` });
 });
 
 // ─── Admin: casino management ─────────────────────────────────────────────────
@@ -539,32 +667,22 @@ router.get("/admin/casinos", async (req, res): Promise<void> => {
   res.json({ casinos });
 });
 
-async function adminDeleteCasino(casinoId: number): Promise<void> {
+async function adminDeleteCasino(casinoId: number, returnBankrollToPool = true): Promise<number> {
+  let bankrollReturned = 0;
   await db.transaction(async (tx) => {
-    await tx.delete(userDrinksTable).where(eq(userDrinksTable.casinoId, casinoId));
-    await tx.delete(casinoGameOddsTable).where(eq(casinoGameOddsTable.casinoId, casinoId));
-    await tx.delete(casinoTransactionsTable).where(eq(casinoTransactionsTable.casinoId, casinoId));
-    await tx.delete(casinoBetsTable).where(eq(casinoBetsTable.casinoId, casinoId));
-    await tx.delete(casinoGamesOwnedTable).where(eq(casinoGamesOwnedTable.casinoId, casinoId));
-    await tx.delete(monthlyTaxLogsTable).where(eq(monthlyTaxLogsTable.casinoId, casinoId));
-    await tx.delete(casinoDrinksTable).where(eq(casinoDrinksTable.casinoId, casinoId));
-    await tx.delete(casinosTable).where(eq(casinosTable.id, casinoId));
-  });
-}
-
-router.post("/admin/casinos/:id/sell", async (req, res): Promise<void> => {
-  const isAdmin = await requireAdmin(req, res);
-  if (!isAdmin) return;
-  const casinoId = parseInt(req.params.id);
-  const [casino] = await db.select().from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
-  if (!casino) { res.status(404).json({ error: "Casino not found" }); return; }
-  const purchasePrice = parseFloat(casino.purchasePrice ?? "100000000");
-  const refund = Math.floor(purchasePrice * 0.10);
-  await db.transaction(async (tx) => {
-    if (refund > 0) {
-      const [owner] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, casino.ownerId)).limit(1);
-      if (owner) {
-        await tx.update(usersTable).set({ balance: (parseFloat(owner.balance) + refund).toFixed(2) }).where(eq(usersTable.id, casino.ownerId));
+    if (returnBankrollToPool) {
+      const [casino] = await tx.select({ bankroll: casinosTable.bankroll }).from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
+      if (casino) {
+        const bankroll = parseFloat(casino.bankroll);
+        if (bankroll > 0) {
+          const [pool] = await tx.select().from(poolTable).limit(1);
+          if (pool) {
+            await tx.update(poolTable)
+              .set({ totalAmount: (parseFloat(pool.totalAmount) + bankroll).toFixed(2) })
+              .where(eq(poolTable.id, pool.id));
+          }
+          bankrollReturned = bankroll;
+        }
       }
     }
     await tx.delete(userDrinksTable).where(eq(userDrinksTable.casinoId, casinoId));
@@ -576,17 +694,102 @@ router.post("/admin/casinos/:id/sell", async (req, res): Promise<void> => {
     await tx.delete(casinoDrinksTable).where(eq(casinoDrinksTable.casinoId, casinoId));
     await tx.delete(casinosTable).where(eq(casinosTable.id, casinoId));
   });
-  res.json({ ok: true, refund, message: `Casino "${casino.name}" sold. Owner refunded ${refund.toLocaleString()} chips.` });
+  return bankrollReturned;
+}
+
+router.post("/admin/casinos/:id/sell", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+  const casinoId = parseInt(req.params.id);
+  const adminId = req.session.userId!;
+  const [casino] = await db.select().from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
+  if (!casino) { res.status(404).json({ error: "Casino not found" }); return; }
+  const purchasePrice = parseFloat(casino.purchasePrice ?? "100000000");
+  const refund = Math.floor(purchasePrice * 0.10);
+  const bankroll = parseFloat(casino.bankroll);
+
+  await db.transaction(async (tx) => {
+    if (refund > 0) {
+      const [owner] = await tx.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, casino.ownerId)).limit(1);
+      if (owner) {
+        await tx.update(usersTable).set({ balance: (parseFloat(owner.balance) + refund).toFixed(2) }).where(eq(usersTable.id, casino.ownerId));
+      }
+    }
+    const [pool] = await tx.select().from(poolTable).limit(1);
+    if (pool && bankroll > 0) {
+      await tx.update(poolTable)
+        .set({ totalAmount: (parseFloat(pool.totalAmount) + bankroll).toFixed(2) })
+        .where(eq(poolTable.id, pool.id));
+    }
+    await tx.delete(userDrinksTable).where(eq(userDrinksTable.casinoId, casinoId));
+    await tx.delete(casinoGameOddsTable).where(eq(casinoGameOddsTable.casinoId, casinoId));
+    await tx.delete(casinoTransactionsTable).where(eq(casinoTransactionsTable.casinoId, casinoId));
+    await tx.delete(casinoBetsTable).where(eq(casinoBetsTable.casinoId, casinoId));
+    await tx.delete(casinoGamesOwnedTable).where(eq(casinoGamesOwnedTable.casinoId, casinoId));
+    await tx.delete(monthlyTaxLogsTable).where(eq(monthlyTaxLogsTable.casinoId, casinoId));
+    await tx.delete(casinoDrinksTable).where(eq(casinoDrinksTable.casinoId, casinoId));
+    await tx.delete(casinosTable).where(eq(casinosTable.id, casinoId));
+  });
+
+  if (refund > 0) {
+    await addLedgerEntry({
+      eventType: "admin_refill_player",
+      direction: "in",
+      amount: refund,
+      description: `Casino "${casino.name}" sold: ${formatCurrency(refund)} refund to owner`,
+      actorUserId: adminId,
+      targetUserId: casino.ownerId,
+    });
+  }
+
+  res.json({ ok: true, refund, message: `Casino "${casino.name}" sold. Owner refunded ${refund.toLocaleString()} chips. Bankroll of ${formatCurrency(bankroll)} returned to pool.` });
 });
 
 router.delete("/admin/casinos/:id", async (req, res): Promise<void> => {
   const isAdmin = await requireAdmin(req, res);
   if (!isAdmin) return;
   const casinoId = parseInt(req.params.id);
-  const [casino] = await db.select({ id: casinosTable.id, name: casinosTable.name }).from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
+  const adminId = req.session.userId!;
+  const [casino] = await db.select({ id: casinosTable.id, name: casinosTable.name, bankroll: casinosTable.bankroll }).from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
   if (!casino) { res.status(404).json({ error: "Casino not found" }); return; }
-  await adminDeleteCasino(casinoId);
-  res.json({ ok: true, message: `Casino "${casino.name}" deleted (no refund).` });
+  const bankrollReturned = await adminDeleteCasino(casinoId, true);
+  res.json({ ok: true, message: `Casino "${casino.name}" deleted. ${formatCurrency(bankrollReturned)} bankroll returned to pool.` });
+});
+
+// ─── Admin: money supply audit ─────────────────────────────────────────────────
+router.get("/admin/money-supply", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+
+  const [pool] = await db.select({ totalAmount: poolTable.totalAmount }).from(poolTable).limit(1);
+  const poolBalance = pool ? parseFloat(pool.totalAmount) : 0;
+
+  const userBalances = await db.select({ balance: usersTable.balance }).from(usersTable);
+  const totalUserBalance = userBalances.reduce((sum, u) => sum + parseFloat(u.balance), 0);
+
+  const casinoBankrolls = await db.select({ bankroll: casinosTable.bankroll }).from(casinosTable);
+  const totalCasinoBankroll = casinoBankrolls.reduce((sum, c) => sum + parseFloat(c.bankroll), 0);
+
+  const totalInCirculation = poolBalance + totalUserBalance + totalCasinoBankroll;
+
+  const ledger = await db.select().from(moneyLedgerTable).orderBy(moneyLedgerTable.createdAt);
+  const totalCreated = ledger.filter(e => e.direction === "in").reduce((sum, e) => sum + parseFloat(e.amount), 0);
+  const totalDestroyed = ledger.filter(e => e.direction === "out").reduce((sum, e) => sum + parseFloat(e.amount), 0);
+  const expectedTotal = totalCreated - totalDestroyed;
+
+  res.json({
+    poolBalance,
+    totalUserBalance,
+    totalCasinoBankroll,
+    totalInCirculation,
+    ledger: {
+      totalCreated,
+      totalDestroyed,
+      expectedTotal,
+      entries: ledger.slice(-50).reverse(),
+    },
+    discrepancy: totalInCirculation - expectedTotal,
+  });
 });
 
 // ─── Owner-only reset endpoint ────────────────────────────────────────────────
@@ -601,7 +804,12 @@ async function requireOwner(req: any, res: any): Promise<boolean> {
 router.post("/admin/owner/reset", async (req, res): Promise<void> => {
   const isOwner = await requireOwner(req, res);
   if (!isOwner) return;
+  const ownerId = req.session.userId!;
   const { startingBalance = 10000, resetPool = true, deleteCasinos = true, deleteStats = true } = req.body ?? {};
+
+  const allNonAdminUsers = await db.select({ id: usersTable.id, isAdmin: usersTable.isAdmin })
+    .from(usersTable).where(eq(usersTable.isAdmin, false));
+  const playerCount = allNonAdminUsers.length;
 
   await db.transaction(async (tx) => {
     if (deleteCasinos) {
@@ -630,6 +838,16 @@ router.post("/admin/owner/reset", async (req, res): Promise<void> => {
     if (resetPool) {
       await tx.update(poolTable).set({ totalAmount: "0.00" });
     }
+    await tx.delete(moneyLedgerTable);
+  });
+
+  const totalNewMoney = playerCount * startingBalance;
+  await addLedgerEntry({
+    eventType: "owner_reset_database",
+    direction: "in",
+    amount: totalNewMoney,
+    description: `Owner reset: ${playerCount} players set to ${formatCurrency(startingBalance)}, pool ${resetPool ? "zeroed" : "unchanged"}, ledger cleared`,
+    actorUserId: ownerId,
   });
 
   res.json({ ok: true, message: `Server reset complete. Balances set to ${startingBalance.toLocaleString()}.` });
