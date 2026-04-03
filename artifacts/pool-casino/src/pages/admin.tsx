@@ -208,6 +208,17 @@ export default function Admin() {
   const [ownerResetPending, setOwnerResetPending] = useState(false);
   const [ownerResetOptions, setOwnerResetOptions] = useState({ resetPool: true, deleteCasinos: true, deleteStats: true });
 
+  const [simWinUsername, setSimWinUsername] = useState("");
+  const [simWinAmount, setSimWinAmount] = useState("");
+  const [simWinPending, setSimWinPending] = useState(false);
+  const [simWinResult, setSimWinResult] = useState<null | {
+    ok: boolean; username: string; winAmount: number;
+    userBalanceBefore: number; userBalanceAfter: number;
+    poolBefore: number; poolAfter: number;
+    shortfall: number; poolWentNegative: boolean;
+    error?: string;
+  }>(null);
+
   const isOwner = (user as any)?.isOwner === true;
 
   const loadMoneyRequests = React.useCallback(async () => {
@@ -537,6 +548,27 @@ export default function Admin() {
     } catch (err: any) {
       toast({ title: "Reset Failed", description: err.message, variant: "destructive" });
     } finally { setOwnerResetPending(false); }
+  };
+
+  const handleSimWin = async () => {
+    if (!simWinUsername.trim() || !simWinAmount) return;
+    setSimWinPending(true);
+    setSimWinResult(null);
+    try {
+      const r = await fetch(`${BASE}api/admin/owner/simulate-win`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: simWinUsername.trim(), amount: parseFloat(simWinAmount) }),
+      });
+      const data = await r.json();
+      if (!r.ok) { setSimWinResult({ ok: false, error: data.error } as any); return; }
+      setSimWinResult(data);
+      qc.invalidateQueries({ queryKey: ["/api/pool"] });
+      qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      refetchPlayers();
+    } catch (err: any) {
+      setSimWinResult({ ok: false, error: err.message } as any);
+    } finally { setSimWinPending(false); }
   };
 
   const pendingReports = reports.filter(r => r.status === "pending").length;
@@ -1427,6 +1459,83 @@ export default function Admin() {
           <SectionHeader title="Owner Controls" icon={<ShieldCheck className="w-5 h-5" />} accent="text-red-300" isOpen={isOpen("owner")} onToggle={() => toggle("owner")} />
           {isOpen("owner") && (
             <CardContent className="px-6 pb-6 pt-2 border-t border-red-500/20 space-y-6">
+
+              {/* Simulate oversized win */}
+              <div className="rounded-xl border border-orange-500/30 bg-orange-900/10 p-4 space-y-4">
+                <div>
+                  <h3 className="text-sm font-bold text-orange-300 uppercase tracking-widest">🧪 Simulate Pool Win</h3>
+                  <p className="text-xs text-orange-200/60 mt-1">Force a win of any size for a player — even larger than the pool. The win is real and the pool will reflect the impact. Use this to test what happens when the pool goes negative.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-orange-300/70 uppercase tracking-wider">Username</label>
+                    <Input
+                      value={simWinUsername}
+                      onChange={e => { setSimWinUsername(e.target.value); setSimWinResult(null); }}
+                      placeholder="exact username"
+                      className="bg-black/40 border-orange-500/20 focus:border-orange-500/50 h-8 text-sm font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-orange-300/70 uppercase tracking-wider">Win Amount</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                      <Input
+                        type="number" min="1" value={simWinAmount}
+                        onChange={e => { setSimWinAmount(e.target.value); setSimWinResult(null); }}
+                        placeholder="e.g. 2000000"
+                        className="pl-7 bg-black/40 border-orange-500/20 focus:border-orange-500/50 h-8 text-sm font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  disabled={simWinPending || !simWinUsername.trim() || !simWinAmount}
+                  onClick={handleSimWin}
+                  className="w-full bg-orange-700 hover:bg-orange-600 text-white font-bold h-9 text-sm"
+                >
+                  {simWinPending ? "Simulating…" : "Run Simulation"}
+                </Button>
+                {simWinResult && (
+                  <div className={`rounded-lg border p-4 space-y-3 text-xs font-mono ${simWinResult.ok === false ? "border-red-500/40 bg-red-900/20" : simWinResult.poolWentNegative ? "border-yellow-500/40 bg-yellow-900/10" : "border-green-500/30 bg-green-900/10"}`}>
+                    {simWinResult.ok === false ? (
+                      <p className="text-red-400 font-bold">❌ {(simWinResult as any).error}</p>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 text-sm font-bold">
+                          {simWinResult.poolWentNegative
+                            ? <span className="text-yellow-400">⚠ Pool went negative by ${simWinResult.shortfall.toLocaleString()}</span>
+                            : <span className="text-green-400">✓ Pool absorbed the win without going negative</span>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-white/70">
+                          <span className="text-white/40">Player</span>
+                          <span className="text-white">{simWinResult.username}</span>
+                          <span className="text-white/40">Win amount</span>
+                          <span className="text-white">${simWinResult.winAmount.toLocaleString()}</span>
+                          <span className="text-white/40">Balance before</span>
+                          <span>${simWinResult.userBalanceBefore.toLocaleString()}</span>
+                          <span className="text-white/40">Balance after</span>
+                          <span className="text-green-300">${simWinResult.userBalanceAfter.toLocaleString()}</span>
+                          <span className="text-white/40">Pool before</span>
+                          <span>${simWinResult.poolBefore.toLocaleString()}</span>
+                          <span className="text-white/40">Pool after</span>
+                          <span className={simWinResult.poolWentNegative ? "text-red-400 font-bold" : "text-white"}>
+                            ${simWinResult.poolAfter.toLocaleString()}
+                          </span>
+                          {simWinResult.poolWentNegative && (
+                            <>
+                              <span className="text-white/40">Shortfall</span>
+                              <span className="text-red-400 font-bold">-${simWinResult.shortfall.toLocaleString()}</span>
+                            </>
+                          )}
+                        </div>
+                        <p className="text-white/40 pt-1">This was a real transaction. Use "Refill Pool" in Admin Controls to restore the pool if needed.</p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="rounded-xl border border-red-500/20 bg-red-900/10 p-4 space-y-4">
                 <h3 className="text-sm font-bold text-red-300 uppercase tracking-widest">⚠ Full Server Reset</h3>
                 <p className="text-xs text-red-200/70">This will reset player balances, and optionally wipe the pool, all casinos, and all gameplay stats. This cannot be undone.</p>

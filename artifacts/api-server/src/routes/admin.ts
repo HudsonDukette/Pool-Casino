@@ -801,6 +801,65 @@ async function requireOwner(req: any, res: any): Promise<boolean> {
   return true;
 }
 
+router.post("/admin/owner/simulate-win", async (req, res): Promise<void> => {
+  const isOwner = await requireOwner(req, res);
+  if (!isOwner) return;
+
+  const { username, amount } = req.body ?? {};
+  if (!username || typeof username !== "string") {
+    res.status(400).json({ error: "username is required" }); return;
+  }
+  const winAmount = parseFloat(amount);
+  if (!winAmount || winAmount <= 0) {
+    res.status(400).json({ error: "amount must be a positive number" }); return;
+  }
+
+  const [target] = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1);
+  if (!target) {
+    res.status(404).json({ error: `User "${username}" not found` }); return;
+  }
+
+  const [pool] = await db.select().from(poolTable).limit(1);
+  if (!pool) {
+    res.status(500).json({ error: "Pool not found" }); return;
+  }
+
+  const poolBefore = parseFloat(pool.totalAmount);
+  const userBalanceBefore = parseFloat(target.balance);
+  const poolAfter = poolBefore - winAmount;
+  const userBalanceAfter = userBalanceBefore + winAmount;
+  const shortfall = poolAfter < 0 ? Math.abs(poolAfter) : 0;
+
+  await db.update(usersTable)
+    .set({ balance: userBalanceAfter.toFixed(2) })
+    .where(eq(usersTable.id, target.id));
+
+  await db.update(poolTable)
+    .set({ totalAmount: poolAfter.toFixed(2) })
+    .where(eq(poolTable.id, pool.id));
+
+  await addLedgerEntry({
+    eventType: "admin_refill_player",
+    direction: "in",
+    amount: winAmount,
+    description: `Owner simulated win: ${username} won ${formatCurrency(winAmount)} from pool (pool went from ${formatCurrency(poolBefore)} to ${formatCurrency(poolAfter)})`,
+    actorUserId: req.session.userId!,
+    targetUserId: target.id,
+  });
+
+  res.json({
+    ok: true,
+    username,
+    winAmount,
+    userBalanceBefore,
+    userBalanceAfter,
+    poolBefore,
+    poolAfter,
+    shortfall,
+    poolWentNegative: poolAfter < 0,
+  });
+});
+
 router.post("/admin/owner/reset", async (req, res): Promise<void> => {
   const isOwner = await requireOwner(req, res);
   if (!isOwner) return;
