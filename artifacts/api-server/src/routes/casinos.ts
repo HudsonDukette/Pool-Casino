@@ -245,12 +245,25 @@ router.post("/casinos/:id/deposit", async (req, res): Promise<void> => {
     if (!freshCasino) throw new Error("Casino not found");
 
     const updatedUserBalance = userBal - amount;
-    const updatedBankroll = parseFloat(freshCasino.bankroll) + amount;
+    const previousBankroll = parseFloat(freshCasino.bankroll);
+    const updatedBankroll = previousBankroll + amount;
+    // Auto-unpause the casino when a deposit clears any debt (bankroll becomes >= 0)
+    const shouldUnpause = updatedBankroll >= 0 && previousBankroll < 0;
+
+    const casinoUpdates: Record<string, unknown> = {
+      bankroll: updatedBankroll.toFixed(2),
+      updatedAt: new Date(),
+    };
+    if (shouldUnpause) {
+      casinoUpdates.isPaused = false;
+      casinoUpdates.insolvencyWinnerId = null;
+      casinoUpdates.insolvencyDebtAmount = null;
+    }
 
     await tx.update(usersTable).set({ balance: updatedUserBalance.toFixed(2) }).where(eq(usersTable.id, userId));
-    await tx.update(casinosTable).set({ bankroll: updatedBankroll.toFixed(2), updatedAt: new Date() }).where(eq(casinosTable.id, casinoId));
-    await tx.insert(casinoTransactionsTable).values({ casinoId, type: "deposit", amount: amount.toFixed(2), description: "Owner deposit" });
-    return { newBankroll: updatedBankroll, newUserBalance: updatedUserBalance };
+    await tx.update(casinosTable).set(casinoUpdates).where(eq(casinosTable.id, casinoId));
+    await tx.insert(casinoTransactionsTable).values({ casinoId, type: "deposit", amount: amount.toFixed(2), description: shouldUnpause ? "Owner deposit — debt cleared, casino reopened" : "Owner deposit" });
+    return { newBankroll: updatedBankroll, newUserBalance: updatedUserBalance, debtCleared: shouldUnpause };
   });
 
   res.json({ newBankroll, newUserBalance });

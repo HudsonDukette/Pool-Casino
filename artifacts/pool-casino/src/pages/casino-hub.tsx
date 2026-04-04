@@ -1103,9 +1103,9 @@ export default function CasinoHub() {
   const [activeTab, setActiveTab] = useState<Tab>("games");
   const [resolvingInsolvency, setResolvingInsolvency] = useState(false);
 
-  const load = useCallback(async () => {
+  const fetchCasinoData = useCallback(async (showLoader: boolean) => {
     if (!casinoId) return;
-    setLoading(true);
+    if (showLoader) setLoading(true);
     try {
       const res = await fetch(`${BASE}api/casinos/${casinoId}`, { credentials: "include" });
       if (!res.ok) { navigate("/casinos"); return; }
@@ -1114,12 +1114,15 @@ export default function CasinoHub() {
       setGames(data.games ?? []);
       setDrinks(data.drinks ?? []);
     } catch {
-      toast({ title: "Failed to load casino", variant: "destructive" });
-      navigate("/casinos");
+      if (showLoader) toast({ title: "Failed to load casino", variant: "destructive" });
+      if (showLoader) navigate("/casinos");
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   }, [casinoId]);
+
+  const load = useCallback(() => fetchCasinoData(true), [fetchCasinoData]);
+  const silentRefresh = useCallback(() => fetchCasinoData(false), [fetchCasinoData]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -1142,7 +1145,7 @@ export default function CasinoHub() {
       if (action === "sell" || action === "transfer") {
         navigate("/casinos");
       } else {
-        await load();
+        await silentRefresh();
       }
     } catch {
       toast({ title: "Network error", variant: "destructive" });
@@ -1289,12 +1292,12 @@ export default function CasinoHub() {
           transition={{ duration: 0.15 }}
         >
           {activeTab === "games" && (
-            <GamesTab casino={casino} games={games} drinks={drinks} isOwner={isOwner} onRefresh={load} />
+            <GamesTab casino={casino} games={games} drinks={drinks} isOwner={isOwner} onRefresh={silentRefresh} />
           )}
           {activeTab === "stats" && <StatsTab casino={casino} />}
           {activeTab === "logs" && <LogsTab casinoId={casino.id} />}
           {activeTab === "owner" && (
-            <OwnerTab casino={casino} drinks={drinks} games={games} onRefresh={load} />
+            <OwnerTab casino={casino} drinks={drinks} games={games} onRefresh={silentRefresh} />
           )}
         </motion.div>
       </AnimatePresence>

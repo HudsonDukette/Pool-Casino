@@ -98,28 +98,26 @@ async function settleGame(
       const [casino] = await tx.select().from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
       if (!casino) throw new Error("Casino not found");
       const bankroll = parseFloat(casino.bankroll);
-      const uncappedPayout = betAmount * multiplier;
-      // Casino funds = current bankroll + the incoming bet (it received the bet before paying out)
-      const totalCasinoFunds = bankroll + betAmount;
-      const insolvent = won && uncappedPayout > totalCasinoFunds;
-      // Cap payout at total casino funds so casino bankroll never goes negative
-      payout = won ? Math.min(uncappedPayout, totalCasinoFunds) : uncappedPayout;
-      // If bet was already deducted at session start, only credit payout back; otherwise do full net settlement
+      const uncappedPayout = won ? betAmount * multiplier : 0;
+      // Always pay the full payout — the casino absorbs the loss, even if it goes into debt.
+      // The casino is paused after this play if the bankroll drops below 0.
+      payout = uncappedPayout;
       newBalance = betAlreadyDeducted ? currentBalance + payout : currentBalance - betAmount + payout;
       const casinoProfit = betAmount - payout;
-      const newBankroll = Math.max(0, bankroll + casinoProfit);
+      const newBankroll = bankroll + casinoProfit; // Allow going negative (debt)
+      const nowInDebt = newBankroll < 0;
 
       const casinoUpdate: Record<string, unknown> = {
         bankroll: newBankroll.toFixed(2),
         totalBets: sql`${casinosTable.totalBets} + 1`,
         totalWagered: sql`${casinosTable.totalWagered} + ${betAmount}`,
         totalPaidOut: sql`${casinosTable.totalPaidOut} + ${payout}`,
-        isPaused: newBankroll <= 0 || insolvent,
+        isPaused: newBankroll < 0,
         updatedAt: new Date(),
       };
-      if (insolvent) {
+      if (nowInDebt) {
         casinoUpdate.insolvencyWinnerId = userId;
-        casinoUpdate.insolvencyDebtAmount = (uncappedPayout - totalCasinoFunds).toFixed(2);
+        casinoUpdate.insolvencyDebtAmount = Math.abs(newBankroll).toFixed(2);
         casinoInsolvent = true;
       }
 
@@ -228,7 +226,7 @@ async function validateCasinoPlay(
   if (betAmount > maxBet) { res.status(400).json({ error: `Maximum bet at this casino is ${maxBet}` }); return false; }
 
   const bankroll = parseFloat(casino.bankroll);
-  if (bankroll <= 0) { res.status(400).json({ error: "Casino bankroll is empty — the owner needs to deposit chips first" }); return false; }
+  if (bankroll < 0) { res.status(400).json({ error: "Casino is in debt — the owner must deposit chips to cover it before play can resume" }); return false; }
 
   return true;
 }

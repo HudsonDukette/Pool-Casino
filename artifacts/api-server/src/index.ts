@@ -7,6 +7,7 @@ import { eq, and, sql, lt } from "drizzle-orm";
 import { setupMatchmaking } from "./multiplayer/matchmaking";
 import { seedBadgesAndChallenges } from "./lib/seed";
 import { scheduleTax } from "./lib/tax-scheduler";
+import { startWatchdog } from "./lib/watchdog";
 
 const rawPort = process.env["PORT"];
 
@@ -57,4 +58,5 @@ httpServer.listen(port, () => {
   cleanupStaleGuests();
   setInterval(cleanupStaleGuests, 24 * 60 * 60 * 1000);
   scheduleTax();
+  startWatchdog();
 });
