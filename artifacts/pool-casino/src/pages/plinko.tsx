@@ -30,7 +30,8 @@ interface BallState {
 const ROWS = 8;
 const ROW_HEIGHT = 44;
 const PEG_SPACING = 42;
-const DEFAULT_BALL_SPAWN_DELAY = 400;
+const DEFAULT_BALL_SPAWN_DELAY = 300;
+const MIN_DROP_DELAY_MS = 10;
 
 export default function Plinko() {
   const { data: pool } = useGetPool();
@@ -360,35 +361,38 @@ export default function Plinko() {
               {/* Drop Delay */}
               {numericCount > 1 && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex justify-between">
-                    Drop Delay
-                    <span className="font-mono text-secondary/80 text-xs">{(dropDelay / 1000).toFixed(2)}s</span>
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-sm font-bold transition-all shrink-0"
-                      onClick={() => setDropDelay(v => Math.max(150, v - 50))}
-                      disabled={isDropping}
-                    >−</button>
-                    <input
-                      type="range"
-                      min={150}
-                      max={2000}
-                      step={50}
-                      value={dropDelay}
-                      disabled={isDropping}
-                      onChange={e => setDropDelay(parseInt(e.target.value))}
-                      className="flex-1 accent-secondary cursor-pointer"
-                    />
-                    <button
-                      className="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-sm font-bold transition-all shrink-0"
-                      onClick={() => setDropDelay(v => Math.min(2000, v + 50))}
-                      disabled={isDropping}
-                    >+</button>
+                  <label className="text-sm font-medium text-muted-foreground">Delay between balls</label>
+                  <div className="flex gap-1.5">
+                    {[0.01, 0.1, 0.5, 1].map(s => (
+                      <button
+                        key={s}
+                        disabled={isDropping}
+                        onClick={() => setDropDelay(s * 1000)}
+                        className={`flex-1 rounded py-1.5 text-xs font-mono font-bold transition-all border ${
+                          dropDelay === s * 1000
+                            ? "bg-secondary text-black border-secondary"
+                            : "bg-white/5 text-muted-foreground border-white/10 hover:border-secondary/40 hover:text-secondary"
+                        }`}
+                      >
+                        {s}s
+                      </button>
+                    ))}
                   </div>
-                  <div className="flex justify-between text-[10px] text-muted-foreground/50 px-1">
-                    <span>0.15s (fast)</span>
-                    <span>2.00s (slow)</span>
+                  <div className="relative flex items-center">
+                    <Input
+                      type="number"
+                      min="0.01"
+                      max="10"
+                      step="0.01"
+                      disabled={isDropping}
+                      value={(dropDelay / 1000).toFixed(2)}
+                      onChange={e => {
+                        const secs = parseFloat(e.target.value);
+                        if (!isNaN(secs)) setDropDelay(Math.max(MIN_DROP_DELAY_MS, Math.round(secs * 1000)));
+                      }}
+                      className="font-mono text-center bg-black/50 h-10 pr-8"
+                    />
+                    <span className="absolute right-3 text-xs text-muted-foreground pointer-events-none">s</span>
                   </div>
                 </div>
               )}
