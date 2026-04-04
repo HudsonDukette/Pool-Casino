@@ -91,8 +91,7 @@ export default function Plinko() {
 
     const highlightDelay = animDuration * 1000 + 100;
     const t1 = setTimeout(() => {
-      const finalX = coords[coords.length - 1]?.x ?? 0;
-      const visualSlot = Math.max(0, Math.min(ROWS, Math.round(finalX / PEG_SPACING + ROWS / 2)));
+      const visualSlot = data.slot;
       const visualMultiplier = RISK_LEVELS[riskLevel].mults[visualSlot] ?? 0;
 
       setHighlightedSlots(prev => {
@@ -273,14 +272,21 @@ export default function Plinko() {
                   />
                 ))}
               </AnimatePresence>
-              <div className="absolute w-full flex justify-center gap-1 px-3" style={{ top: `${ROWS * ROW_HEIGHT + ROW_HEIGHT * 0.4}px` }}>
+              <div className="absolute w-full" style={{ top: `${ROWS * ROW_HEIGHT + ROW_HEIGHT * 0.35}px` }}>
                 {mults.map((m, i) => {
                   const isHighlighted = highlightedSlots.has(i);
+                  const slotCenterX = (i - ROWS / 2) * PEG_SPACING;
+                  const barWidth = PEG_SPACING - 2;
                   return (
                     <motion.div key={i}
-                      animate={isHighlighted ? { scale: 1.15 } : { scale: 1 }}
+                      animate={isHighlighted ? { scale: 1.12 } : { scale: 1 }}
                       transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                      className={`flex-1 flex items-center justify-center rounded-md py-2 text-xs font-mono font-bold transition-colors duration-200 ${
+                      style={{
+                        position: "absolute",
+                        left: `calc(50% + ${slotCenterX - barWidth / 2}px)`,
+                        width: `${barWidth}px`,
+                      }}
+                      className={`flex items-center justify-center rounded-md py-2 text-xs font-mono font-bold transition-colors duration-200 ${
                         isHighlighted
                           ? `${RISK_LEVELS[risk].color} text-white shadow-[0_0_18px_currentColor]`
                           : "bg-white/5 text-muted-foreground border border-white/10"
