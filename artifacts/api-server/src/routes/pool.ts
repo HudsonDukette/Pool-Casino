@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, poolTable, betsTable, usersTable, settingsTable } from "@workspace/db";
 import { desc, gte, eq } from "drizzle-orm";
 import { GetPoolResponse } from "@workspace/api-zod";
+import { isPoolPaused } from "../lib/pool-guard";
 
 const router: IRouter = Router();
 
@@ -29,6 +30,7 @@ router.get("/pool", async (req, res): Promise<void> => {
 
   const totalAmount = parseFloat(pool.totalAmount);
   const maxBet = totalAmount;
+  const poolPaused = await isPoolPaused();
 
   const [forceReloadRow] = await db
     .select()
@@ -50,6 +52,7 @@ router.get("/pool", async (req, res): Promise<void> => {
       biggestWin: parseFloat(pool.biggestWin),
       biggestBet: parseFloat(pool.biggestBet),
       maxBet,
+      poolPaused,
       forceReloadAt,
       disabledGames,
       recentBigBets: recentBigBets.map((b) => ({

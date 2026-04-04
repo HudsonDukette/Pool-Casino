@@ -432,6 +432,7 @@ const item = {
 export default function Games() {
   const { data: pool } = useGetPool({ query: { refetchInterval: 5000 } });
   const disabledGames = pool?.disabledGames ?? [];
+  const poolPaused = pool?.poolPaused ?? false;
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       <motion.div
@@ -445,6 +446,16 @@ export default function Games() {
           34 games. One global pool. Every bet matters.
         </p>
       </motion.div>
+
+      {poolPaused && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-950/60 border border-red-500/50 rounded-xl px-5 py-4 text-center text-red-300 font-medium"
+        >
+          🚨 The prize pool is currently empty. All pool-backed games are paused until an admin refills the pool.
+        </motion.div>
+      )}
 
       <motion.div
         variants={container}

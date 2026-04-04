@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, usersTable, poolTable, settingsTable, chatMessagesTable, moneyRequestsTable, reportsTable, banAppealsTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable, casinoDrinksTable, userDrinksTable, monthlyTaxLogsTable, casinoGameOddsTable, betsTable, moneyLedgerTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
 import { sendPushToUser } from "../lib/push";
+import { unlockPool } from "../lib/pool-guard";
 import {
   AdminRefillPoolBody,
   AdminRefillPoolResponse,
@@ -91,6 +92,8 @@ router.post("/admin/refill-pool", async (req, res): Promise<void> => {
   await db.update(poolTable).set({
     totalAmount: newPoolAmount.toFixed(2),
   }).where(eq(poolTable.id, pool.id));
+
+  await unlockPool();
 
   await addLedgerEntry({
     eventType: "admin_refill_pool",

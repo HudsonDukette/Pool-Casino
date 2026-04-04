@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response, type NextFunction } 
 import { db, usersTable, poolTable, betsTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable, casinoGameOddsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { calculateWinChance } from "../lib/gambling";
+import { checkAndLockIfEmpty } from "../lib/pool-guard";
 
 const router: IRouter = Router();
 
@@ -84,6 +85,7 @@ async function settleGame(
   let payout = 0;
   let newBalance = 0;
   let casinoInsolvent = false;
+  let poolAfterTx: number | null = null;
 
   await db.transaction(async (tx) => {
     // Re-read rows inside the transaction for atomic accounting
@@ -154,8 +156,10 @@ async function settleGame(
       const newBiggestWin = won && payout > parseFloat(freshPool.biggestWin) ? payout : parseFloat(freshPool.biggestWin);
       const newBiggestBet = betAmount > parseFloat(freshPool.biggestBet) ? betAmount : parseFloat(freshPool.biggestBet);
 
+      const clampedPool = Math.max(0, newPool);
+      poolAfterTx = clampedPool;
       await tx.update(poolTable).set({
-        totalAmount: Math.max(0, newPool).toFixed(2),
+        totalAmount: clampedPool.toFixed(2),
         biggestWin: newBiggestWin.toFixed(2),
         biggestBet: newBiggestBet.toFixed(2),
       }).where(eq(poolTable.id, freshPool.id));
@@ -194,6 +198,10 @@ async function settleGame(
       }),
     ]);
   });
+
+  if (poolAfterTx !== null) {
+    await checkAndLockIfEmpty(poolAfterTx);
+  }
 
   return { won, breakEven, payout, multiplier, newBalance, profit: payout - betAmount, casinoInsolvent };
 }
@@ -810,6 +818,7 @@ router.post("/games/mines/cashout", async (req, res): Promise<void> => {
       biggestWin: newBiggestWin.toFixed(2),
       biggestBet: newBiggestBet.toFixed(2),
     }).where(eq(poolTable.id, pool.id));
+    await checkAndLockIfEmpty(newPool);
   }
 
   const profit = payout - game.betAmount;

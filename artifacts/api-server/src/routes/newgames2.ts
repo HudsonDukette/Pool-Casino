@@ -2,6 +2,7 @@ import { Router, type IRouter, type Response } from "express";
 import { db, usersTable, poolTable, betsTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable, casinoGameOddsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { trackGameProgress } from "../lib/progress";
+import { isPoolPaused, checkAndLockIfEmpty } from "../lib/pool-guard";
 
 const router: IRouter = Router();
 
@@ -52,14 +53,26 @@ async function settle(
   userId: number, gameType: string, betAmount: number, rawMultiplier: number,
   user: any, pool: any, casinoId?: number
 ): Promise<{ won: boolean; payout: number; newBalance: number }> {
+  // Block pool games when pool is paused (newgames2 routes don't go through /games middleware)
+  if (casinoId === undefined) {
+    const paused = await isPoolPaused();
+    if (paused) throw Object.assign(new Error("pool_paused"), { status: 503, message: "The prize pool is empty. Games are paused until an admin refills the pool." });
+  }
+
   let multiplier = rawMultiplier;
   if (casinoId !== undefined && rawMultiplier > 1) {
     const oddsMultiplier = await getCasinoOddsMultiplier(casinoId, gameType);
     multiplier = rawMultiplier * oddsMultiplier;
   }
   const won = multiplier > 1;
-  const payout = parseFloat((betAmount * multiplier).toFixed(2));
+
+  // Cap payout to current pool balance so pool can never go below zero
+  const poolAmount = parseFloat(pool.totalAmount);
+  const uncappedPayout = parseFloat((betAmount * multiplier).toFixed(2));
+  const payout = (won && casinoId === undefined) ? Math.min(uncappedPayout, poolAmount) : uncappedPayout;
   const net = payout - betAmount;
+
+  let poolAfter = poolAmount;
 
   const result = await db.transaction(async (tx) => {
     const [updatedUser] = await tx.update(usersTable)
@@ -77,14 +90,21 @@ async function settle(
         ]);
       }
     } else {
-      const [updatedPool] = await tx.update(poolTable)
-        .set({ totalAmount: sql`${poolTable.totalAmount} + ${(-net).toFixed(2)}` })
-        .where(eq(poolTable.id, pool.id)).returning();
+      const newPool = Math.max(0, poolAmount - net);
+      poolAfter = newPool;
+      await tx.update(poolTable)
+        .set({ totalAmount: newPool.toFixed(2) })
+        .where(eq(poolTable.id, pool.id));
       await tx.insert(betsTable).values({ userId, gameType, betAmount: betAmount.toFixed(2), result: won ? "win" : "loss", payout: payout.toFixed(2), multiplier: multiplier.toFixed(4) });
     }
 
     return { newBalance: parseFloat(updatedUser.balance) };
   });
+
+  // After pool update, lock pool if it hit zero
+  if (casinoId === undefined) {
+    await checkAndLockIfEmpty(poolAfter);
+  }
 
   await trackGameProgress(userId, gameType, won);
   return { won, payout, newBalance: result.newBalance };

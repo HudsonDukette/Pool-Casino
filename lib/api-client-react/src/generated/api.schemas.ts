@@ -81,6 +81,7 @@ export interface RecentBet {
 export interface PoolInfo {
   forceReloadAt?: number;
   disabledGames?: string[];
+  poolPaused?: boolean;
   totalAmount: number;
   biggestWin: number;
   biggestBet: number;

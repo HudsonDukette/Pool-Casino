@@ -8,6 +8,7 @@ import {
   simulatePlinko,
 } from "../lib/gambling";
 import { trackGameProgress } from "../lib/progress";
+import { checkAndLockIfEmpty } from "../lib/pool-guard";
 
 const router: IRouter = Router();
 
@@ -135,7 +136,9 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
     const newPoolAmount = poolAmount + betAmount - payout;
     const newBiggestWin = won && payout > parseFloat(pool.biggestWin) ? payout : parseFloat(pool.biggestWin);
     const newBiggestBet = betAmount > parseFloat(pool.biggestBet) ? betAmount : parseFloat(pool.biggestBet);
-    await db.update(poolTable).set({ totalAmount: Math.max(0, newPoolAmount).toFixed(2), biggestWin: newBiggestWin.toFixed(2), biggestBet: newBiggestBet.toFixed(2) }).where(eq(poolTable.id, pool.id));
+    const clampedPoolAmount = Math.max(0, newPoolAmount);
+    await db.update(poolTable).set({ totalAmount: clampedPoolAmount.toFixed(2), biggestWin: newBiggestWin.toFixed(2), biggestBet: newBiggestBet.toFixed(2) }).where(eq(poolTable.id, pool.id));
+    await checkAndLockIfEmpty(clampedPoolAmount);
   }
 
   const profit = payout - betAmount;
@@ -221,13 +224,15 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
     newBalance = currentBalance - betAmount + payout;
     const balanceDelta = payout - betAmount;
     const poolDelta = betAmount - payout;
+    const plinkoPoolAfter = Math.max(0, poolAmount + poolDelta);
     await Promise.all([
       db.update(poolTable).set({
-        totalAmount: sql`GREATEST(0, ${poolTable.totalAmount} + ${poolDelta})`,
+        totalAmount: plinkoPoolAfter.toFixed(2),
         biggestWin: won ? sql`GREATEST(${poolTable.biggestWin}::numeric, ${payout})` : undefined,
         biggestBet: sql`GREATEST(${poolTable.biggestBet}::numeric, ${betAmount})`,
       }).where(eq(poolTable.id, pool.id)),
     ]);
+    await checkAndLockIfEmpty(plinkoPoolAfter);
     await db.update(usersTable).set({
       balance: sql`${usersTable.balance} + ${balanceDelta}`,
       totalProfit: sql`${usersTable.totalProfit} + ${profit}`,
