@@ -50,7 +50,7 @@ export default function Plinko() {
   const [highlightedSlots, setHighlightedSlots] = useState<Map<number, number>>(new Map());
   const [inFlightTotal, setInFlightTotal] = useState(0);
   const nextBallId = useRef(0);
-  const MAX_BALLS = 100;
+  const MAX_BALLS = 1000;
   const ballsCountRef = useRef(0);
 
   // Multi-ball state
@@ -64,7 +64,7 @@ export default function Plinko() {
   useEffect(() => { ballsCountRef.current = balls.length; }, [balls]);
 
   const numericBet = parseFloat(betAmount) || 0;
-  const numericCount = Math.max(1, Math.min(100, parseInt(ballCount) || 1));
+  const numericCount = Math.max(1, Math.min(1000, parseInt(ballCount) || 1));
   const displayBalance = user ? Math.max(0, user.balance - inFlightTotal) : 0;
   const totalCost = numericBet * numericCount;
 
@@ -345,7 +345,7 @@ export default function Plinko() {
               <div className="space-y-3">
                 <label className="text-sm font-medium text-muted-foreground">Balls to Drop</label>
                 <div className="flex gap-2">
-                  {[1, 3, 5, 10].map(n => (
+                  {[1, 10, 100, 500].map(n => (
                     <Button key={n} variant={numericCount === n && !isDropping ? "default" : "outline"}
                       size="sm" className="flex-1" disabled={isDropping}
                       onClick={() => setBallCount(String(n))}>
@@ -354,11 +354,11 @@ export default function Plinko() {
                   ))}
                 </div>
                 <div className="relative">
-                  <Input type="number" min="1" max="100" value={ballCount}
+                  <Input type="number" min="1" max="1000" value={ballCount}
                     onChange={e => setBallCount(e.target.value)}
                     disabled={isDropping}
                     className="font-mono text-center bg-black/50 h-10"
-                    placeholder="Custom..."
+                    placeholder="Custom (max 1000)..."
                   />
                 </div>
                 {numericCount > 1 && (

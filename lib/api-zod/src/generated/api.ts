@@ -192,7 +192,7 @@ export const PlayPlinkoResponse = zod.object({
 export const PlayPlinkoBatchBody = zod.object({
   betAmount: zod.number(),
   risk: zod.enum(["low", "medium", "high"]),
-  count: zod.number().int().min(1).max(100),
+  count: zod.number().int().min(1).max(1000),
 });
 
 export const PlayPlinkoBatchResponse = zod.object({
