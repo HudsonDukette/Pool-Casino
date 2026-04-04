@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, usersTable, poolTable, settingsTable, chatMessagesTable, moneyRequestsTable, reportsTable, banAppealsTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable, casinoDrinksTable, userDrinksTable, monthlyTaxLogsTable, casinoGameOddsTable, betsTable, moneyLedgerTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
 import { sendPushToUser } from "../lib/push";
-import { unlockPool } from "../lib/pool-guard";
+import { unlockPool, checkAndLockIfEmpty } from "../lib/pool-guard";
 import {
   AdminRefillPoolBody,
   AdminRefillPoolResponse,
@@ -829,9 +829,11 @@ router.post("/admin/owner/simulate-win", async (req, res): Promise<void> => {
 
   const poolBefore = parseFloat(pool.totalAmount);
   const userBalanceBefore = parseFloat(target.balance);
-  const poolAfter = poolBefore - winAmount;
-  const userBalanceAfter = userBalanceBefore + winAmount;
-  const shortfall = poolAfter < 0 ? Math.abs(poolAfter) : 0;
+  // Cap the actual payout to what the pool can cover — pool floor is zero
+  const actualWin = Math.min(winAmount, poolBefore);
+  const poolAfter = Math.max(0, poolBefore - winAmount);
+  const userBalanceAfter = userBalanceBefore + actualWin;
+  const shortfall = winAmount > poolBefore ? winAmount - poolBefore : 0;
 
   await db.update(usersTable)
     .set({ balance: userBalanceAfter.toFixed(2) })
@@ -841,11 +843,13 @@ router.post("/admin/owner/simulate-win", async (req, res): Promise<void> => {
     .set({ totalAmount: poolAfter.toFixed(2) })
     .where(eq(poolTable.id, pool.id));
 
+  await checkAndLockIfEmpty(poolAfter);
+
   await addLedgerEntry({
     eventType: "admin_refill_player",
     direction: "in",
-    amount: winAmount,
-    description: `Owner simulated win: ${username} won ${formatCurrency(winAmount)} from pool (pool went from ${formatCurrency(poolBefore)} to ${formatCurrency(poolAfter)})`,
+    amount: actualWin,
+    description: `Owner simulated win: ${username} won ${formatCurrency(actualWin)} from pool (pool went from ${formatCurrency(poolBefore)} to ${formatCurrency(poolAfter)}${shortfall > 0 ? `, capped — requested ${formatCurrency(winAmount)}` : ""})`,
     actorUserId: req.session.userId!,
     targetUserId: target.id,
   });
@@ -853,13 +857,14 @@ router.post("/admin/owner/simulate-win", async (req, res): Promise<void> => {
   res.json({
     ok: true,
     username,
-    winAmount,
+    winAmount: actualWin,
+    requestedAmount: winAmount,
     userBalanceBefore,
     userBalanceAfter,
     poolBefore,
     poolAfter,
     shortfall,
-    poolWentNegative: poolAfter < 0,
+    capped: shortfall > 0,
   });
 });
 
