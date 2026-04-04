@@ -37,6 +37,8 @@ import type {
   LeaderboardList,
   LoginRequest,
   MessageResponse,
+  PlinkoBatchRequest,
+  PlinkoBatchResult,
   PlinkoRequest,
   PlinkoResult,
   PoolInfo,
@@ -843,6 +845,86 @@ export const usePlayPlinko = <
   TContext
 > => {
   return useMutation(getPlayPlinkoMutationOptions(options));
+};
+
+/**
+ * @summary Play plinko batch (multiple balls in one request)
+ */
+export const getPlayPlinkoBatchUrl = () => {
+  return `/api/games/plinko/batch`;
+};
+
+export const playPlinkoBatch = async (
+  plinkoBatchRequest: PlinkoBatchRequest,
+  options?: RequestInit,
+): Promise<PlinkoBatchResult> => {
+  return customFetch<PlinkoBatchResult>(getPlayPlinkoBatchUrl(), {
+    ...options,
+    method: "POST",
+    body: JSON.stringify(plinkoBatchRequest),
+  });
+};
+
+export const getPlayPlinkoBatchMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof playPlinkoBatch>>,
+    TError,
+    { data: BodyType<PlinkoBatchRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof playPlinkoBatch>>,
+  TError,
+  { data: BodyType<PlinkoBatchRequest> },
+  TContext
+> => {
+  const mutationKey = ["playPlinkoBatch"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? (options as typeof options & { mutation: NonNullable<typeof options.mutation> })
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof playPlinkoBatch>>,
+    { data: BodyType<PlinkoBatchRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+    return playPlinkoBatch(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PlayPlinkoBatchMutationResult = NonNullable<Awaited<ReturnType<typeof playPlinkoBatch>>>;
+export type PlayPlinkoBatchMutationBody = BodyType<PlinkoBatchRequest>;
+export type PlayPlinkoBatchMutationError = ErrorType<ErrorResponse>;
+
+export const usePlayPlinkoBatch = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof playPlinkoBatch>>,
+    TError,
+    { data: BodyType<PlinkoBatchRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof playPlinkoBatch>>,
+  TError,
+  { data: BodyType<PlinkoBatchRequest> },
+  TContext
+> => {
+  const mutationOptions = getPlayPlinkoBatchMutationOptions(options);
+  return useMutation(mutationOptions);
 };
 
 /**

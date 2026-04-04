@@ -142,6 +142,28 @@ export interface PlinkoResult {
   winChance: number;
 }
 
+export interface PlinkoBatchRequest {
+  betAmount: number;
+  risk: PlinkoRequestRisk;
+  count: number;
+}
+
+export type PlinkoBatchSingleResult = {
+  won: boolean;
+  multiplier: number;
+  path: PlinkoResultPathItem[];
+  payout: number;
+  slot: number;
+  winChance: number;
+};
+
+export interface PlinkoBatchResult {
+  results: PlinkoBatchSingleResult[];
+  newBalance: number;
+  totalBet: number;
+  totalPayout: number;
+}
+
 export interface Transaction {
   id: number;
   gameType: string;

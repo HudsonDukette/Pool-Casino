@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Link } from "wouter";
-import { usePlayPlinko, useGetPool, useGetMe } from "@workspace/api-client-react";
+import { usePlayPlinko, usePlayPlinkoBatch, useGetPool, useGetMe } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,8 @@ export default function Plinko() {
   const { toast } = useToast();
   const casinoId = useCasinoId();
 
+  const batchMut = usePlayPlinkoBatch();
+
   const [betAmount, setBetAmount] = useState<string>("10");
   const [risk, setRisk] = useState<"low" | "medium" | "high">("medium");
   const [balls, setBalls] = useState<BallState[]>([]);
@@ -74,6 +76,58 @@ export default function Plinko() {
 
   useEffect(() => () => stopDropping(), [stopDropping]);
 
+  // Spawn a ball from already-resolved server data (no HTTP request)
+  const spawnBall = useCallback((
+    coords: { x: number; y: number }[],
+    data: { won: boolean; multiplier: number; payout: number; slot: number },
+    betAmt: number,
+    riskLevel: "low" | "medium" | "high",
+    onDone?: () => void,
+  ) => {
+    const ballId = nextBallId.current++;
+    const animDuration = Math.max(1.5, coords.length * 0.055);
+    setBalls(prev => [...prev, { id: ballId, coords, multiplier: data.multiplier, slot: data.slot, won: data.won, animDuration }]);
+
+    const highlightDelay = animDuration * 1000 + 100;
+    const t1 = setTimeout(() => {
+      const finalX = coords[coords.length - 1]?.x ?? 0;
+      const visualSlot = Math.max(0, Math.min(ROWS, Math.round(finalX / PEG_SPACING + ROWS / 2)));
+      const visualMultiplier = RISK_LEVELS[riskLevel].mults[visualSlot] ?? 0;
+
+      setHighlightedSlots(prev => {
+        const next = new Map(prev);
+        next.set(visualSlot, (next.get(visualSlot) ?? 0) + 1);
+        return next;
+      });
+      setTimeout(() => {
+        setHighlightedSlots(prev => {
+          const next = new Map(prev);
+          const c = (next.get(visualSlot) ?? 1) - 1;
+          if (c <= 0) next.delete(visualSlot); else next.set(visualSlot, c);
+          return next;
+        });
+      }, 1200);
+      onDone?.();
+
+      const isBreakEven = visualMultiplier === 1;
+      if (data.won) {
+        toast({ title: `${visualMultiplier}x Win! 🎉`, description: `+${formatCurrency(data.payout)} returned`, className: "bg-success text-success-foreground border-none" });
+      } else if (isBreakEven) {
+        toast({ title: `1x — Break Even`, description: `Your ${formatCurrency(betAmt)} bet was returned` });
+      } else {
+        const netLoss = betAmt - data.payout;
+        const gotBack = data.payout > 0 ? ` (got ${formatCurrency(data.payout)} back)` : "";
+        toast({ title: `${visualMultiplier}x — No luck`, description: `Lost ${formatCurrency(netLoss)}${gotBack}`, variant: "destructive" });
+      }
+    }, highlightDelay);
+
+    const t2 = setTimeout(() => {
+      setBalls(prev => prev.filter(b => b.id !== ballId));
+    }, highlightDelay + 800);
+
+    timeoutsRef.current.push(t1, t2);
+  }, [toast]);
+
   const dropOneBall = useCallback((betAmt: number, riskLevel: "low" | "medium" | "high") => {
     setInFlightTotal(prev => prev + betAmt);
 
@@ -82,59 +136,11 @@ export default function Plinko() {
       {
         onSuccess: (data) => {
           const coords = data.path as { x: number; y: number }[];
-          const ballId = nextBallId.current++;
-          const animDuration = Math.max(1.5, coords.length * 0.055);
-
-          setBalls(prev => [...prev, { id: ballId, coords, multiplier: data.multiplier, slot: data.slot, won: data.won, animDuration }]);
-
-          const highlightDelay = animDuration * 1000 + 100;
-          const t1 = setTimeout(() => {
-            const finalX = coords[coords.length - 1]?.x ?? 0;
-            const visualSlot = Math.max(0, Math.min(ROWS, Math.round(finalX / PEG_SPACING + ROWS / 2)));
-            const visualMultiplier = RISK_LEVELS[riskLevel].mults[visualSlot] ?? 0;
-
-            setInFlightTotal(prev => Math.max(0, prev - betAmt));
-            // Add this slot to the multi-highlight map (ref-counted)
-            setHighlightedSlots(prev => {
-              const next = new Map(prev);
-              next.set(visualSlot, (next.get(visualSlot) ?? 0) + 1);
-              return next;
-            });
+          setInFlightTotal(prev => Math.max(0, prev - betAmt));
+          spawnBall(coords, data, betAmt, riskLevel, () => {
             queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
             queryClient.invalidateQueries({ queryKey: ["/api/pool"] });
-
-            const isBreakEven = visualMultiplier === 1;
-            if (data.won) {
-              toast({
-                title: `${visualMultiplier}x Win! 🎉`,
-                description: `+${formatCurrency(data.payout)} returned to your balance`,
-                className: "bg-success text-success-foreground border-none",
-              });
-            } else if (isBreakEven) {
-              toast({ title: `1x — Break Even`, description: `Your ${formatCurrency(betAmt)} bet was returned` });
-            } else {
-              const netLoss = betAmt - data.payout;
-              const gotBack = data.payout > 0 ? ` (got ${formatCurrency(data.payout)} back)` : "";
-              toast({ title: `${visualMultiplier}x — No luck`, description: `Lost ${formatCurrency(netLoss)}${gotBack}`, variant: "destructive" });
-            }
-
-            // Decrement the ref count for this slot after highlight expires
-            setTimeout(() => {
-              setHighlightedSlots(prev => {
-                const next = new Map(prev);
-                const count = (next.get(visualSlot) ?? 1) - 1;
-                if (count <= 0) next.delete(visualSlot);
-                else next.set(visualSlot, count);
-                return next;
-              });
-            }, 1200);
-          }, highlightDelay);
-
-          const t2 = setTimeout(() => {
-            setBalls(prev => prev.filter(b => b.id !== ballId));
-          }, highlightDelay + 800);
-
-          timeoutsRef.current.push(t1, t2);
+          });
         },
         onError: (err) => {
           setInFlightTotal(prev => Math.max(0, prev - betAmt));
@@ -142,7 +148,7 @@ export default function Plinko() {
         },
       }
     );
-  }, [playMut, queryClient, toast]);
+  }, [playMut, spawnBall, queryClient, toast]);
 
   const handleDrop = useCallback(() => {
     if (!user) {
@@ -153,30 +159,50 @@ export default function Plinko() {
       toast({ title: "Invalid Bet", description: "Enter a valid bet amount.", variant: "destructive" });
       return;
     }
-    if (numericCount === 1) {
+
+    if (numericCount === 1 || casinoId !== undefined) {
+      // Single ball or casino mode — use the original per-request flow
       if (balls.length >= MAX_BALLS) {
         toast({ title: "Max balls reached", description: "Wait for some balls to finish.", variant: "destructive" });
         return;
       }
       dropOneBall(numericBet, risk);
     } else {
+      // Multi-ball pool mode — send ONE batch request, animate all results locally
       droppingRef.current = true;
       setIsDropping(true);
+      setInFlightTotal(prev => prev + totalCost);
 
-      for (let i = 0; i < numericCount; i++) {
-        const t = setTimeout(() => {
-          if (!droppingRef.current) return;
-          if (ballsCountRef.current >= MAX_BALLS) { stopDropping(); return; }
-          dropOneBall(numericBet, risk);
-          if (i === numericCount - 1) {
+      batchMut.mutate(
+        { data: { betAmount: numericBet, risk, count: numericCount } },
+        {
+          onSuccess: (data) => {
+            setInFlightTotal(prev => Math.max(0, prev - totalCost));
+            // Schedule each ball's visual drop with the configured delay
+            data.results.forEach((result, i) => {
+              const t = setTimeout(() => {
+                if (!droppingRef.current && i > 0) return;
+                spawnBall(result.path as { x: number; y: number }[], result, numericBet, risk);
+                if (i === data.results.length - 1) {
+                  droppingRef.current = false;
+                  setIsDropping(false);
+                  queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/pool"] });
+                }
+              }, i * dropDelay);
+              timeoutsRef.current.push(t);
+            });
+          },
+          onError: (err) => {
+            setInFlightTotal(prev => Math.max(0, prev - totalCost));
             droppingRef.current = false;
             setIsDropping(false);
-          }
-        }, i * dropDelay);
-        timeoutsRef.current.push(t);
-      }
+            toast({ title: "Error", description: (err as any).error?.error || "Failed to place bets", variant: "destructive" });
+          },
+        }
+      );
     }
-  }, [user, numericBet, numericCount, risk, dropDelay, displayBalance, totalCost, dropOneBall, stopDropping, toast]);
+  }, [user, numericBet, numericCount, risk, dropDelay, totalCost, casinoId, balls.length, batchMut, dropOneBall, spawnBall, queryClient, stopDropping, toast]);
 
   // Render pegs
   const pegs: React.ReactNode[] = [];

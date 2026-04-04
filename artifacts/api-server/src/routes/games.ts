@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Response } from "express";
 import { db, usersTable, poolTable, betsTable, casinosTable, casinoGamesOwnedTable, casinoBetsTable, casinoTransactionsTable, casinoGameOddsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
-import { PlayRouletteBody, PlayRouletteResponse, PlayPlinkoBody, PlayPlinkoResponse } from "@workspace/api-zod";
+import { PlayRouletteBody, PlayRouletteResponse, PlayPlinkoBody, PlayPlinkoResponse, PlayPlinkoBatchBody, PlayPlinkoBatchResponse } from "@workspace/api-zod";
 import {
   calculateWinChance,
   ROULETTE_NUMBERS,
@@ -257,6 +257,96 @@ router.post("/games/plinko", async (req, res): Promise<void> => {
   const plinkoWinStreak = Math.max(parseInt(user.winStreak), plinkoNewStreak);
   trackGameProgress({ userId, gameType: "plinko", betAmount, won, lostAmount: won ? 0 : betAmount, currentWinStreak: plinkoWinStreak });
   res.json(PlayPlinkoResponse.parse({ won, multiplier, path, betAmount, payout, newBalance, slot, winChance }));
+});
+
+router.post("/games/plinko/batch", async (req, res): Promise<void> => {
+  const userId = req.session.userId;
+  if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+
+  const parsed = PlayPlinkoBatchBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const { betAmount, risk, count } = parsed.data;
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user) { res.status(401).json({ error: "Not authenticated" }); return; }
+
+  const banErr = getBanError(user);
+  if (banErr) { res.status(403).json({ error: "banned", message: banErr }); return; }
+
+  const pool = await getOrCreatePool();
+  const totalCost = betAmount * count;
+  const userBalance = parseFloat(user.balance);
+  if (userBalance < totalCost) {
+    res.status(400).json({ error: `Insufficient balance. Need ${totalCost.toFixed(2)}, have ${userBalance.toFixed(2)}` });
+    return;
+  }
+
+  // Simulate all balls sequentially, tracking pool balance as it changes
+  let runningPool = parseFloat(pool.totalAmount);
+  const results: Array<{ won: boolean; multiplier: number; path: { x: number; y: number }[]; payout: number; slot: number; winChance: number }> = [];
+
+  for (let i = 0; i < count; i++) {
+    const winChance = calculateWinChance(betAmount, runningPool);
+    const { path, slot, multiplier } = simulatePlinko(risk, winChance);
+    const won = multiplier > 1;
+    const uncappedPayout = betAmount * multiplier;
+    const payout = won ? Math.min(uncappedPayout, runningPool) : uncappedPayout;
+    // Update running pool balance for next iteration
+    runningPool = Math.max(0, runningPool + betAmount - payout);
+    results.push({ won, multiplier, path, payout, slot, winChance });
+    // If pool is now empty, stop simulating wins (remaining balls just lose)
+    if (runningPool === 0 && i < count - 1) {
+      for (let j = i + 1; j < count; j++) {
+        const { path: p2, slot: s2 } = simulatePlinko(risk, 0);
+        results.push({ won: false, multiplier: 0, path: p2, payout: 0, slot: s2, winChance: 0 });
+      }
+      break;
+    }
+  }
+
+  const totalPayout = results.reduce((sum, r) => sum + r.payout, 0);
+  const netDelta = totalPayout - totalCost;
+  const newBalance = parseFloat((userBalance + netDelta).toFixed(2));
+  const poolAfter = parseFloat(pool.totalAmount) - totalCost + totalPayout;
+  const clampedPoolAfter = Math.max(0, poolAfter);
+
+  // Apply all changes atomically
+  const biggestWin = Math.max(...results.filter(r => r.won).map(r => r.payout), 0);
+  await db.transaction(async (tx) => {
+    await tx.update(poolTable).set({
+      totalAmount: clampedPoolAfter.toFixed(2),
+      biggestWin: biggestWin > 0 ? sql`GREATEST(${poolTable.biggestWin}::numeric, ${biggestWin})` : undefined,
+      biggestBet: sql`GREATEST(${poolTable.biggestBet}::numeric, ${betAmount})`,
+    }).where(eq(poolTable.id, pool.id));
+
+    await tx.update(usersTable).set({
+      balance: newBalance.toFixed(2),
+      totalProfit: sql`${usersTable.totalProfit} + ${netDelta.toFixed(2)}`,
+      gamesPlayed: sql`(${usersTable.gamesPlayed}::integer + ${count})::text`,
+      totalWins: sql`(${usersTable.totalWins}::integer + ${results.filter(r => r.won).length})::text`,
+      totalLosses: sql`(${usersTable.totalLosses}::integer + ${results.filter(r => !r.won).length})::text`,
+      lastBetAt: new Date(),
+    }).where(eq(usersTable.id, userId));
+
+    await tx.insert(betsTable).values(
+      results.map(r => ({
+        userId,
+        gameType: "plinko",
+        betAmount: betAmount.toFixed(2),
+        result: r.won ? "win" : "loss",
+        payout: r.payout.toFixed(2),
+        multiplier: r.multiplier.toFixed(4),
+      }))
+    );
+  });
+
+  await checkAndLockIfEmpty(clampedPoolAfter);
+
+  const winsCount = results.filter(r => r.won).length;
+  trackGameProgress({ userId, gameType: "plinko", betAmount: totalCost, won: winsCount > 0, lostAmount: results.filter(r => !r.won).reduce((s, r) => s + betAmount - r.payout, 0), currentWinStreak: 0 });
+
+  res.json(PlayPlinkoBatchResponse.parse({ results, newBalance, totalBet: totalCost, totalPayout }));
 });
 
 export default router;

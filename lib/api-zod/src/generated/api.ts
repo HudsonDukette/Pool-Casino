@@ -187,6 +187,31 @@ export const PlayPlinkoResponse = zod.object({
 });
 
 /**
+ * @summary Play plinko batch (multiple balls in one request)
+ */
+export const PlayPlinkoBatchBody = zod.object({
+  betAmount: zod.number(),
+  risk: zod.enum(["low", "medium", "high"]),
+  count: zod.number().int().min(1).max(100),
+});
+
+export const PlayPlinkoBatchResponse = zod.object({
+  results: zod.array(
+    zod.object({
+      won: zod.boolean(),
+      multiplier: zod.number(),
+      path: zod.array(zod.object({ x: zod.number(), y: zod.number() })),
+      payout: zod.number(),
+      slot: zod.number(),
+      winChance: zod.number(),
+    }),
+  ),
+  newBalance: zod.number(),
+  totalBet: zod.number(),
+  totalPayout: zod.number(),
+});
+
+/**
  * @summary Get transaction history
  */
 export const GetTransactionsQueryParams = zod.object({
