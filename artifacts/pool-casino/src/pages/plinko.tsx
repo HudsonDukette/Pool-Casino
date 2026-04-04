@@ -131,6 +131,7 @@ export default function Plinko() {
 
   const dropOneBall = useCallback((betAmt: number, riskLevel: "low" | "medium" | "high") => {
     setInFlightTotal(prev => prev + betAmt);
+    setIsDropping(true);
 
     playMut.mutate(
       { data: { betAmount: betAmt, risk: riskLevel, ...(casinoId !== undefined ? { casinoId } : {}) } as any },
@@ -138,14 +139,17 @@ export default function Plinko() {
         onSuccess: (data) => {
           const coords = data.path as { x: number; y: number }[];
           setInFlightTotal(prev => Math.max(0, prev - betAmt));
+          setIsDropping(false);
           spawnBall(coords, data, betAmt, riskLevel, () => {
             queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
             queryClient.invalidateQueries({ queryKey: ["/api/pool"] });
           });
         },
-        onError: (err) => {
+        onError: (err: any) => {
           setInFlightTotal(prev => Math.max(0, prev - betAmt));
-          toast({ title: "Error", description: (err as any).error?.error || "Failed to place bet", variant: "destructive" });
+          setIsDropping(false);
+          const isAbort = err?.name === "AbortError" || err?.message === "The user aborted a request.";
+          if (!isAbort) toast({ title: "Error", description: err?.error?.error || err?.message || "Failed to place bet", variant: "destructive" });
         },
       }
     );
@@ -194,11 +198,12 @@ export default function Plinko() {
               timeoutsRef.current.push(t);
             });
           },
-          onError: (err) => {
+          onError: (err: any) => {
             setInFlightTotal(prev => Math.max(0, prev - totalCost));
             droppingRef.current = false;
             setIsDropping(false);
-            toast({ title: "Error", description: (err as any).error?.error || "Failed to place bets", variant: "destructive" });
+            const isAbort = err?.name === "AbortError" || err?.message === "The user aborted a request.";
+            if (!isAbort) toast({ title: "Error", description: err?.error?.error || err?.message || "Failed to place bets", variant: "destructive" });
           },
         }
       );
@@ -422,7 +427,7 @@ export default function Plinko() {
               )}
 
               {/* Drop Button */}
-              {isDropping ? (
+              {isDropping && numericCount > 1 ? (
                 <Button size="lg" variant="destructive"
                   className="w-full h-16 text-xl gap-3"
                   onClick={stopDropping}>
@@ -432,8 +437,8 @@ export default function Plinko() {
                 <Button size="lg"
                   className="w-full h-16 text-xl bg-secondary hover:bg-secondary/90 shadow-secondary/20"
                   onClick={handleDrop}
-                  disabled={numericBet <= 0 || !user}>
-                  {numericCount === 1 ? "Drop Ball" : `Drop ${numericCount} Balls`}
+                  disabled={numericBet <= 0 || !user || isDropping || batchMut.isPending || playMut.isPending}>
+                  {isDropping && numericCount === 1 ? "Dropping…" : numericCount === 1 ? "Drop Ball" : `Drop ${numericCount} Balls`}
                 </Button>
               )}
 
