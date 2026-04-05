@@ -3,6 +3,7 @@ import { db, usersTable, poolTable, settingsTable, chatMessagesTable, moneyReque
 import { eq, sql, and } from "drizzle-orm";
 import { sendPushToUser } from "../lib/push";
 import { unlockPool, checkAndLockIfEmpty } from "../lib/pool-guard";
+import { resetWatchdogBaseline } from "../lib/watchdog";
 import {
   AdminRefillPoolBody,
   AdminRefillPoolResponse,
@@ -252,8 +253,8 @@ router.post("/admin/reset-watchdog-baseline", async (req, res): Promise<void> =>
   const isAdmin = await requireAdmin(req, res);
   if (!isAdmin) return;
 
-  await db.delete(settingsTable).where(eq(settingsTable.key, "watchdog_baseline_pool"));
-  res.json({ ok: true, message: "Watchdog baseline cleared — it will re-establish on the next 60s tick." });
+  resetWatchdogBaseline();
+  res.json({ ok: true, message: "Watchdog baseline reset — it will re-establish on the next 60s tick." });
 });
 
 router.get("/admin/settings", async (req, res): Promise<void> => {

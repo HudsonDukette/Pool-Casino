@@ -4,10 +4,13 @@
  * Runs every 60 seconds. Verifies that the global pool balance matches the
  * expected value derived from every recorded bet, admin refill, and casino tax.
  *
- * Expected pool formula (all-time):
+ * Baseline is stored in memory only — it is re-established fresh on every
+ * server start (including deployments), so a stale baseline can never cause
+ * phantom corrections.
+ *
+ * Expected pool formula (all-time from baseline):
  *   expected = baseline_pool
- *            + sum(bets.bet_amount - bets.payout)         ← ALL bets (pool + casino, since both write to bets table)
- *            - sum(casino_bets.bet_amount - casino_bets.payout)  ← subtract casino portion to isolate pool-only flow
+ *            + (betsTable net) - (casinoBetsTable net)   ← pool-only flow
  *            + sum(money_ledger.amount WHERE eventType = 'admin_refill_pool')
  *            + sum(monthly_tax_logs.tax_amount)
  *
@@ -16,86 +19,84 @@
  * the adjustment is always auditable.
  */
 
-import { db, poolTable, betsTable, casinoBetsTable, moneyLedgerTable, settingsTable, monthlyTaxLogsTable } from "@workspace/db";
-import { sql, eq } from "drizzle-orm";
+import { db, poolTable, betsTable, casinoBetsTable, moneyLedgerTable, monthlyTaxLogsTable } from "@workspace/db";
+import { sql } from "drizzle-orm";
 import { logger } from "./logger";
 
-const WATCHDOG_BASELINE_KEY = "watchdog_baseline_pool";
 const DRIFT_THRESHOLD = 0.01; // $0.01
 
-async function getSetting(key: string): Promise<string | null> {
-  const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, key)).limit(1);
-  return row?.value ?? null;
-}
+// Baseline is in-memory only — refreshed on every server restart / deployment.
+// Stores the "anchor" values so we only track CHANGES since server start.
+let baselinePool: number | null = null;
+let baselineBetsNet: number | null = null;
+let baselineRefills: number | null = null;
+let baselineTaxes: number | null = null;
 
-async function setSetting(key: string, value: string): Promise<void> {
-  await db
-    .insert(settingsTable)
-    .values({ key, value })
-    .onConflictDoUpdate({ target: settingsTable.key, set: { value } });
+async function computeComponents(): Promise<{
+  actualPool: number;
+  betsNet: number;
+  totalRefills: number;
+  totalTaxes: number;
+}> {
+  const [poolRow] = await db.select({ totalAmount: poolTable.totalAmount }).from(poolTable).limit(1);
+  if (!poolRow) throw new Error("Pool row not found");
+
+  const [betTotals] = await db
+    .select({
+      totalBets: sql<string>`COALESCE(SUM(${betsTable.betAmount}), 0)`,
+      totalPayouts: sql<string>`COALESCE(SUM(${betsTable.payout}), 0)`,
+    })
+    .from(betsTable);
+
+  const [casinoBetTotals] = await db
+    .select({
+      totalBets: sql<string>`COALESCE(SUM(${casinoBetsTable.betAmount}), 0)`,
+      totalPayouts: sql<string>`COALESCE(SUM(${casinoBetsTable.payout}), 0)`,
+    })
+    .from(casinoBetsTable);
+
+  const [refillTotals] = await db
+    .select({ total: sql<string>`COALESCE(SUM(${moneyLedgerTable.amount}), 0)` })
+    .from(moneyLedgerTable)
+    .where(sql`${moneyLedgerTable.eventType} = 'admin_refill_pool'`);
+
+  const [taxTotals] = await db
+    .select({ total: sql<string>`COALESCE(SUM(${monthlyTaxLogsTable.taxAmount}), 0)` })
+    .from(monthlyTaxLogsTable);
+
+  const totalBets = parseFloat(betTotals?.totalBets ?? "0");
+  const totalPayouts = parseFloat(betTotals?.totalPayouts ?? "0");
+  const totalCasinoBets = parseFloat(casinoBetTotals?.totalBets ?? "0");
+  const totalCasinoPayouts = parseFloat(casinoBetTotals?.totalPayouts ?? "0");
+
+  return {
+    actualPool: parseFloat(poolRow.totalAmount),
+    // Pool-only net: subtract casino bets since they also write to betsTable but never touch the pool
+    betsNet: (totalBets - totalPayouts) - (totalCasinoBets - totalCasinoPayouts),
+    totalRefills: parseFloat(refillTotals?.total ?? "0"),
+    totalTaxes: parseFloat(taxTotals?.total ?? "0"),
+  };
 }
 
 export async function runWatchdog(): Promise<void> {
   try {
-    const [poolRow] = await db.select().from(poolTable).limit(1);
-    if (!poolRow) return;
-    const actualPool = parseFloat(poolRow.totalAmount);
+    const { actualPool, betsNet, totalRefills, totalTaxes } = await computeComponents();
 
-    // --- Sum of all entries in betsTable (includes both pool and casino bets) ---
-    const [betTotals] = await db
-      .select({
-        totalBets: sql<string>`COALESCE(SUM(${betsTable.betAmount}), 0)`,
-        totalPayouts: sql<string>`COALESCE(SUM(${betsTable.payout}), 0)`,
-      })
-      .from(betsTable);
-
-    const totalBets = parseFloat(betTotals?.totalBets ?? "0");
-    const totalPayouts = parseFloat(betTotals?.totalPayouts ?? "0");
-
-    // --- Casino bets are also recorded in betsTable — subtract them to isolate pool-only flow ---
-    const [casinoBetTotals] = await db
-      .select({
-        totalBets: sql<string>`COALESCE(SUM(${casinoBetsTable.betAmount}), 0)`,
-        totalPayouts: sql<string>`COALESCE(SUM(${casinoBetsTable.payout}), 0)`,
-      })
-      .from(casinoBetsTable);
-
-    const totalCasinoBets = parseFloat(casinoBetTotals?.totalBets ?? "0");
-    const totalCasinoPayouts = parseFloat(casinoBetTotals?.totalPayouts ?? "0");
-
-    // Pool-only net = all bets minus casino bets (casino bets never touch the pool)
-    const netFromBets = (totalBets - totalPayouts) - (totalCasinoBets - totalCasinoPayouts);
-
-    // --- Sum of all admin pool refills ---
-    const [refillTotals] = await db
-      .select({ total: sql<string>`COALESCE(SUM(${moneyLedgerTable.amount}), 0)` })
-      .from(moneyLedgerTable)
-      .where(sql`${moneyLedgerTable.eventType} = 'admin_refill_pool'`);
-
-    const totalRefills = parseFloat(refillTotals?.total ?? "0");
-
-    // --- Sum of all casino taxes that flowed into the pool ---
-    const [taxTotals] = await db
-      .select({ total: sql<string>`COALESCE(SUM(${monthlyTaxLogsTable.taxAmount}), 0)` })
-      .from(monthlyTaxLogsTable);
-
-    const totalTaxes = parseFloat(taxTotals?.total ?? "0");
-
-    // --- Establish or read the baseline ---
-    const baselineStr = await getSetting(WATCHDOG_BASELINE_KEY);
-
-    if (baselineStr === null) {
-      // First run — establish the baseline pool amount at this exact moment.
-      // The formula is:  baseline = actual - netFromBets - refills - taxes
-      // so that expected = baseline + netFromBets + refills + taxes = actual ✓
-      const baseline = actualPool - netFromBets - totalRefills - totalTaxes;
-      await setSetting(WATCHDOG_BASELINE_KEY, baseline.toFixed(2));
-      logger.info({ baseline: baseline.toFixed(2), actualPool }, "Watchdog: baseline established");
+    // --- Establish in-memory baseline on first run ---
+    if (baselinePool === null) {
+      baselinePool = actualPool;
+      baselineBetsNet = betsNet;
+      baselineRefills = totalRefills;
+      baselineTaxes = totalTaxes;
+      logger.info({ baselinePool: baselinePool.toFixed(2), actualPool }, "Watchdog: in-memory baseline established");
       return;
     }
 
-    const baseline = parseFloat(baselineStr);
-    const expectedPool = baseline + netFromBets + totalRefills + totalTaxes;
+    // Expected pool = baseline + changes since baseline
+    const betsNetSince = betsNet - baselineBetsNet!;
+    const refillsSince = totalRefills - baselineRefills!;
+    const taxesSince = totalTaxes - baselineTaxes!;
+    const expectedPool = baselinePool + betsNetSince + refillsSince + taxesSince;
     const drift = actualPool - expectedPool;
 
     if (Math.abs(drift) < DRIFT_THRESHOLD) {
@@ -112,23 +113,23 @@ export async function runWatchdog(): Promise<void> {
         actualPool,
         expectedPool: expectedPool.toFixed(2),
         drift: drift.toFixed(4),
-        totalBets,
-        totalPayouts,
-        totalRefills,
-        totalTaxes,
-        baseline,
+        betsNetSince,
+        refillsSince,
+        taxesSince,
+        baselinePool,
       },
       "Watchdog: pool drift detected — auto-correcting"
     );
 
     // Auto-correct: set pool to expected value and log the correction
+    const [freshPool] = await db.select().from(poolTable).limit(1);
+    if (!freshPool) return;
     await db.transaction(async (tx) => {
       await tx
         .update(poolTable)
         .set({ totalAmount: expectedPool.toFixed(2) })
-        .where(eq(poolTable.id, poolRow.id));
+        .where(sql`id = ${freshPool.id}`);
 
-      // Record the correction in the money ledger so it's always auditable
       const correctionDirection = drift > 0 ? "out" : "in";
       await tx.insert(moneyLedgerTable).values({
         eventType: "watchdog_correction",
@@ -145,6 +146,15 @@ export async function runWatchdog(): Promise<void> {
   } catch (err) {
     logger.error({ err }, "Watchdog: error during run");
   }
+}
+
+/** Reset the in-memory baseline — useful after intentional admin pool adjustments. */
+export function resetWatchdogBaseline(): void {
+  baselinePool = null;
+  baselineBetsNet = null;
+  baselineRefills = null;
+  baselineTaxes = null;
+  logger.info("Watchdog: baseline manually reset — will re-establish on next tick");
 }
 
 export function startWatchdog(): void {
