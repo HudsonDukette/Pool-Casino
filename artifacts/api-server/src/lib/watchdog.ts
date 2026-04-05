@@ -6,7 +6,8 @@
  *
  * Expected pool formula (all-time):
  *   expected = baseline_pool
- *            + sum(bets.bet_amount - bets.payout)   ← global pool bets only
+ *            + sum(bets.bet_amount - bets.payout)         ← ALL bets (pool + casino, since both write to bets table)
+ *            - sum(casino_bets.bet_amount - casino_bets.payout)  ← subtract casino portion to isolate pool-only flow
  *            + sum(money_ledger.amount WHERE eventType = 'admin_refill_pool')
  *            + sum(monthly_tax_logs.tax_amount)
  *
@@ -15,10 +16,9 @@
  * the adjustment is always auditable.
  */
 
-import { db, poolTable, betsTable, moneyLedgerTable, settingsTable } from "@workspace/db";
+import { db, poolTable, betsTable, casinoBetsTable, moneyLedgerTable, settingsTable, monthlyTaxLogsTable } from "@workspace/db";
 import { sql, eq } from "drizzle-orm";
 import { logger } from "./logger";
-import { monthlyTaxLogsTable } from "@workspace/db";
 
 const WATCHDOG_BASELINE_KEY = "watchdog_baseline_pool";
 const DRIFT_THRESHOLD = 0.01; // $0.01
@@ -41,7 +41,7 @@ export async function runWatchdog(): Promise<void> {
     if (!poolRow) return;
     const actualPool = parseFloat(poolRow.totalAmount);
 
-    // --- Sum of all global bets and payouts (pool-mode only — casino bets live in casino_bets) ---
+    // --- Sum of all entries in betsTable (includes both pool and casino bets) ---
     const [betTotals] = await db
       .select({
         totalBets: sql<string>`COALESCE(SUM(${betsTable.betAmount}), 0)`,
@@ -51,7 +51,20 @@ export async function runWatchdog(): Promise<void> {
 
     const totalBets = parseFloat(betTotals?.totalBets ?? "0");
     const totalPayouts = parseFloat(betTotals?.totalPayouts ?? "0");
-    const netFromBets = totalBets - totalPayouts;
+
+    // --- Casino bets are also recorded in betsTable — subtract them to isolate pool-only flow ---
+    const [casinoBetTotals] = await db
+      .select({
+        totalBets: sql<string>`COALESCE(SUM(${casinoBetsTable.betAmount}), 0)`,
+        totalPayouts: sql<string>`COALESCE(SUM(${casinoBetsTable.payout}), 0)`,
+      })
+      .from(casinoBetsTable);
+
+    const totalCasinoBets = parseFloat(casinoBetTotals?.totalBets ?? "0");
+    const totalCasinoPayouts = parseFloat(casinoBetTotals?.totalPayouts ?? "0");
+
+    // Pool-only net = all bets minus casino bets (casino bets never touch the pool)
+    const netFromBets = (totalBets - totalPayouts) - (totalCasinoBets - totalCasinoPayouts);
 
     // --- Sum of all admin pool refills ---
     const [refillTotals] = await db

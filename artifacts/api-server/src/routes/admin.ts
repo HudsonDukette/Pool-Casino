@@ -248,6 +248,14 @@ router.get("/admin/money-audit", async (req, res): Promise<void> => {
   });
 });
 
+router.post("/admin/reset-watchdog-baseline", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+
+  await db.delete(settingsTable).where(eq(settingsTable.key, "watchdog_baseline_pool"));
+  res.json({ ok: true, message: "Watchdog baseline cleared — it will re-establish on the next 60s tick." });
+});
+
 router.get("/admin/settings", async (req, res): Promise<void> => {
   const isAdmin = await requireAdmin(req, res);
   if (!isAdmin) return;

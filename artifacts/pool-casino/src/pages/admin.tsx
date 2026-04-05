@@ -443,6 +443,15 @@ export default function Admin() {
     finally { setAuditLoading(false); }
   };
 
+  const handleResetWatchdogBaseline = async () => {
+    try {
+      const res = await fetch(`${BASE}api/admin/reset-watchdog-baseline`, { method: "POST", credentials: "include" });
+      const data = await res.json();
+      if (res.ok) toast({ title: "Baseline Reset", description: data.message, className: "bg-success text-success-foreground border-none" });
+      else toast({ title: "Error", description: data.error || "Failed", variant: "destructive" });
+    } catch { toast({ title: "Error", description: "Network error", variant: "destructive" }); }
+  };
+
   const handleUpdateSettings = () => {
     const usernameChangeCost = parseFloat(adminUsernameCost);
     const avatarChangeCost = parseFloat(adminAvatarCost);
@@ -682,11 +691,18 @@ export default function Admin() {
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-emerald-400 uppercase tracking-widest">Money Audit</h3>
               <p className="text-xs text-muted-foreground">Tallies all money across the system — pool, players, casinos, daily rewards, admin gifts, and account creation bonuses.</p>
-              <Button onClick={handleMoneyAudit} disabled={auditLoading} variant="outline"
-                className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 gap-2">
-                <BarChart3 className={`w-4 h-4 ${auditLoading ? "animate-pulse" : ""}`} />
-                {auditLoading ? "Auditing..." : "Run Money Audit"}
-              </Button>
+              <div className="flex gap-3 flex-wrap">
+                <Button onClick={handleMoneyAudit} disabled={auditLoading} variant="outline"
+                  className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 gap-2">
+                  <BarChart3 className={`w-4 h-4 ${auditLoading ? "animate-pulse" : ""}`} />
+                  {auditLoading ? "Auditing..." : "Run Money Audit"}
+                </Button>
+                <Button onClick={handleResetWatchdogBaseline} variant="outline"
+                  className="border-orange-500/40 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300 gap-2 text-xs">
+                  <RefreshCw className="w-3 h-3" />
+                  Reset Watchdog Baseline
+                </Button>
+              </div>
               {auditReport && (
                 <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-950/10 p-4 space-y-4">
                   <div className="flex items-center justify-between">
