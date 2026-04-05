@@ -25,6 +25,15 @@ import { logger } from "./logger";
 
 const DRIFT_THRESHOLD = 0.01; // $0.01
 
+// During a rolling deployment, the old and new server instances briefly overlap.
+// The old server has a stale in-memory baseline from before any admin resets, so
+// it will "correct" the pool in the opposite direction from the new server,
+// causing an oscillation until the old process dies.
+// Solution: don't make any corrections for the first 5 minutes after boot.
+// The baseline is still established immediately so monitoring begins right away.
+const CORRECTION_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const correctionEnabledAfter = Date.now() + CORRECTION_COOLDOWN_MS;
+
 // Baseline is in-memory only — refreshed on every server restart / deployment.
 // Stores the "anchor" values so we only track CHANGES since server start.
 let baselinePool: number | null = null;
@@ -108,6 +117,22 @@ export async function runWatchdog(): Promise<void> {
     }
 
     // ---- Discrepancy detected ----
+
+    // If still within the startup cooldown, log the drift but don't correct yet.
+    // This prevents the old and new server from oscillating during a rolling deployment.
+    if (Date.now() < correctionEnabledAfter) {
+      logger.warn(
+        {
+          actualPool,
+          expectedPool: expectedPool.toFixed(2),
+          drift: drift.toFixed(4),
+          cooldownRemainingMs: correctionEnabledAfter - Date.now(),
+        },
+        "Watchdog: pool drift detected — in startup cooldown, not correcting yet"
+      );
+      return;
+    }
+
     logger.warn(
       {
         actualPool,
@@ -163,6 +188,11 @@ export function startWatchdog(): void {
     await runWatchdog();
     setInterval(runWatchdog, 60_000);
   }, 5_000); // 5-second delay after server boot so DB is ready
+
+  // Log when the startup cooldown expires so it's visible in logs
+  setTimeout(() => {
+    logger.info({ correctionEnabledAt: new Date(correctionEnabledAfter).toISOString() }, "Watchdog: startup cooldown expired — auto-corrections now active");
+  }, CORRECTION_COOLDOWN_MS);
 
   logger.info("Transaction watchdog started (60s interval)");
 }
