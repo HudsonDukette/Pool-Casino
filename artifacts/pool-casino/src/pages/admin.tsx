@@ -23,7 +23,7 @@ import {
   Settings, Gamepad2, Power, PowerOff, Megaphone, Building2,
   CheckCircle2, XCircle, Clock, BanknoteIcon, ChevronDown,
   Flag, Trash2, UserX, UserCheck, Edit2, AlertTriangle, Eye, Link2,
-  Ban, MicOff, MessageCircle,
+  Ban, MicOff, MessageCircle, BarChart3,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -166,6 +166,21 @@ export default function Admin() {
   const [resetBalanceAmount, setResetBalanceAmount] = useState("10000");
   const [confirmReset, setConfirmReset] = useState(false);
   const [forceReloadPending, setForceReloadPending] = useState(false);
+  const [auditReport, setAuditReport] = useState<null | {
+    generatedAt: string;
+    sections: {
+      pool: { balance: number };
+      players: { total: number; count: number };
+      casinos: { total: number; count: number; debt: number };
+      dailyRewards: { total: number; count: number };
+      adminGifts: { total: number; count: number };
+      accountCreation: { total: number; count: number };
+      adminPoolRefills: { total: number; count: number };
+    };
+    liveTotal: number;
+    injectedTotal: number;
+  }>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
   const [seizePlayers, setSeizePlayers] = useState<{ id: number; username: string } | null>(null);
   const [seizeAmount, setSeizeAmount] = useState("10000");
   const [seizeDestination, setSeizeDestination] = useState<"pool" | "user">("pool");
@@ -417,6 +432,17 @@ export default function Admin() {
     finally { setRemoveGuestsPending(false); }
   };
 
+  const handleMoneyAudit = async () => {
+    setAuditLoading(true);
+    try {
+      const res = await fetch(`${BASE}api/admin/money-audit`, { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setAuditReport(data);
+      else toast({ title: "Audit Failed", description: data.error || "Failed to run audit", variant: "destructive" });
+    } catch { toast({ title: "Error", description: "Network error", variant: "destructive" }); }
+    finally { setAuditLoading(false); }
+  };
+
   const handleUpdateSettings = () => {
     const usernameChangeCost = parseFloat(adminUsernameCost);
     const avatarChangeCost = parseFloat(adminAvatarCost);
@@ -651,6 +677,68 @@ export default function Admin() {
                   </button>
                 ))}
               </div>
+            </div>
+            {/* Money Audit */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-emerald-400 uppercase tracking-widest">Money Audit</h3>
+              <p className="text-xs text-muted-foreground">Tallies all money across the system — pool, players, casinos, daily rewards, admin gifts, and account creation bonuses.</p>
+              <Button onClick={handleMoneyAudit} disabled={auditLoading} variant="outline"
+                className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 gap-2">
+                <BarChart3 className={`w-4 h-4 ${auditLoading ? "animate-pulse" : ""}`} />
+                {auditLoading ? "Auditing..." : "Run Money Audit"}
+              </Button>
+              {auditReport && (
+                <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-950/10 p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Audit Report</span>
+                    <span className="text-xs text-muted-foreground">{new Date(auditReport.generatedAt).toLocaleString()}</span>
+                  </div>
+                  {/* Live Money */}
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Live Money (in circulation)</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {[
+                        { label: "Global Pool", value: auditReport.sections.pool.balance, sub: null },
+                        { label: "All Players", value: auditReport.sections.players.total, sub: `${auditReport.sections.players.count} players` },
+                        { label: "All Casinos", value: auditReport.sections.casinos.total, sub: `${auditReport.sections.casinos.count} casinos${auditReport.sections.casinos.debt > 0 ? ` · $${auditReport.sections.casinos.debt.toLocaleString()} debt` : ""}` },
+                      ].map(({ label, value, sub }) => (
+                        <div key={label} className="rounded-lg bg-black/30 border border-emerald-500/10 px-3 py-2">
+                          <p className="text-xs text-muted-foreground">{label}</p>
+                          <p className="text-base font-mono font-bold text-emerald-300">{formatCurrency(value)}</p>
+                          {sub && <p className="text-xs text-muted-foreground/70">{sub}</p>}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-2">
+                      <span className="text-sm font-bold text-emerald-300">Total Live Money</span>
+                      <span className="text-sm font-mono font-bold text-emerald-300">{formatCurrency(auditReport.liveTotal)}</span>
+                    </div>
+                  </div>
+                  {/* Injected Money */}
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Money Injected Into System (all time)</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[
+                        { label: "Daily Rewards", value: auditReport.sections.dailyRewards.total, sub: `${auditReport.sections.dailyRewards.count} claims` },
+                        { label: "Admin Gifts", value: auditReport.sections.adminGifts.total, sub: `${auditReport.sections.adminGifts.count} gifts` },
+                        { label: "Account Creation Bonuses", value: auditReport.sections.accountCreation.total, sub: `${auditReport.sections.accountCreation.count} accounts` },
+                        { label: "Admin Pool Refills", value: auditReport.sections.adminPoolRefills.total, sub: `${auditReport.sections.adminPoolRefills.count} refills` },
+                      ].map(({ label, value, sub }) => (
+                        <div key={label} className="rounded-lg bg-black/30 border border-yellow-500/10 px-3 py-2">
+                          <p className="text-xs text-muted-foreground">{label}</p>
+                          <p className="text-sm font-mono font-bold text-yellow-300">{formatCurrency(value)}</p>
+                          <p className="text-xs text-muted-foreground/70">{sub}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg bg-yellow-500/10 border border-yellow-500/30 px-3 py-2">
+                      <span className="text-sm font-bold text-yellow-300">Total Injected</span>
+                      <span className="text-sm font-mono font-bold text-yellow-300">{formatCurrency(auditReport.injectedTotal)}</span>
+                    </div>
+                  </div>
+                  <button onClick={() => setAuditReport(null)} className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">Dismiss report</button>
+                </div>
+              )}
             </div>
             {/* Force Reload */}
             <div className="space-y-3">

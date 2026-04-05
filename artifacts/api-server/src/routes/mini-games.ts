@@ -116,9 +116,56 @@ async function settleGame(
         updatedAt: new Date(),
       };
       if (nowInDebt) {
-        casinoUpdate.insolvencyWinnerId = userId;
-        casinoUpdate.insolvencyDebtAmount = Math.abs(newBankroll).toFixed(2);
+        const debtAmount = Math.abs(newBankroll);
         casinoInsolvent = true;
+
+        if (casino.ownerId === userId) {
+          // Player is gambling at their own casino — just record the debt manually
+          casinoUpdate.insolvencyWinnerId = userId;
+          casinoUpdate.insolvencyDebtAmount = debtAmount.toFixed(2);
+        } else {
+          // Auto-resolve: try owner first, then pool
+          const [ownerRow] = await tx
+            .select({ balance: usersTable.balance })
+            .from(usersTable)
+            .where(eq(usersTable.id, casino.ownerId))
+            .limit(1);
+
+          const ownerBalance = ownerRow ? parseFloat(ownerRow.balance) : 0;
+          const fromOwner = Math.min(ownerBalance, debtAmount);
+          const poolCovers = debtAmount - fromOwner;
+
+          if (fromOwner > 0) {
+            await tx
+              .update(usersTable)
+              .set({ balance: (ownerBalance - fromOwner).toFixed(2) })
+              .where(eq(usersTable.id, casino.ownerId));
+          }
+
+          if (poolCovers > 0) {
+            // Remaining deficit comes from the pool
+            const [freshPool] = await tx.select().from(poolTable).limit(1);
+            if (freshPool) {
+              const newPoolAmount = Math.max(0, parseFloat(freshPool.totalAmount) - poolCovers);
+              poolAfterTx = newPoolAmount;
+              await tx
+                .update(poolTable)
+                .set({ totalAmount: newPoolAmount.toFixed(2) })
+                .where(eq(poolTable.id, freshPool.id));
+            }
+            // Transfer casino ownership to the winner
+            casinoUpdate.ownerId = userId;
+            casinoUpdate.isPaused = false;
+          } else {
+            // Owner paid it all — casino stays paused until they deposit more
+            casinoUpdate.isPaused = true;
+          }
+
+          // Debt is resolved — bankroll to 0, clear insolvency fields
+          casinoUpdate.bankroll = "0.00";
+          casinoUpdate.insolvencyWinnerId = null;
+          casinoUpdate.insolvencyDebtAmount = null;
+        }
       }
 
       await Promise.all([

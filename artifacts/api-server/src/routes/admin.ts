@@ -177,6 +177,77 @@ router.get("/admin/players", async (req, res): Promise<void> => {
   });
 });
 
+router.get("/admin/money-audit", async (req, res): Promise<void> => {
+  const isAdmin = await requireAdmin(req, res);
+  if (!isAdmin) return;
+
+  const [poolRow] = await db.select({ total: poolTable.totalAmount }).from(poolTable).limit(1);
+
+  const [playersRow] = await db.select({
+    total: sql<string>`COALESCE(SUM(${usersTable.balance}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(usersTable);
+
+  const [casinosRow] = await db.select({
+    total: sql<string>`COALESCE(SUM(${casinosTable.bankroll}), 0)`,
+    count: sql<string>`COUNT(*)`,
+    debt: sql<string>`COALESCE(SUM(CASE WHEN ${casinosTable.bankroll} < 0 THEN ABS(${casinosTable.bankroll}) ELSE 0 END), 0)`,
+  }).from(casinosTable);
+
+  const [dailyRewardsRow] = await db.select({
+    total: sql<string>`COALESCE(SUM(${moneyLedgerTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(moneyLedgerTable).where(eq(moneyLedgerTable.eventType, "daily_reward"));
+
+  const [adminGiftsRow] = await db.select({
+    total: sql<string>`COALESCE(SUM(${moneyLedgerTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(moneyLedgerTable).where(sql`${moneyLedgerTable.eventType} IN ('admin_refill_player', 'money_request_fulfilled')`);
+
+  const [accountCreationRow] = await db.select({
+    total: sql<string>`COALESCE(SUM(${moneyLedgerTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(moneyLedgerTable).where(eq(moneyLedgerTable.eventType, "account_creation"));
+
+  const [adminRefillPoolRow] = await db.select({
+    total: sql<string>`COALESCE(SUM(${moneyLedgerTable.amount}), 0)`,
+    count: sql<string>`COUNT(*)`,
+  }).from(moneyLedgerTable).where(eq(moneyLedgerTable.eventType, "admin_refill_pool"));
+
+  const poolBalance = parseFloat(poolRow?.total ?? "0");
+  const playersTotal = parseFloat(playersRow?.total ?? "0");
+  const playersCount = parseInt(playersRow?.count ?? "0");
+  const casinosTotal = parseFloat(casinosRow?.total ?? "0");
+  const casinosCount = parseInt(casinosRow?.count ?? "0");
+  const casinosDebt = parseFloat(casinosRow?.debt ?? "0");
+  const dailyRewards = parseFloat(dailyRewardsRow?.total ?? "0");
+  const dailyRewardsCount = parseInt(dailyRewardsRow?.count ?? "0");
+  const adminGifts = parseFloat(adminGiftsRow?.total ?? "0");
+  const adminGiftsCount = parseInt(adminGiftsRow?.count ?? "0");
+  const accountCreation = parseFloat(accountCreationRow?.total ?? "0");
+  const accountCreationCount = parseInt(accountCreationRow?.count ?? "0");
+  const adminPoolRefills = parseFloat(adminRefillPoolRow?.total ?? "0");
+  const adminPoolRefillsCount = parseInt(adminRefillPoolRow?.count ?? "0");
+
+  const liveTotal = poolBalance + playersTotal + casinosTotal;
+  const injectedTotal = dailyRewards + adminGifts + accountCreation + adminPoolRefills;
+
+  res.json({
+    generatedAt: new Date().toISOString(),
+    sections: {
+      pool: { balance: poolBalance },
+      players: { total: playersTotal, count: playersCount },
+      casinos: { total: casinosTotal, count: casinosCount, debt: casinosDebt },
+      dailyRewards: { total: dailyRewards, count: dailyRewardsCount },
+      adminGifts: { total: adminGifts, count: adminGiftsCount },
+      accountCreation: { total: accountCreation, count: accountCreationCount },
+      adminPoolRefills: { total: adminPoolRefills, count: adminPoolRefillsCount },
+    },
+    liveTotal,
+    injectedTotal,
+  });
+});
+
 router.get("/admin/settings", async (req, res): Promise<void> => {
   const isAdmin = await requireAdmin(req, res);
   if (!isAdmin) return;
