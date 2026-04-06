@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import { useGetMe, useGetPool, useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, safeLocaleDate } from "@/lib/utils";
 import {
   Coins,
   LogOut,
@@ -851,7 +851,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span className="text-sm font-medium">
                 {u.permanentlyBanned
                   ? "Your account has been permanently banned from playing games."
-                  : `Your account is banned from playing games until ${new Date(u.bannedUntil).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.`}
+                  : `Your account is banned from playing games until ${safeLocaleDate(u.bannedUntil, { month: "short", day: "numeric", year: "numeric" })}.`}
               </span>
             </div>
             <button
@@ -869,11 +869,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <MicOff className="w-4 h-4 flex-shrink-0" />
             <span className="text-sm font-medium">
               Your chat privileges are suspended until{" "}
-              {new Date(u.suspendedUntil).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
+              {safeLocaleDate(u.suspendedUntil, { month: "short", day: "numeric", year: "numeric" })}
               .
             </span>
           </div>

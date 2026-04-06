@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useGetMe } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, safeLocaleDate, safeLocaleTime } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,7 +120,7 @@ function ChatPanel({ room, userId }: { room: ChatRoom; userId: number }) {
   };
 
   const grouped = messages.reduce<{ date: string; msgs: Message[] }[]>((acc, msg) => {
-    const d = new Date(msg.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const d = safeLocaleDate(msg.createdAt, { month: "short", day: "numeric" });
     if (!acc.length || acc[acc.length - 1].date !== d) acc.push({ date: d, msgs: [] });
     acc[acc.length - 1].msgs.push(msg);
     return acc;
@@ -142,7 +142,7 @@ function ChatPanel({ room, userId }: { room: ChatRoom; userId: number }) {
                 const isBroadcast = msg.isAdminBroadcast;
                 const showAvatar = !isMe && (i === 0 || group.msgs[i - 1].userId !== msg.userId);
                 const showName = !isMe && showAvatar;
-                const time = new Date(msg.createdAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+                const time = safeLocaleTime(msg.createdAt, { hour: "2-digit", minute: "2-digit", hour12: false });
 
                 if (isBroadcast) {
                   return (

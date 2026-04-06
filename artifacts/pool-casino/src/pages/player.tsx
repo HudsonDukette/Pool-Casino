@@ -4,10 +4,9 @@ import { useGetMe } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, safeFormat } from "@/lib/utils";
 import { ShieldAlert, Trophy, Gamepad2, Target, Calendar, Flag, X, ChevronDown, Ban, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
 
 const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
@@ -155,16 +154,16 @@ export default function PlayerProfile() {
               </div>
               <p className="text-muted-foreground flex items-center gap-2 mt-1 text-sm">
                 <Calendar className="w-3.5 h-3.5" />
-                Joined {format(new Date(profile.createdAt), "MMMM yyyy")}
+                Joined {safeFormat(profile.createdAt, "MMMM yyyy")}
               </p>
               {profile.isBanned && profile.bannedUntil && !profile.permanentlyBanned && (
                 <p className="text-xs text-red-400/70 mt-1">
-                  Ban expires {format(new Date(profile.bannedUntil), "MMM d, yyyy 'at' h:mm a")}
+                  Ban expires {safeFormat(profile.bannedUntil, "MMM d, yyyy 'at' h:mm a")}
                 </p>
               )}
               {!profile.isBanned && profile.isSuspended && profile.suspendedUntil && (
                 <p className="text-xs text-orange-400/70 mt-1">
-                  Suspension expires {format(new Date(profile.suspendedUntil), "MMM d, yyyy 'at' h:mm a")}
+                  Suspension expires {safeFormat(profile.suspendedUntil, "MMM d, yyyy 'at' h:mm a")}
                 </p>
               )}
             </div>

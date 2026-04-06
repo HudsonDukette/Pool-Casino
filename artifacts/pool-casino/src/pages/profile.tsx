@@ -22,14 +22,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatNumber, safeFormat } from "@/lib/utils";
 import {
   Trophy, Gift, ArrowUpRight, Coins, History, Calendar, Target, Flame,
   ShieldAlert, RefreshCw, Users, X, ArrowRight, Plus, Copy, Check,
   Edit2, Image, Tag, Settings
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
 
 const _apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
@@ -496,7 +495,7 @@ export default function Profile() {
             </div>
             <p className="text-muted-foreground flex items-center gap-2 mt-1">
               <Calendar className="w-4 h-4" />
-              Joined {user ? format(new Date(user.createdAt), "MMM yyyy") : "..."}
+              Joined {user ? safeFormat(user.createdAt, "MMM yyyy", "...") : "..."}
             </p>
             {/* Referral Code */}
             {user?.referralCode && (
@@ -1184,7 +1183,7 @@ export default function Profile() {
                         {tx.payout > 0 ? "+" : ""}{formatCurrency(tx.payout)}
                       </td>
                       <td className="px-6 py-4 text-right text-muted-foreground">
-                        {format(new Date(tx.timestamp), "MMM d, HH:mm")}
+                        {safeFormat(tx.timestamp, "MMM d, HH:mm")}
                       </td>
                     </tr>
                   ))

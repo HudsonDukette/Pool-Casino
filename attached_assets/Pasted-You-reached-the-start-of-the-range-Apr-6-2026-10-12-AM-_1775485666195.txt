@@ -1,0 +1,106 @@
+You reached the start of the range
+Apr 6, 2026, 10:12 AM
+ 
+[Region: us-west1]
+==============
+Using Nixpacks
+==============
+
+context: k1w3-LBzh
+╔═════════════════════════════ Nixpacks v1.38.0 ═════════════════════════════╗
+║ setup      │ nodejs_18, pnpm-9_x, openssl                                  ║
+║────────────────────────────────────────────────────────────────────────────║
+║ install    │ npm install -g corepack@0.24.1 && corepack enable             ║
+║            │ pnpm i --frozen-lockfile                                      ║
+║────────────────────────────────────────────────────────────────────────────║
+║ build      │ pnpm install && pnpm --filter @workspace/api-server run build ║
+║────────────────────────────────────────────────────────────────────────────║
+║ start      │ pnpm --filter @workspace/api-server run start                 ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+internal
+load build definition from Dockerfile
+0ms
+
+internal
+load metadata for ghcr.io/railwayapp/nixpacks:ubuntu-1745885067
+278ms
+
+internal
+load .dockerignore
+0ms
+
+internal
+load build context
+0ms
+
+stage-0
+RUN nix-env -if .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix && nix-collect-garbage -d cached
+0ms
+
+stage-0
+COPY .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix cached
+0ms
+
+stage-0
+WORKDIR /app/ cached
+0ms
+
+stage-0
+COPY . /app/.
+181ms
+
+stage-0
+RUN npm install -g corepack@0.24.1 && corepack enable
+1s
+changed 1 package in 749ms
+
+stage-0
+RUN pnpm i --frozen-lockfile
+7s
+Done in 6.3s using pnpm v10.26.1
+
+stage-0
+COPY . /app/.
+429ms
+
+stage-0
+RUN pnpm install && pnpm --filter @workspace/api-server run build
+2s
+⚡ Done in 265ms
+
+stage-0
+RUN printf '\nPATH=/app/node_modules/.bin:$PATH' >> /root/.profile
+109ms
+
+stage-0
+COPY . /app
+131ms
+
+importing to docker
+17s
+
+auth
+sharing credentials for production-us-west2.railway-registry.com
+0ms
+=== Successfully Built! ===
+Run:
+docker run -it production-us-west2.railway-registry.com/15207996-c6a4-4fd9-a654-68497ba60f84:8cca883c-4888-460a-9fe3-bed9bc1dc8b1
+Build time: 97.87 seconds
+ 
+====================
+Starting Healthcheck
+====================
+Path: /api/healthz
+Retry window: 2m0s
+ 
+Attempt #1 failed with service unavailable. Continuing to retry for 1m49s
+Attempt #2 failed with service unavailable. Continuing to retry for 1m38s
+Attempt #3 failed with service unavailable. Continuing to retry for 1m26s
+Attempt #4 failed with service unavailable. Continuing to retry for 1m12s
+Attempt #5 failed with service unavailable. Continuing to retry for 54s
+Attempt #6 failed with service unavailable. Continuing to retry for 28s
+ 
+1/1 replicas never became healthy!
+
+Healthcheck failed!

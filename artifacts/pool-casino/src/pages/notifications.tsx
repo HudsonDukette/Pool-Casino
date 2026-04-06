@@ -7,7 +7,7 @@ import {
   ChevronRight, Hash, Globe, Users, RefreshCw, Ban, AlertTriangle, Clock, ShieldOff,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, safeLocaleDate, safeLocaleTime } from "@/lib/utils";
 
 const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
@@ -297,7 +297,7 @@ export default function Notifications() {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold">{req.from?.username ?? "Unknown"}</p>
                       <p className="text-xs text-muted-foreground">
-                        Sent {new Date(req.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        Sent {safeLocaleDate(req.createdAt, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
@@ -379,7 +379,7 @@ export default function Notifications() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity">
                         <span className="text-xs text-muted-foreground">
-                          {room.lastMessage ? new Date(room.lastMessage.createdAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }) : ""}
+                          {room.lastMessage ? safeLocaleTime(room.lastMessage.createdAt, { hour: "2-digit", minute: "2-digit", hour12: false }) : ""}
                         </span>
                         <ChevronRight className="w-4 h-4 text-muted-foreground" />
                       </div>

@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Swords, Trophy, Clock, Users } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, safeLocaleDate } from "@/lib/utils";
 
 const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
@@ -168,7 +168,7 @@ export default function Multiplayer() {
                     <span className="text-lg">{emoji}</span>
                     <div>
                       <p className="text-sm font-medium text-white capitalize">{match.game_type.replace(/-/g, " ")} vs {match.opponent_username}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(match.completed_at).toLocaleDateString()}</p>
+                      <p className="text-xs text-muted-foreground">{safeLocaleDate(match.completed_at)}</p>
                     </div>
                   </div>
                   <div className="text-right">

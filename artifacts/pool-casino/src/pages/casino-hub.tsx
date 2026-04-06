@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, safeLocaleDate } from "@/lib/utils";
 import {
   Building2, ArrowLeft, Gamepad2, BarChart2, ScrollText,
   Settings, Plus, Coins, TrendingUp, TrendingDown, PauseCircle,
@@ -398,9 +398,9 @@ function StatsTab({ casino }: { casino: Casino }) {
       const amt = parseFloat(tx.amount) || 0;
       if (POSITIVE_TYPES.has(tx.type)) running += amt;
       else if (NEGATIVE_TYPES.has(tx.type)) running -= amt;
-      const d = new Date(tx.createdAt);
+      const d = tx.createdAt ? new Date(tx.createdAt) : null;
       return {
-        label: `${d.getMonth() + 1}/${d.getDate()}`,
+        label: d && !isNaN(d.getTime()) ? `${d.getMonth() + 1}/${d.getDate()}` : "—",
         value: running,
       };
     });
@@ -488,7 +488,7 @@ function StatsTab({ casino }: { casino: Casino }) {
       </div>
 
       <div className="text-center text-muted-foreground text-sm py-2">
-        Casino opened {new Date(casino.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+        Casino opened {safeLocaleDate(casino.createdAt, { year: "numeric", month: "long", day: "numeric" })}
       </div>
     </div>
   );
