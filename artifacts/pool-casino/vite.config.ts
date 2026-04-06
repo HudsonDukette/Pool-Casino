@@ -61,6 +61,17 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    warmup: {
+      clientFiles: [
+        "./src/main.tsx",
+        "./src/App.tsx",
+        "./src/components/layout.tsx",
+        "./src/pages/home.tsx",
+        "./src/pages/games.tsx",
+        "./src/components/game-shell.tsx",
+        "./src/components/ui/*.tsx",
+      ],
+    },
   },
   preview: {
     port,

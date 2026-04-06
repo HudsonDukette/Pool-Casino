@@ -43,9 +43,9 @@ async function apiFetch(url: string, opts?: RequestInit) {
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { data: user, isLoading } = useGetMe({
-    query: { retry: false, refetchInterval: 3000 },
+    query: { retry: false, refetchInterval: 30000 },
   });
-  const { data: pool } = useGetPool({ query: { refetchInterval: 3000 } });
+  const { data: pool } = useGetPool({ query: { refetchInterval: 5000 } });
   const logoutMut = useLogout();
   const queryClient = useQueryClient();
   const { toast } = useToast();
