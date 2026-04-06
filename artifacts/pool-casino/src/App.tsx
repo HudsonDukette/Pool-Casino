@@ -1,3 +1,4 @@
+import { Component, type ReactNode } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -75,6 +76,40 @@ import Notifications from "@/pages/notifications";
 import Leaderboard from "@/pages/leaderboard";
 import { Login, Register } from "@/pages/auth";
 import NotFound from "@/pages/not-found";
+
+class AppErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: "2rem", color: "#fff", background: "#111", minHeight: "100vh" }}>
+          <h1 style={{ color: "#f87171" }}>Something went wrong</h1>
+          <pre style={{ whiteSpace: "pre-wrap", fontSize: "0.8rem", color: "#aaa" }}>
+            {this.state.error.message}
+            {"\n"}
+            {this.state.error.stack}
+          </pre>
+          <button
+            style={{ marginTop: "1rem", padding: "0.5rem 1rem", cursor: "pointer" }}
+            onClick={() => this.setState({ error: null })}
+          >
+            Try again
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -167,17 +202,19 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <MultiplayerProvider>
-            <Router />
-            <MatchmakingBar />
-          </MultiplayerProvider>
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <MultiplayerProvider>
+              <Router />
+              <MatchmakingBar />
+            </MultiplayerProvider>
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </AppErrorBoundary>
   );
 }
 
