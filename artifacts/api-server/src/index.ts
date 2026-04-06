@@ -52,13 +52,14 @@ setupMatchmaking(io);
 
 httpServer.listen(port, "0.0.0.0", () => {
   logger.info({ port }, "Server listening");
-  if (process.env.DATABASE_URL) {
+  const hasDb = !!(process.env.SUPABASE_DATABASE_URL ?? process.env.DATABASE_URL);
+  if (hasDb) {
     seedBadgesAndChallenges();
     cleanupStaleGuests();
     setInterval(cleanupStaleGuests, 24 * 60 * 60 * 1000);
     scheduleTax();
   } else {
-    logger.warn("DATABASE_URL not set — skipping seeding and scheduled tasks");
+    logger.warn("No DATABASE_URL set — skipping seeding and scheduled tasks");
   }
   startWatchdog();
 });

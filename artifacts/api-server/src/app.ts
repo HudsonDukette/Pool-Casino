@@ -46,9 +46,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
 
-const sessionStore = process.env.DATABASE_URL
+const dbUrl = process.env.SUPABASE_DATABASE_URL ?? process.env.DATABASE_URL;
+const sessionStore = dbUrl
   ? new PgSession({
-      conString: process.env.DATABASE_URL,
+      conString: dbUrl,
       tableName: "session",
       createTableIfMissing: false,
     })

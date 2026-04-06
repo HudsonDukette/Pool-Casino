@@ -11,16 +11,23 @@ let _db: DbInstance | null = null;
 
 function getConnection(): { pool: pg.Pool; db: DbInstance } {
   if (_db && _pool) return { pool: _pool, db: _db };
-  if (!process.env.DATABASE_URL) {
+
+  const url =
+    process.env.SUPABASE_DATABASE_URL ?? process.env.DATABASE_URL;
+
+  if (!url) {
     throw new Error(
-      "DATABASE_URL must be set. Did you forget to provision a database?",
+      "DATABASE_URL (or SUPABASE_DATABASE_URL) must be set.",
     );
   }
+
   const sslEnabled =
     process.env.DATABASE_SSL === "true" ||
-    process.env.DATABASE_URL.includes("sslmode=require");
+    url.includes("sslmode=require") ||
+    url.includes("supabase.co");
+
   _pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: url,
     ...(sslEnabled ? { ssl: { rejectUnauthorized: false } } : {}),
   });
   _db = drizzle(_pool, { schema });
