@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 const GAME_DISPLAY_NAMES: Record<string, string> = {
   roulette: "Neon Roulette", plinko: "Drop Plinko", blackjack: "Blackjack",

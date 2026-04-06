@@ -9,7 +9,7 @@ import { GameShell, BetInput } from "@/components/game-shell";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
 import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 type Phase = "idle" | "playing" | "done";
 
 export default function PowerGrid() {

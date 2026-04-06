@@ -104,7 +104,8 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (!userId || user?.isGuest) return;
 
-    const socket = io(window.location.origin, {
+    const socketUrl = (import.meta.env.VITE_API_URL as string | undefined) || window.location.origin;
+    const socket = io(socketUrl, {
       path: "/api/socket.io",
       auth: { userId },
       withCredentials: true,

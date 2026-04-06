@@ -54,7 +54,7 @@ export function CasinoGameEditor({ casinoId, gameType, payTableEntries = [], onS
   const defaults = Object.fromEntries(payTableEntries.map(e => [e.key, e.defaultValue]));
 
   const loadConfig = useCallback(async () => {
-    const BASE = import.meta.env.BASE_URL;
+    const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
     const res = await fetch(`${BASE}api/casinos/${casinoId}/odds`, { credentials: "include" });
     if (res.ok) {
       setIsOwner(true);
@@ -79,7 +79,7 @@ export function CasinoGameEditor({ casinoId, gameType, payTableEntries = [], onS
   async function handleSave() {
     setSaving(true);
     try {
-      const BASE = import.meta.env.BASE_URL;
+      const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
       const body: Record<string, unknown> = { payoutMultiplier: multiplier };
       if (payTableEntries.length > 0) body.payTableConfig = JSON.stringify(payouts);
       const res = await fetch(`${BASE}api/casinos/${casinoId}/odds/${gameType}`, {

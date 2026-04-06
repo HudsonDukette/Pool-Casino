@@ -9,7 +9,7 @@ import { GameShell, BetInput } from "@/components/game-shell";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
 import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 const STEP_MULTS = [0, 1.2, 1.5, 1.9, 2.5, 3.2, 4.0, 5.0, 6.5, 8.5, 12];
 const STEP_FAIL = [0, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60];
 type Phase = "idle" | "playing" | "done";

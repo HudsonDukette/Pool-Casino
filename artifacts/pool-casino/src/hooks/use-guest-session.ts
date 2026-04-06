@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
+const _apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
+
 function getOrCreateDeviceId(): string {
   let id = localStorage.getItem("poolcasino_device_id");
   if (!id) {
@@ -22,7 +24,7 @@ export function useGuestSession(isLoggedIn: boolean, isLoading: boolean) {
 
     const deviceId = getOrCreateDeviceId();
 
-    fetch("/api/auth/guest/init", {
+    fetch(`${_apiBase}/api/auth/guest/init`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

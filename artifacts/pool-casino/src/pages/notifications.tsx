@@ -9,7 +9,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 async function apiFetch(url: string, opts?: RequestInit) {
   const r = await fetch(`${BASE}${url}`, {

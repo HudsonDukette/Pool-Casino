@@ -185,7 +185,7 @@ nano artifacts/api-server/.env
 
 # Frontend env
 cp artifacts/pool-casino/.env.example artifacts/pool-casino/.env
-# Set VITE_API_BASE_URL to the forwarded Codespaces URL for the API port
+# Set VITE_API_URL to the forwarded Codespaces URL for the API port
 nano artifacts/pool-casino/.env
 ```
 
@@ -214,7 +214,7 @@ Codespaces automatically detects open ports. In the **Ports** panel (bottom of V
 1. Find the API port (8080) — right-click → **Port Visibility** → **Public**.
 2. Find the frontend port — right-click → **Port Visibility** → **Public**.
 3. Copy the forwarded HTTPS URL for port 8080.
-4. Update `VITE_API_BASE_URL` in `artifacts/pool-casino/.env` to that URL.
+4. Update `VITE_API_URL` in `artifacts/pool-casino/.env` to that URL.
 5. Restart the frontend dev server.
 
 > **Tip**: Codespaces URLs look like `https://your-codespace-name-8080.preview.app.github.dev`.
@@ -744,7 +744,7 @@ PORT=8080
 # URL of the deployed API server (no trailing slash)
 # Local: http://localhost:8080
 # Production: https://your-api.up.railway.app
-VITE_API_BASE_URL=http://localhost:8080
+VITE_API_URL=http://localhost:8080
 
 # Set by Replit / Vite automatically; only override if needed
 PORT=23507
@@ -842,7 +842,7 @@ Railway supports persistent TCP connections out of the box — no extra configur
 
 ```javascript
 import { io } from "socket.io-client";
-const socket = io(import.meta.env.VITE_API_BASE_URL, {
+const socket = io(import.meta.env.VITE_API_URL, {
   withCredentials: true,
   transports: ["websocket", "polling"],
 });
@@ -850,10 +850,10 @@ const socket = io(import.meta.env.VITE_API_BASE_URL, {
 
 ### CORS configuration
 
-The API server's CORS origin must include your Vercel frontend URL. The `ALLOWED_ORIGINS` setting in `artifacts/api-server/src/app.ts` accepts a comma-separated list:
+The API server's CORS origin must include your Vercel frontend URL. Set `ALLOWED_ORIGIN` in the API server environment to the exact origin of your Vercel frontend:
 
 ```env
-ALLOWED_ORIGINS=https://your-frontend.vercel.app,http://localhost:23507
+ALLOWED_ORIGIN=https://your-frontend.vercel.app
 ```
 
 ---
@@ -871,7 +871,7 @@ ALLOWED_ORIGINS=https://your-frontend.vercel.app,http://localhost:23507
 
    | Variable | Value |
    |----------|-------|
-   | `VITE_API_BASE_URL` | Your Railway API URL (e.g. `https://poolcasino-api.up.railway.app`) |
+   | `VITE_API_URL` | Your Railway API URL (e.g. `https://poolcasino-api.up.railway.app`) |
    | `BASE_PATH` | `/` |
 
 7. Click **Deploy**.
@@ -888,7 +888,7 @@ pnpm build
 
 # Deploy
 vercel --cwd artifacts/pool-casino \
-  --env VITE_API_BASE_URL=https://your-api.up.railway.app \
+  --env VITE_API_URL=https://your-api.up.railway.app \
   --prod
 ```
 
@@ -896,12 +896,12 @@ vercel --cwd artifacts/pool-casino \
 
 ## 7. Connecting Frontend to API
 
-The frontend reads `VITE_API_BASE_URL` at build time. All REST calls go through the shared API client in `lib/api-client-react/src/custom-fetch.ts`.
+The frontend reads `VITE_API_URL` at build time. All REST calls go through the shared API client in `lib/api-client-react/src/custom-fetch.ts`.
 
 ```typescript
 // Set the base URL at app startup (src/main.tsx)
 import { setBaseUrl } from "@workspace/api-client-react";
-setBaseUrl(import.meta.env.VITE_API_BASE_URL ?? "");
+setBaseUrl(import.meta.env.VITE_API_URL ?? "");
 ```
 
 The Socket.IO client connects in the multiplayer context:
@@ -910,7 +910,7 @@ The Socket.IO client connects in the multiplayer context:
 // artifacts/pool-casino/src/context/SocketContext.tsx
 import { io } from "socket.io-client";
 
-const socket = io(import.meta.env.VITE_API_BASE_URL, {
+const socket = io(import.meta.env.VITE_API_URL, {
   withCredentials: true,          // sends the session cookie
   transports: ["websocket", "polling"],
 });
@@ -922,7 +922,7 @@ Follow this order to avoid broken references:
 
 1. **Set up Supabase** — run all SQL blocks, confirm pool row exists.
 2. **Deploy API to Railway** — add all env vars, verify `/api/pool` returns 200.
-3. **Deploy frontend to Vercel** — set `VITE_API_BASE_URL` to the Railway URL, verify the app loads.
+3. **Deploy frontend to Vercel** — set `VITE_API_URL` to the Railway URL, verify the app loads.
 4. **Verify end-to-end** — register an account, play a game, confirm balance changes.
 
 ---
@@ -958,7 +958,7 @@ The Socket.IO server at `artifacts/api-server/src/multiplayer/` handles all PvP 
 ```typescript
 import { io } from "socket.io-client";
 
-const socket = io(import.meta.env.VITE_API_BASE_URL, {
+const socket = io(import.meta.env.VITE_API_URL, {
   withCredentials: true,
   transports: ["websocket", "polling"],
 });
@@ -1114,10 +1114,10 @@ pnpm --filter @workspace/db run push-force
 
 ### CORS errors in the browser console
 
-The API server must allow the frontend's origin. Set `ALLOWED_ORIGINS` in the API server environment:
+The API server must allow the frontend's origin. Set `ALLOWED_ORIGIN` in the API server environment:
 
 ```env
-ALLOWED_ORIGINS=https://your-frontend.vercel.app,http://localhost:23507
+ALLOWED_ORIGIN=https://your-frontend.vercel.app
 ```
 
 If using Railway, check that the Railway URL is not blocked by a Vercel firewall rule.
@@ -1173,11 +1173,11 @@ Follow this order exactly:
 - [ ] **Supabase SQL**: All 7 SQL blocks executed in order
 - [ ] **Supabase SQL**: Pool row confirmed (`SELECT * FROM pool` returns 1 row)
 - [ ] **API env**: `artifacts/api-server/.env` created with `DATABASE_URL` and `SESSION_SECRET`
-- [ ] **Frontend env**: `artifacts/pool-casino/.env` created with `VITE_API_BASE_URL=http://localhost:8080`
+- [ ] **Frontend env**: `artifacts/pool-casino/.env` created with `VITE_API_URL=http://localhost:8080`
 - [ ] **Local test**: `pnpm dev` in both directories; pool shows $1,000,000.00
 - [ ] **Railway**: Project created, root dir set to `artifacts/api-server`, env vars added, deployed
 - [ ] **Railway test**: `curl https://your-api.up.railway.app/api/pool` returns 200
-- [ ] **Vercel**: Project created, root dir set to `artifacts/pool-casino`, `VITE_API_BASE_URL` set to Railway URL, deployed
+- [ ] **Vercel**: Project created, root dir set to `artifacts/pool-casino`, `VITE_API_URL` set to Railway URL, deployed
 - [ ] **Vercel test**: Frontend loads, pool balance shows, registration works
 - [ ] **Admin**: First account promoted via SQL `UPDATE users SET is_admin = true WHERE username = '...'`
 - [ ] **Push notifications** (optional): VAPID keys generated and added to Railway env vars

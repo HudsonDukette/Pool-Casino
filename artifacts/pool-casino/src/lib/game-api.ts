@@ -1,5 +1,7 @@
 import { useState, useCallback } from "react";
 
+const _apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
+
 export function useGameApi<T = Record<string, unknown>>() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -9,7 +11,7 @@ export function useGameApi<T = Record<string, unknown>>() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/games/${path}`, {
+      const res = await fetch(`${_apiBase}/api/games/${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -44,7 +46,7 @@ export function useUserBalance() {
   const [balance, setBalance] = useState<number | null>(null);
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch("/api/user/me", { credentials: "include" });
+      const res = await fetch(`${_apiBase}/api/user/me`, { credentials: "include" });
       if (res.ok) {
         const d = await res.json();
         setBalance(parseFloat(d.balance));

@@ -9,7 +9,7 @@ import { GameShell, BetInput } from "@/components/game-shell";
 import heroImg from "@/assets/game-range.png";
 import { formatCurrency } from "@/lib/utils";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 const RANGES = [
   { key: "narrow", label: "🎯 Narrow", range: "1 – 20", odds: "20% chance", payout: "4.75×", color: "text-red-400", border: "border-red-500/40", bg: "bg-red-500/10" },

@@ -13,7 +13,7 @@ import {
   Lock, Pause, Users, PauseCircle, CheckCircle2,
 } from "lucide-react";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 interface CasinoListing {
   id: number;

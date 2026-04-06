@@ -9,7 +9,7 @@ import { GameShell, BetInput } from "@/components/game-shell";
 import heroImg from "@/assets/game-advwheel.png";
 import { formatCurrency } from "@/lib/utils";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 const SEGMENTS = [
   { label: "0×",   multiplier: 0,   fill: "#1a1a2e", border: "#444",    text: "#666",    glow: null },

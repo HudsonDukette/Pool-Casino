@@ -173,3 +173,33 @@ Every package extends `tsconfig.base.json`. Run `pnpm run typecheck` from root.
 - `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly`
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API client + zod schemas
 - `pnpm --filter @workspace/db run push` — push DB schema changes
+
+## External Deployment (GitHub → Vercel + Railway + Supabase)
+
+### Environment variables
+
+**API server (Railway)** — see `artifacts/api-server/.env.example`:
+- `DATABASE_URL` — Supabase PostgreSQL URI (append `?sslmode=require`)
+- `DATABASE_SSL=true` — enables TLS for Supabase
+- `SESSION_SECRET` — long random string for signing session cookies
+- `ALLOWED_ORIGIN` — exact Vercel frontend URL (e.g. `https://poolcasino.vercel.app`)
+- `PORT` — set automatically by Railway
+- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL` — optional, for push notifications
+
+**Frontend (Vercel)** — see `artifacts/pool-casino/.env.example`:
+- `VITE_API_URL` — Railway backend URL (e.g. `https://poolcasino-api.up.railway.app`)
+
+### How VITE_API_URL works
+
+All API calls in the frontend (fetch calls, React Query hooks, Socket.IO) detect `VITE_API_URL` at build time:
+- **Replit / local dev**: `VITE_API_URL` is not set → uses same-origin relative URLs proxied by Replit
+- **External (Vercel + Railway)**: `VITE_API_URL=https://railway-url` → all API calls go to the Railway backend directly
+
+### Deployment configs
+
+- `vercel.json` (root) — Vercel build commands and SPA rewrite rule
+- `railway.json` (root) — Railway build and start commands for the api-server
+
+### Supabase SSL
+
+Set `DATABASE_SSL=true` OR append `?sslmode=require` to `DATABASE_URL`. The DB pool in `lib/db/src/index.ts` detects either and enables `ssl: { rejectUnauthorized: false }`.

@@ -10,7 +10,7 @@ import heroImg from "@/assets/game-lightning.png";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
 import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 export default function Lightning() {
   const { data: user } = useGetMe({ query: { retry: false } });

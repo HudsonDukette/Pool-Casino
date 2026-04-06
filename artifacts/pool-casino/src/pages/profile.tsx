@@ -31,6 +31,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
+const _apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
+
 export default function Profile() {
   const { data: user, isLoading: userLoading } = useGetMe({ query: { retry: false } });
   const { data: stats, isLoading: statsLoading } = useGetUserStats({ query: { enabled: !!user } });
@@ -365,7 +367,7 @@ export default function Profile() {
   const handleForceReload = async () => {
     setForceReloadPending(true);
     try {
-      const res = await fetch("/api/admin/force-reload", { method: "POST", credentials: "include" });
+      const res = await fetch(`${_apiBase}/api/admin/force-reload`, { method: "POST", credentials: "include" });
       if (res.ok) {
         toast({ title: "Reload Signal Sent!", description: "All connected players will reload within 3 seconds.", className: "bg-success text-success-foreground border-none" });
       } else {

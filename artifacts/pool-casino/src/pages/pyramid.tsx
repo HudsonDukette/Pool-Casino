@@ -11,7 +11,7 @@ import { formatCurrency, useCasinoId } from "@/lib/utils";
 import { ChevronUp, TrendingUp, Trophy } from "lucide-react";
 import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 const PAYOUTS = [0, 1.9, 3.8, 7.5, 15, 30, 60, 120, 240, 480, 960];
 

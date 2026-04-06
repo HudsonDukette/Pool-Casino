@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
+const _apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
+
 declare global {
   interface Window {
     CrazyGames?: {
@@ -79,7 +81,7 @@ export function useCrazyGamesAuth() {
       }
       if (!user) throw new Error("Authentication cancelled");
       const token = await sdk.SDK.user.getUserToken();
-      const result = await verifyCGToken(token, "/api/auth/crazygames");
+      const result = await verifyCGToken(token, `${_apiBase}/api/auth/crazygames`);
       setState({ status: "ready", isLoggedIn: true });
       return result;
     } catch (err: unknown) {
@@ -100,7 +102,7 @@ export function useCrazyGamesAuth() {
       }
       if (!user) throw new Error("Authentication cancelled");
       const token = await sdk.SDK.user.getUserToken();
-      const result = await verifyCGToken(token, "/api/auth/crazygames/link");
+      const result = await verifyCGToken(token, `${_apiBase}/api/auth/crazygames/link`);
       setState({ status: "ready", isLoggedIn: true });
       return result;
     } catch (err: unknown) {

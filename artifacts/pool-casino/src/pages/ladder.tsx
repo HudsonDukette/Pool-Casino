@@ -10,7 +10,7 @@ import heroImg from "@/assets/game-ladder.png";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
 import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 const RUNGS = [
   { rung: 10, mult: "30×",  fail: "55%", color: "text-red-400",    bg: "bg-red-500/20",    border: "border-red-500/40" },

@@ -9,7 +9,7 @@ import { GameShell, BetInput } from "@/components/game-shell";
 import heroImg from "@/assets/game-war.png";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 function CardFace({ label, suit = "♠", color = "text-white", size = "text-5xl" }: { label: string; suit?: string; color?: string; size?: string }) {
   return (

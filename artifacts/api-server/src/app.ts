@@ -31,7 +31,15 @@ app.use(
     },
   }),
 );
-app.use(cors({ origin: true, credentials: true }));
+const allowedOrigin = process.env.ALLOWED_ORIGIN;
+app.use(
+  cors({
+    origin: allowedOrigin
+      ? [allowedOrigin, /\.replit\.dev$/, /\.repl\.co$/]
+      : true,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -9,7 +9,7 @@ import { ShieldAlert, Trophy, Gamepad2, Target, Calendar, Flag, X, ChevronDown, 
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 const REPORT_REASONS = [
   "Harassment",

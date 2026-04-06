@@ -11,7 +11,7 @@ import {
   UserPlus, Check, X, Trash2, RefreshCw, ChevronRight, Crown,
 } from "lucide-react";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 interface ChatRoom { id: number; name: string; type: string; unreadCount: number; lastMessage: any; otherUser: any; }
 interface Message { id: number; content: string; createdAt: string; userId: number | null; username: string | null; avatarUrl: string | null; isAdminBroadcast: boolean; }

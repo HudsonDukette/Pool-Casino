@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Swords, Trophy, Clock, Users } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 interface MatchHistoryItem {
   id: number;

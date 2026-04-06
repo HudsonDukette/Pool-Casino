@@ -9,7 +9,7 @@ import { GameShell, BetInput } from "@/components/game-shell";
 import heroImg from "@/assets/game-target.png";
 import { formatCurrency } from "@/lib/utils";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
 const TARGETS = [
   { value: 1.5, label: "1.5×", winPct: "64%", color: "text-green-400", border: "border-green-500/40", bg: "bg-green-500/10" },
