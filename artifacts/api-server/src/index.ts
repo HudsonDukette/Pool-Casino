@@ -9,16 +9,7 @@ import { seedBadgesAndChallenges } from "./lib/seed";
 import { scheduleTax } from "./lib/tax-scheduler";
 import { startWatchdog } from "./lib/watchdog";
 
-const rawPort = process.env["PORT"];
-
-if (!rawPort) {
-  throw new Error("PORT environment variable is required but was not provided.");
-}
-
-const port = Number(rawPort);
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
+const port = Number(process.env["PORT"] ?? 3000);
 
 async function cleanupStaleGuests() {
   try {
@@ -44,19 +35,30 @@ async function cleanupStaleGuests() {
 
 const httpServer = createServer(app);
 
+const allowedOrigin = process.env.ALLOWED_ORIGIN;
 const io = new SocketIOServer(httpServer, {
   path: "/api/socket.io",
-  cors: { origin: true, credentials: true },
+  cors: {
+    origin: allowedOrigin
+      ? [allowedOrigin, /\.replit\.dev$/, /\.repl\.co$/, /\.vercel\.app$/]
+      : true,
+    credentials: true,
+  },
   transports: ["websocket", "polling"],
+  allowEIO3: true,
 });
 
 setupMatchmaking(io);
 
-httpServer.listen(port, () => {
+httpServer.listen(port, "0.0.0.0", () => {
   logger.info({ port }, "Server listening");
-  seedBadgesAndChallenges();
-  cleanupStaleGuests();
-  setInterval(cleanupStaleGuests, 24 * 60 * 60 * 1000);
-  scheduleTax();
+  if (process.env.DATABASE_URL) {
+    seedBadgesAndChallenges();
+    cleanupStaleGuests();
+    setInterval(cleanupStaleGuests, 24 * 60 * 60 * 1000);
+    scheduleTax();
+  } else {
+    logger.warn("DATABASE_URL not set — skipping seeding and scheduled tasks");
+  }
   startWatchdog();
 });

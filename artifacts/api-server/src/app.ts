@@ -31,11 +31,12 @@ app.use(
     },
   }),
 );
+
 const allowedOrigin = process.env.ALLOWED_ORIGIN;
 app.use(
   cors({
     origin: allowedOrigin
-      ? [allowedOrigin, /\.replit\.dev$/, /\.repl\.co$/]
+      ? [allowedOrigin, /\.replit\.dev$/, /\.repl\.co$/, /\.vercel\.app$/]
       : true,
     credentials: true,
   }),
@@ -43,21 +44,29 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  session({
-    store: new PgSession({
+app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
+
+const sessionStore = process.env.DATABASE_URL
+  ? new PgSession({
       conString: process.env.DATABASE_URL,
       tableName: "session",
       createTableIfMissing: false,
-    }),
+    })
+  : undefined;
+
+const isProd = process.env.NODE_ENV === "production";
+
+app.use(
+  session({
+    store: sessionStore,
     secret: process.env.SESSION_SECRET ?? "poolcasino-dev-secret-change-in-prod",
     resave: false,
     saveUninitialized: false,
     rolling: true,
     cookie: {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
       maxAge: 30 * 24 * 60 * 60 * 1000,
     },
   }),

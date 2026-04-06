@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGuestSession, markGuestOptOut } from "@/hooks/use-guest-session";
+import { useGuestSession } from "@/hooks/use-guest-session";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 
@@ -156,12 +156,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const isGuest = user?.isGuest === true;
-  useGuestSession(!!user && !isGuest, isLoading);
+  useGuestSession(!!user && !isGuest, isLoading, location);
 
   const handleLogout = () => {
     logoutMut.mutate(undefined, {
       onSuccess: () => {
-        markGuestOptOut();
         queryClient.clear();
         window.location.href = "/login";
       },
