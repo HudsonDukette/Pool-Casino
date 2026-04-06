@@ -285,7 +285,7 @@ export default function Leaderboard() {
                               className={`w-8 h-8 rounded-full object-cover flex-shrink-0 border ${idx === 0 ? 'border-yellow-400/40' : 'border-white/10'}`} />
                           ) : (
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${idx === 0 ? 'bg-yellow-400/20 text-yellow-400' : 'bg-white/10 text-white'}`}>
-                              {entry.username.charAt(0).toUpperCase()}
+                              {(entry.username ?? "?").charAt(0).toUpperCase()}
                             </div>
                           )}
                           <div className="flex items-center gap-2 min-w-0">

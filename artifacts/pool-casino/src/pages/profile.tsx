@@ -461,7 +461,7 @@ export default function Profile() {
             ) : (
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-[0_0_20px_rgba(0,255,170,0.3)] border-2 border-background group-hover:brightness-75 transition-all">
                 <span className="text-3xl font-display font-bold text-background">
-                  {user?.username.charAt(0).toUpperCase()}
+                  {(user?.username ?? "?").charAt(0).toUpperCase()}
                 </span>
               </div>
             )}
@@ -966,7 +966,7 @@ export default function Profile() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500/40 to-yellow-700/40 border border-yellow-500/30 flex items-center justify-center font-bold text-yellow-300 text-sm">
-                        {selectedPlayer.username.charAt(0).toUpperCase()}
+                        {(selectedPlayer.username ?? "?").charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <p className="font-semibold text-white">{selectedPlayer.username}</p>

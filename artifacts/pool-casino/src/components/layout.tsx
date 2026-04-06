@@ -456,7 +456,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                           />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/80 to-accent/80 flex items-center justify-center text-black text-xs font-bold">
-                            {user.username.charAt(0).toUpperCase()}
+                            {(user.username ?? "?").charAt(0).toUpperCase()}
                           </div>
                         )}
                       </Button>

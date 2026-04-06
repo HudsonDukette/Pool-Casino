@@ -1,0 +1,155 @@
+
+
+illustrious-balance
+
+production
+
+
+4
+
+21 days or $4.96 left
+
+
+Agent
+
+
+
+
+
+
+
+
+@workspace/pool-casino
+Deployments
+Variables
+Metrics
+Settings
+Unexposed service
+us-west2
+1 Replica
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+History
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@workspace/pool-casino
+/
+db3a7a59
+Failed
+
+Apr 6, 2026, 10:04 AM EDT
+Get Help
+Details
+Build Logs
+Deploy Logs
+Network Flow Logs
+Search build logs
+
+You reached the start of the range
+Apr 6, 2026, 9:59 AM
+ 
+[Region: us-west1]
+==============
+Using Nixpacks
+==============
+
+context: cbkw-xxiP
+╔═════════════════════════════ Nixpacks v1.38.0 ═════════════════════════════╗
+║ setup      │ nodejs_18, pnpm-9_x, openssl                                  ║
+║────────────────────────────────────────────────────────────────────────────║
+║ install    │ pnpm i --frozen-lockfile                                      ║
+║────────────────────────────────────────────────────────────────────────────║
+║ build      │ pnpm install && pnpm --filter @workspace/api-server run build ║
+║────────────────────────────────────────────────────────────────────────────║
+║ start      │ pnpm --filter @workspace/api-server run start                 ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+internal
+load build definition from Dockerfile
+0ms
+
+internal
+load metadata for ghcr.io/railwayapp/nixpacks:ubuntu-1745885067
+300ms
+
+internal
+load .dockerignore
+0ms
+
+internal
+load build context
+1ms
+
+stage-0
+FROM ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de
+11ms
+
+stage-0
+WORKDIR /app/ cached
+1ms
+
+stage-0
+COPY .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix
+116ms
+
+stage-0
+RUN nix-env -if .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix && nix-collect-garbage -d
+50s
+61 store paths deleted, 560.93 MiB freed
+
+stage-0
+COPY . /app/.
+319ms
+
+stage-0
+RUN pnpm i --frozen-lockfile
+987ms
+Update your lockfile using "pnpm install --no-frozen-lockfile"
+Dockerfile:20
+-------------------
+18 |     ENV NIXPACKS_PATH=/app/node_modules/.bin:$NIXPACKS_PATH
+19 |     COPY . /app/.
+20 | >>> RUN --mount=type=cache,id=s/9147a95c-19af-4f0e-ae01-ed0d6d86c39b-/root/local/share/pnpm/store/v3,target=/root/.local/share/pnpm/store/v3 pnpm i --frozen-lockfile
+21 |
+22 |     # build phase
+-------------------
+ERROR: failed to build: failed to solve: process "/bin/bash -ol pipefail -c pnpm i --frozen-lockfile" did not complete successfully: exit code: 1
+Error: Docker build failed
+You reached the end of the range
+Apr 6, 2026, 10:10 AM
+
+
+New Agent
+
+
+Deployed · 3 resources created (Details)
+Develop, debug, deploy anything...
+

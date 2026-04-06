@@ -916,7 +916,7 @@ export default function Admin() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500/40 to-yellow-700/40 border border-yellow-500/30 flex items-center justify-center font-bold text-yellow-300 text-sm">
-                        {selectedPlayer.username.charAt(0).toUpperCase()}
+                        {(selectedPlayer.username ?? "?").charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <p className="font-semibold text-white">{selectedPlayer.username}</p>
@@ -1052,7 +1052,7 @@ export default function Admin() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center font-bold text-red-300 text-sm">
-                      {managedPlayer.username.charAt(0).toUpperCase()}
+                      {(managedPlayer.username ?? "?").charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <p className="font-semibold text-white">{managedPlayer.username}</p>
