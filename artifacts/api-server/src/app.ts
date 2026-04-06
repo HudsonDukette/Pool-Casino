@@ -51,7 +51,7 @@ const sessionStore = dbUrl
   ? new PgSession({
       conString: dbUrl,
       tableName: "session",
-      createTableIfMissing: false,
+      createTableIfMissing: true,
     })
   : undefined;
 
