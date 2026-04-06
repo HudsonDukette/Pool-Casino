@@ -9,7 +9,7 @@ import { seedBadgesAndChallenges } from "./lib/seed";
 import { scheduleTax } from "./lib/tax-scheduler";
 import { startWatchdog } from "./lib/watchdog";
 
-const port = Number(process.env["PORT"] ?? 3000);
+const port = Number(process.env.PORT ?? 3000);
 
 async function cleanupStaleGuests() {
   try {
@@ -52,14 +52,9 @@ setupMatchmaking(io);
 
 httpServer.listen(port, "0.0.0.0", () => {
   logger.info({ port }, "Server listening");
-  const hasDb = !!(process.env.SUPABASE_DATABASE_URL ?? process.env.DATABASE_URL);
-  if (hasDb) {
-    seedBadgesAndChallenges();
-    cleanupStaleGuests();
-    setInterval(cleanupStaleGuests, 24 * 60 * 60 * 1000);
-    scheduleTax();
-  } else {
-    logger.warn("No DATABASE_URL set — skipping seeding and scheduled tasks");
-  }
+  seedBadgesAndChallenges();
+  cleanupStaleGuests();
+  setInterval(cleanupStaleGuests, 24 * 60 * 60 * 1000);
+  scheduleTax();
   startWatchdog();
 });

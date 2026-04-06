@@ -176,30 +176,51 @@ Every package extends `tsconfig.base.json`. Run `pnpm run typecheck` from root.
 
 ## External Deployment (GitHub → Vercel + Railway + Supabase)
 
-### Environment variables
+### Architecture
 
-**API server (Railway)** — see `artifacts/api-server/.env.example`:
-- `DATABASE_URL` — Supabase PostgreSQL URI (append `?sslmode=require`)
-- `DATABASE_SSL=true` — enables TLS for Supabase
-- `SESSION_SECRET` — long random string for signing session cookies
-- `ALLOWED_ORIGIN` — exact Vercel frontend URL (e.g. `https://poolcasino.vercel.app`)
-- `PORT` — set automatically by Railway
-- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL` — optional, for push notifications
+```
+Browser → Vercel (static SPA) → Railway (API + Socket.IO) → Supabase (PostgreSQL)
+```
 
-**Frontend (Vercel)** — see `artifacts/pool-casino/.env.example`:
-- `VITE_API_URL` — Railway backend URL (e.g. `https://poolcasino-api.up.railway.app`)
+- **Replit dev**: frontend proxies API through Replit; `DATABASE_URL` = Replit's built-in Postgres (auto-set, runtime-managed)
+- **Production**: Vercel hosts frontend; Railway hosts API; `DATABASE_URL` = Supabase URL (set in Railway env vars)
 
-### How VITE_API_URL works
+### Env var strategy
 
-All API calls in the frontend (fetch calls, React Query hooks, Socket.IO) detect `VITE_API_URL` at build time:
-- **Replit / local dev**: `VITE_API_URL` is not set → uses same-origin relative URLs proxied by Replit
-- **External (Vercel + Railway)**: `VITE_API_URL=https://railway-url` → all API calls go to the Railway backend directly
+| Variable | Replit dev | Railway prod |
+|---|---|---|
+| `DATABASE_URL` | Auto-set by Replit (built-in PG) | Set to Supabase URL |
+| `SESSION_SECRET` | Auto-set (secret) | Set in Railway |
+| `VITE_API_URL` | Not set (uses same-origin proxy) | Set in Vercel → Railway URL |
+| `ALLOWED_ORIGIN` | Not set (allows all) | Set in Railway → Vercel URL |
+| `NODE_ENV` | `development` | `production` |
 
-### Deployment configs
+> `SUPABASE_DATABASE_URL` in Replit secrets is **only for schema migrations** (`pnpm --filter @workspace/db run push`). The runtime DB always uses `DATABASE_URL`.
 
-- `vercel.json` (root) — Vercel build commands and SPA rewrite rule
-- `railway.json` (root) — Railway build and start commands for the api-server
+### Railway env vars to set
+
+```
+DATABASE_URL=postgresql://postgres:[PASSWORD]@db.envkswuvdssykdiftycs.supabase.co:5432/postgres
+SESSION_SECRET=<long random string>
+ALLOWED_ORIGIN=https://your-app.vercel.app
+NODE_ENV=production
+```
+Railway auto-sets `PORT`.
+
+### Vercel settings
+
+- **Root Directory**: `artifacts/pool-casino`
+- **Build Command**: `cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @workspace/pool-casino run build`
+- **Output Directory**: `dist/public`
+- **Environment variable**: `VITE_API_URL=https://your-api.up.railway.app`
+- SPA routing handled by `artifacts/pool-casino/vercel.json`
+
+### Railway settings
+
+- Detects `nixpacks.toml` in repo root → Node 22 + pnpm 10 via corepack
+- `railway.json` configures health check at `GET /healthz`, restart on failure
+- Drizzle schema must be pushed to Supabase manually via SQL Editor (see `lib/db/drizzle/0000_remarkable_typhoid_mary.sql`)
 
 ### Supabase SSL
 
-Set `DATABASE_SSL=true` OR append `?sslmode=require` to `DATABASE_URL`. The DB pool in `lib/db/src/index.ts` detects either and enables `ssl: { rejectUnauthorized: false }`.
+The DB pool in `lib/db/src/index.ts` auto-detects Supabase URLs and enables `ssl: { rejectUnauthorized: false }`. No extra env var needed if using the `supabase.co` hostname.

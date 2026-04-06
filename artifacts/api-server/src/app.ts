@@ -17,16 +17,10 @@ app.use(
     logger,
     serializers: {
       req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
+        return { id: req.id, method: req.method, url: req.url?.split("?")[0] };
       },
       res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
+        return { statusCode: res.statusCode };
       },
     },
   }),
@@ -46,16 +40,15 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
 
-const dbUrl = process.env.SUPABASE_DATABASE_URL ?? process.env.DATABASE_URL;
-const sessionStore = dbUrl
+const isProd = process.env.NODE_ENV === "production";
+
+const sessionStore = process.env.DATABASE_URL
   ? new PgSession({
-      conString: dbUrl,
+      conString: process.env.DATABASE_URL,
       tableName: "session",
       createTableIfMissing: true,
     })
   : undefined;
-
-const isProd = process.env.NODE_ENV === "production";
 
 app.use(
   session({
