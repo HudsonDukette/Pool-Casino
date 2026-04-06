@@ -1,0 +1,160 @@
+---
+
+# ⚡ BACKEND SETUP (FOR RAILWAY)
+
+Create /backend with:
+
+## package.json
+```json
+{
+  "name": "multiplayer-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.1",
+    "@supabase/supabase-js": "^2.0.0",
+    "dotenv": "^16.0.0"
+  }
+}
+server.js
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const { createClient } = require("@supabase/supabase-js");
+require("dotenv").config();
+
+const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
+});
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  socket.on("joinQueue", (data) => {
+    console.log("joinQueue:", data);
+  });
+
+  socket.on("playerAction", (data) => {
+    console.log("playerAction:", data);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log("Server running on port", PORT));
+backend/.env.example
+SUPABASE_URL=https://lkcbikijkcdtvaxyypuv.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SECRET_KEY
+PORT=3000
+🧠 FRONTEND (NEXT.JS APP ROUTER)
+
+Ensure project uses:
+
+Next.js App Router
+Existing Supabase setup (DO NOT MODIFY)
+🟢 SUPABASE INTEGRATION (USE EXACT SETUP)
+
+Ensure README includes:
+
+Install
+npm install @supabase/supabase-js
+.env.local
+NEXT_PUBLIC_SUPABASE_URL=https://lkcbikijkcdtvaxyypuv.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_fh7b3Ykj0z9BYSdDiFMMIw_0r2VTRZL
+Required files:
+utils/supabase/server.ts
+utils/supabase/client.ts
+utils/supabase/middleware.ts
+page.tsx example
+
+(Include FULL code exactly as provided)
+
+🚂 RAILWAY DEPLOYMENT (BACKEND)
+
+README must include:
+
+Go to Railway
+Create new project
+Deploy from GitHub
+Select ONLY /backend folder as root
+Add env variables:
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+Deploy
+Copy deployed URL
+🌐 VERCEL DEPLOYMENT (FRONTEND)
+
+README must include:
+
+Import GitHub repo into Vercel
+Set root directory to frontend (or project root if applicable)
+Add env variables:
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=
+NEXT_PUBLIC_SOCKET_URL=YOUR_RAILWAY_URL
+Deploy
+🔌 CONNECTION FLOW
+
+Explain clearly in README:
+
+Frontend (Vercel)
+→ connects to Socket.IO (Railway)
+→ backend reads/writes to Supabase
+→ Supabase handles auth + database
+
+🔄 SOCKET CONNECTION EXAMPLE
+
+Frontend example:
+
+import { io } from "socket.io-client";
+
+const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL);
+
+socket.emit("joinQueue", { game: "war" });
+🧪 LOCAL DEVELOPMENT
+
+README must include:
+
+Run frontend
+npm run dev
+Run backend
+cd backend
+npm install
+npm run start
+📦 GITHUB READY
+
+Ensure:
+
+.gitignore exists (node_modules, .env)
+backend included
+no secrets committed
+🎯 FINAL GOAL
+
+After following README:
+
+Project runs locally
+Can be pushed to GitHub
+Works in Codespaces
+Backend deploys on Railway
+Frontend deploys on Vercel
+Supabase is fully connected
+Multiplayer sockets function
+
+If anything is unclear, make correct assumptions and proceed.
