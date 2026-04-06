@@ -75,9 +75,13 @@ async function settle(
   let poolAfter = poolAmount;
 
   const result = await db.transaction(async (tx) => {
+    // Re-read balance inside transaction to prevent race-condition overdrafts.
+    // Only allow the update when the resulting balance would be >= 0.
     const [updatedUser] = await tx.update(usersTable)
-      .set({ balance: sql`${usersTable.balance} + ${net.toFixed(2)}` })
-      .where(eq(usersTable.id, userId)).returning({ balance: usersTable.balance });
+      .set({ balance: sql`GREATEST(${usersTable.balance} + ${net.toFixed(2)}, 0)` })
+      .where(and(eq(usersTable.id, userId), sql`${usersTable.balance} + ${net.toFixed(2)} >= 0`))
+      .returning({ balance: usersTable.balance });
+    if (!updatedUser) throw Object.assign(new Error("Insufficient balance"), { status: 400 });
 
     if (casinoId !== undefined) {
       const [casino] = await tx.select().from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);

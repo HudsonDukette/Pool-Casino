@@ -89,6 +89,10 @@ router.post("/games/roulette", async (req, res): Promise<void> => {
   const poolAmount = parseFloat(pool.totalAmount);
   const currentBalance = parseFloat(user.balance);
 
+  if (currentBalance < betAmount) {
+    res.status(400).json({ error: "Insufficient balance" }); return;
+  }
+
   const isGreen = color === "green";
   const winChance = casinoId !== undefined
     ? 0.5

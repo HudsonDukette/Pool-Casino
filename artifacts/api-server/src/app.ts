@@ -68,9 +68,10 @@ app.use(
 
 app.use("/api", router);
 
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  logger.error({ err }, "Unhandled route error");
-  res.status(500).json({ error: err.message || "Internal server error" });
+app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
+  const status = err.status ?? 500;
+  if (status >= 500) logger.error({ err }, "Unhandled route error");
+  res.status(status).json({ error: err.message || "Internal server error" });
 });
 
 export default app;

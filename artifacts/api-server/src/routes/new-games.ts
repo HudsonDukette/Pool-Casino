@@ -87,6 +87,11 @@ async function settle(
     if (!freshUser) throw new Error("User not found");
     const currentBalance = parseFloat(freshUser.balance);
 
+    // Guard against race-condition overdrafts: re-check balance inside the transaction.
+    if (!betAlreadyDeducted && currentBalance < betAmount) {
+      throw Object.assign(new Error("Insufficient balance"), { status: 400 });
+    }
+
     if (casinoId !== undefined) {
       const [casino] = await tx.select().from(casinosTable).where(eq(casinosTable.id, casinoId)).limit(1);
       if (!casino) throw new Error("Casino not found");
