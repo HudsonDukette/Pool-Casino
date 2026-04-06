@@ -5,6 +5,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { pool } from "@workspace/db";
 
 const PgSession = connectPgSimple(session);
 
@@ -44,7 +45,7 @@ const isProd = process.env.NODE_ENV === "production";
 
 const sessionStore = process.env.DATABASE_URL
   ? new PgSession({
-      conString: process.env.DATABASE_URL,
+      pool: pool as any,
       tableName: "session",
       createTableIfMissing: true,
     })
