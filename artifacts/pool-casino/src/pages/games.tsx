@@ -30,18 +30,15 @@ import hiddenpathImg from "@/assets/game-hiddenpath.png";
 import jackpothuntImg from "@/assets/game-jackpothunt.png";
 import targethitImg from "@/assets/game-targethit.png";
 import chainreactionImg from "@/assets/game-chainreaction.png";
-import timedsafeImg from "@/assets/game-timedsafe.png";
-import reversecrashImg from "@/assets/game-reversecrash.png";
 import countdownImg from "@/assets/game-countdown.png";
 import cardstackImg from "@/assets/game-cardstack.png";
 import powergridImg from "@/assets/game-powergrid.png";
-import elimwheelImg from "@/assets/game-elimwheel.png";
 import combobuilderImg from "@/assets/game-combobuilder.png";
 import safestepsImg from "@/assets/game-safesteps.png";
 import predchainImg from "@/assets/game-predchain.png";
 import powerbarImg from "@/assets/game-powerbar.png";
 
-const games = [
+export const allGames = [
   {
     id: "roulette",
     name: "Neon Roulette",
@@ -396,42 +393,6 @@ const games = [
   },
 ];
 
-const mpGames = [
-  {
-    id: "elimwheel",
-    name: "Elimination Wheel",
-    image: elimwheelImg,
-    description: "Last survivor wins. Each spin eliminates one real player from the shared pot!",
-    href: "/games/elimwheel",
-    accentClass: "group-hover:border-purple-500/50 group-hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]",
-    titleClass: "group-hover:text-purple-400",
-    tag: "Up to 8 players",
-    tagColor: "bg-purple-500/20 text-purple-300",
-  },
-  {
-    id: "timedsafe",
-    name: "Vault Race",
-    image: timedsafeImg,
-    description: "The safe cracks at a secret moment. Last player to open BEFORE the crack wins the pot!",
-    href: "/games/timedsafe",
-    accentClass: "group-hover:border-amber-400/50 group-hover:shadow-[0_0_30px_rgba(251,191,36,0.3)]",
-    titleClass: "group-hover:text-amber-300",
-    tag: "Up to 6 players",
-    tagColor: "bg-amber-500/20 text-amber-300",
-  },
-  {
-    id: "reversecrash",
-    name: "Speed Test",
-    image: reversecrashImg,
-    description: "Multiplier falls from 3×. Lock in yours before it crashes — highest locked mult wins!",
-    href: "/games/reversecrash",
-    accentClass: "group-hover:border-green-500/50 group-hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]",
-    titleClass: "group-hover:text-green-400",
-    tag: "Up to 6 players",
-    tagColor: "bg-green-500/20 text-green-400",
-  },
-];
-
 const container = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.06 } },
@@ -442,7 +403,7 @@ const item = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 260, damping: 24 } },
 };
 
-function GameCard({ game, disabledGames }: { game: typeof games[0]; disabledGames: string[] }) {
+function GameCard({ game, disabledGames }: { game: typeof allGames[0]; disabledGames: string[] }) {
   const g = game as any;
   const hasImage = !!g.image;
   const isDisabled = disabledGames.includes(game.id);
@@ -526,9 +487,9 @@ export default function Games() {
         transition={{ duration: 0.5 }}
         className="text-center space-y-4 pt-8 pb-4"
       >
-        <h1 className="text-4xl md:text-5xl font-display font-bold">All Games</h1>
+        <h1 className="text-4xl md:text-5xl font-display font-bold">Casino Games</h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          35 games. One global pool. Every bet matters.
+          32 solo games. One global pool. Every bet matters.
         </p>
       </motion.div>
 
@@ -542,75 +503,16 @@ export default function Games() {
         </motion.div>
       )}
 
-      {/* Regular Games */}
-      <section>
-        <div className="flex items-center gap-3 mb-6">
-          <h2 className="text-2xl font-display font-bold">🎰 Casino Games</h2>
-          <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">{games.length} games</span>
-        </div>
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
-        >
-          {games.map((game) => (
-            <GameCard key={game.id} game={game as any} disabledGames={disabledGames} />
-          ))}
-        </motion.div>
-      </section>
-
-      {/* Multiplayer Games */}
-      <section>
-        <div className="flex items-center gap-3 mb-2">
-          <h2 className="text-2xl font-display font-bold">⚡ Multiplayer Games</h2>
-          <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">{mpGames.length} games</span>
-        </div>
-        <p className="text-sm text-muted-foreground mb-6">
-          Real-time lobbies. You bet against other live players — winner takes the shared pot.
-        </p>
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
-        >
-          {mpGames.map((game) => (
-            <motion.div key={game.id} variants={item}>
-              <Link href={game.href} className="block group h-full">
-                <Card className={`h-full overflow-hidden transition-all duration-500 bg-card/40 border-white/5 relative cursor-pointer ${game.accentClass}`}>
-                  <div className="absolute top-3 left-3 z-20">
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500/20 text-blue-300">⚡ Multiplayer</span>
-                  </div>
-                  <div className="absolute top-3 right-3 z-20">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${game.tagColor}`}>{game.tag}</span>
-                  </div>
-                  <CardContent className="p-0 flex flex-col h-[280px]">
-                    <div className="h-[160px] relative overflow-hidden border-b border-white/5">
-                      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent z-10" />
-                      <motion.img
-                        src={game.image}
-                        alt={game.name}
-                        className="w-full h-full object-cover"
-                        whileHover={{ scale: 1.06 }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                      />
-                    </div>
-                    <div className="p-5 flex-1 flex flex-col justify-center space-y-1.5">
-                      <h3 className={`text-xl font-display font-bold transition-colors duration-300 ${game.titleClass}`}>
-                        {game.name}
-                      </h3>
-                      <p className="text-muted-foreground text-xs line-clamp-2 leading-relaxed">
-                        {game.description}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+      >
+        {allGames.map((game) => (
+          <GameCard key={game.id} game={game as any} disabledGames={disabledGames} />
+        ))}
+      </motion.div>
     </div>
   );
 }
