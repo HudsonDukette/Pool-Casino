@@ -62,6 +62,9 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     bannedUntil: user.bannedUntil?.toISOString() ?? null,
     permanentlyBanned: user.permanentlyBanned,
     banReason: user.banReason ?? null,
+    bio: user.bio ?? null,
+    xp: user.xp ?? 0,
+    level: user.level ?? 1,
   };
 }
 

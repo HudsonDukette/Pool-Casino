@@ -137,6 +137,10 @@ async function settle(
     const currentStreak = won ? parseInt(freshUser.currentStreak) + 1 : 0;
     const winStreak = Math.max(parseInt(freshUser.winStreak), currentStreak);
     const totalProfit = parseFloat(freshUser.totalProfit) + profit;
+    // XP & level calculation
+    const xpGain = Math.max(1, Math.floor(betAmount / 100)) + (won ? Math.floor(betAmount / 200) : 0);
+    const newXp = (freshUser.xp ?? 0) + xpGain;
+    const newLevel = Math.floor(Math.sqrt(newXp / 25)) + 1;
     await Promise.all([
       tx.update(usersTable).set({
         balance: newBalance.toFixed(2), totalProfit: totalProfit.toFixed(2),
@@ -145,6 +149,7 @@ async function settle(
         gamesPlayed: gamesPlayed.toString(), winStreak: winStreak.toString(),
         currentStreak: currentStreak.toString(), totalWins: totalWins.toString(),
         totalLosses: totalLosses.toString(), lastBetAt: new Date(),
+        xp: newXp, level: newLevel,
       }).where(eq(usersTable.id, userId)),
       tx.insert(betsTable).values({ userId, gameType, betAmount: betAmount.toFixed(2), result: won ? "win" : "loss", payout: payout.toFixed(2), multiplier: multiplier.toFixed(4) }),
     ]);
@@ -163,49 +168,101 @@ function weightedPick<T extends { weight: number }>(items: T[]): T {
   return items[items.length - 1];
 }
 
-// ── 1. High-Low Card ─────────────────────────────────────────────────────────
-router.post("/games/highlow", async (req, res): Promise<void> => {
+// ── 1. High-Low Chain ────────────────────────────────────────────────────────
+const CARD_LABELS: Record<number, string> = { 1: "A", 11: "J", 12: "Q", 13: "K" };
+const cardLabel = (c: number) => CARD_LABELS[c] ?? String(c);
+
+// Chain multipliers:
+// 0 correct → 0x, 1 → 0.25x, 2 → 0.5x, 3 → 0.75x, 4 → 1.0x (break-even)
+// 5 → 2.0x, 6 → 3.0x, 7 → 4.0x, etc.
+function chainMultiplier(chain: number): number {
+  if (chain <= 0) return 0;
+  if (chain <= 4) return chain * 0.25;
+  return chain - 3;
+}
+
+interface HighLowSession { betAmount: number; casinoId?: number; currentCard: number; chain: number }
+const highlowSessions = new Map<number, HighLowSession>();
+
+// Start a new chain — places the bet and returns the first card
+router.post("/games/highlow/start", async (req, res): Promise<void> => {
   const userId = authCheck(req, res); if (!userId) return;
   const betAmount = parseBet(req, res); if (!betAmount) return;
-  const guess = req.body?.guess; // "higher" | "lower"
-  if (guess !== "higher" && guess !== "lower") {
-    res.status(400).json({ error: "guess must be 'higher' or 'lower'" }); return;
-  }
-  const card1 = parseInt(req.body?.card1 ?? "0");
-  if (!card1 || card1 < 1 || card1 > 13) {
-    res.status(400).json({ error: "card1 must be 1–13" }); return;
-  }
   const casinoId = req.body?.casinoId ? parseInt(req.body.casinoId) : undefined;
-
   if (casinoId !== undefined) {
     const ok = await validateCasinoPlay(casinoId, "highlow", betAmount, res as Response);
     if (!ok) return;
   }
-
-  const { user, pool } = await loadCtx(userId);
+  const { user } = await loadCtx(userId);
   if (!user) { res.status(401).json({ error: "User not found" }); return; }
   const banErr = checkBan(user); if (banErr) { res.status(403).json({ error: banErr }); return; }
-  if (Math.round(parseFloat(user.balance) * 100) < Math.round(betAmount * 100)) { res.status(400).json({ error: "Insufficient balance" }); return; }
-
-  const card2 = Math.floor(Math.random() * 13) + 1;
-  let won: boolean;
-  let tie = false;
-  if (card2 === card1) { tie = true; won = false; }
-  else if (guess === "higher") won = card2 > card1;
-  else won = card2 < card1;
-
-  const multiplier = tie ? 1 : (won ? 1.85 : 0);
-  const result = await settle(userId, "highlow", betAmount, multiplier, user, pool, casinoId);
-  const LABELS: Record<number, string> = { 1:"A",11:"J",12:"Q",13:"K" };
-  const lbl = (c: number) => LABELS[c] ?? String(c);
-  res.json({ ...result, card1: lbl(card1), card2: lbl(card2), card1Val: card1, card2Val: card2, tie, guess });
+  if (parseFloat(user.balance) < betAmount) { res.status(400).json({ error: "Insufficient balance" }); return; }
+  const card = Math.floor(Math.random() * 13) + 1;
+  highlowSessions.set(userId, { betAmount, casinoId, currentCard: card, chain: 0 });
+  res.json({ card, label: cardLabel(card), chain: 0, multiplier: 0 });
 });
 
-// Fetch a fresh card (no bet) — used to start the round on the frontend
+// Make a guess — correct advances the chain; wrong ends the game (loss)
+router.post("/games/highlow/guess", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const session = highlowSessions.get(userId);
+  if (!session) { res.status(400).json({ error: "No active High-Low chain. Start a new game." }); return; }
+  const guess = req.body?.guess;
+  if (guess !== "higher" && guess !== "lower") { res.status(400).json({ error: "guess must be 'higher' or 'lower'" }); return; }
+  const { currentCard, chain, betAmount, casinoId } = session;
+  const card2 = Math.floor(Math.random() * 13) + 1;
+  let correct: boolean;
+  let tie = false;
+  if (card2 === currentCard) { tie = true; correct = true; }
+  else if (guess === "higher") correct = card2 > currentCard;
+  else correct = card2 < currentCard;
+
+  if (!correct) {
+    // Wrong guess → settle as a loss
+    highlowSessions.delete(userId);
+    const { user, pool } = await loadCtx(userId);
+    if (!user) { res.status(401).json({ error: "User not found" }); return; }
+    const result = await settle(userId, "highlow", betAmount, 0, user, pool, casinoId);
+    return void res.json({ correct: false, tie: false, card1: cardLabel(currentCard), card2: cardLabel(card2), chain, lost: true, ...result });
+  }
+
+  if (tie) {
+    // Tie — chain doesn't advance, card stays the same
+    return void res.json({ correct: true, tie: true, card1: cardLabel(currentCard), card2: cardLabel(card2), chain, multiplier: chainMultiplier(chain) });
+  }
+
+  // Correct — advance chain
+  const newChain = chain + 1;
+  session.currentCard = card2;
+  session.chain = newChain;
+  res.json({ correct: true, tie: false, chain: newChain, multiplier: chainMultiplier(newChain), card1: cardLabel(currentCard), card2: cardLabel(card2) });
+});
+
+// Cash out the current chain
+router.post("/games/highlow/cashout", async (req, res): Promise<void> => {
+  const userId = authCheck(req, res); if (!userId) return;
+  const session = highlowSessions.get(userId);
+  if (!session) { res.status(400).json({ error: "No active High-Low chain." }); return; }
+  if (session.chain === 0) { res.status(400).json({ error: "Must win at least 1 guess before cashing out." }); return; }
+  highlowSessions.delete(userId);
+  const multiplier = chainMultiplier(session.chain);
+  const { user, pool } = await loadCtx(userId);
+  if (!user) { res.status(401).json({ error: "User not found" }); return; }
+  const result = await settle(userId, "highlow", session.betAmount, multiplier, user, pool, session.casinoId);
+  res.json({ ...result, chain: session.chain, multiplier });
+});
+
+// Abort (forfeit) an active chain
+router.post("/games/highlow/abort", (req, res): void => {
+  const userId = authCheck(req, res); if (!userId) return;
+  highlowSessions.delete(userId);
+  res.json({ aborted: true });
+});
+
+// Get a fresh card — used as initial display (no bet)
 router.get("/games/highlow/card", (req, res): void => {
   const card = Math.floor(Math.random() * 13) + 1;
-  const LABELS: Record<number, string> = { 1:"A",11:"J",12:"Q",13:"K" };
-  res.json({ card, label: LABELS[card] ?? String(card) });
+  res.json({ card, label: cardLabel(card) });
 });
 
 // ── 2. Double Dice ────────────────────────────────────────────────────────────

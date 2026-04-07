@@ -94,6 +94,9 @@ export const GetMeResponse = zod.object({
   bannedUntil: zod.string().nullish(),
   permanentlyBanned: zod.boolean().optional(),
   banReason: zod.string().nullish(),
+  bio: zod.string().nullish(),
+  xp: zod.number().optional(),
+  level: zod.number().optional(),
 });
 
 /**

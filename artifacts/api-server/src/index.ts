@@ -46,6 +46,10 @@ const io = new SocketIOServer(httpServer, {
   },
   transports: ["websocket", "polling"],
   allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  upgradeTimeout: 30000,
+  connectTimeout: 45000,
 });
 
 setupMatchmaking(io);
@@ -57,4 +61,28 @@ httpServer.listen(port, "0.0.0.0", () => {
   setInterval(cleanupStaleGuests, 24 * 60 * 60 * 1000);
   scheduleTax();
   startWatchdog();
+});
+
+// ── Graceful shutdown ─────────────────────────────────────────────────────────
+function gracefulShutdown(signal: string) {
+  logger.info({ signal }, "Received shutdown signal, closing server");
+  io.close(() => {
+    logger.info("Socket.IO closed");
+  });
+  httpServer.close(() => {
+    logger.info("HTTP server closed, process exiting");
+    process.exit(0);
+  });
+  // Force exit after 10 seconds if graceful shutdown stalls
+  setTimeout(() => {
+    logger.warn("Graceful shutdown timed out, forcing exit");
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("uncaughtException", (err) => {
+  logger.error({ err }, "Uncaught exception");
+  gracefulShutdown("uncaughtException");
 });

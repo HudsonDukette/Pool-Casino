@@ -12,12 +12,13 @@ import {
   Settings, Plus, Coins, TrendingUp, TrendingDown, PauseCircle,
   PlayCircle, ShoppingCart, Check, X, AlertCircle, Trash2,
   ChevronDown, ChevronUp, RefreshCw, Save, Wine, ExternalLink, AlertTriangle,
+  MessageSquare, Lock,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
-type Tab = "games" | "stats" | "logs" | "owner";
+type Tab = "games" | "stats" | "logs" | "owner" | "chat";
 
 interface Casino {
   id: number;
@@ -42,6 +43,7 @@ interface Casino {
   cheapStorageLevel: number;
   standardStorageLevel: number;
   expensiveStorageLevel: number;
+  chatUnlocked: boolean;
 }
 
 interface GameOwned {
@@ -579,6 +581,95 @@ function LogsTab({ casinoId }: { casinoId: number }) {
   );
 }
 
+// ─── Chat Tab ──────────────────────────────────────────────────────────────────
+interface ChatMessage { id: number; userId: number; username: string; message: string; createdAt: string; }
+
+function ChatTab({ casino, currentUser }: { casino: Casino; currentUser: any }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [msgInput, setMsgInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const bottomRef = React.useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  const fetchMessages = async () => {
+    try {
+      const r = await fetch(`${BASE}api/casino-chat/${casino.id}`, { credentials: "include" });
+      const data = await r.json();
+      if (data.chatUnlocked) setMessages(data.messages ?? []);
+    } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchMessages(); }, [casino.id]);
+  useEffect(() => {
+    const interval = setInterval(fetchMessages, 5000);
+    return () => clearInterval(interval);
+  }, [casino.id]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!msgInput.trim()) return;
+    if (!currentUser || currentUser.isGuest) { toast({ title: "Login required", variant: "destructive" }); return; }
+    setSending(true);
+    try {
+      const r = await fetch(`${BASE}api/casino-chat/${casino.id}`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: msgInput.trim() }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error ?? "Failed to send");
+      setMsgInput("");
+      fetchMessages();
+    } catch (e: any) {
+      toast({ title: e.message, variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (!casino.chatUnlocked) {
+    return (
+      <div className="text-center py-16 text-muted-foreground">
+        <p className="text-lg">Chat is not unlocked for this casino.</p>
+        <p className="text-sm mt-1">The owner can unlock chat from the Controls tab.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="h-96 overflow-y-auto bg-black/40 rounded-xl border border-white/10 p-4 flex flex-col gap-2">
+        {loading && <p className="text-muted-foreground text-sm text-center">Loading…</p>}
+        {!loading && messages.length === 0 && <p className="text-muted-foreground text-sm text-center">No messages yet. Say hi!</p>}
+        {messages.map(msg => (
+          <div key={msg.id} className="flex flex-col gap-0.5">
+            <span className="text-xs font-semibold text-primary">{msg.username}</span>
+            <span className="text-sm text-white/90 break-words">{msg.message}</span>
+            <span className="text-[10px] text-muted-foreground">{new Date(msg.createdAt).toLocaleTimeString()}</span>
+          </div>
+        ))}
+        <div ref={bottomRef} />
+      </div>
+      <div className="flex gap-2">
+        <Input
+          value={msgInput}
+          onChange={e => setMsgInput(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
+          placeholder={currentUser?.isGuest ? "Log in to chat" : "Type a message…"}
+          disabled={!!currentUser?.isGuest || sending}
+          maxLength={500}
+          className="flex-1"
+        />
+        <Button onClick={handleSend} disabled={!!currentUser?.isGuest || sending || !msgInput.trim()}>Send</Button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Owner Controls Tab ────────────────────────────────────────────────────────
 function OwnerTab({ casino, drinks, games, onRefresh }: {
   casino: Casino;
@@ -611,6 +702,24 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
   const [depositAmt, setDepositAmt] = useState("");
   const [withdrawAmt, setWithdrawAmt] = useState("");
   const [bankrolling, setBankrolling] = useState(false);
+
+  // Chat
+  const [unlockingChat, setUnlockingChat] = useState(false);
+  const unlockChat = async () => {
+    if (!confirm("Unlock chat costs $5,000 chips. This is permanent. Proceed?")) return;
+    setUnlockingChat(true);
+    try {
+      const res = await fetch(`${BASE}api/casino-chat/${casino.id}/unlock`, {
+        method: "POST", credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error || "Failed", variant: "destructive" }); return; }
+      toast({ title: "Chat unlocked!", description: data.message });
+      onRefresh();
+    } finally {
+      setUnlockingChat(false);
+    }
+  };
 
   // Drinks
   const [showDrinkForm, setShowDrinkForm] = useState(false);
@@ -776,6 +885,23 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
         >
           {casino.isPaused ? <><PlayCircle className="w-4 h-4 mr-2" /> Resume</> : <><PauseCircle className="w-4 h-4 mr-2" /> Pause</>}
         </Button>
+      </div>
+
+      {/* Casino Chat */}
+      <div className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-card/30">
+        <div>
+          <p className="font-medium flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-400" /> Casino Chat</p>
+          <p className="text-sm text-muted-foreground">
+            {casino.chatUnlocked ? "Chat is enabled — players can message each other here." : "Enable a live chat room for your casino ($5,000 chips, permanent)."}
+          </p>
+        </div>
+        {casino.chatUnlocked ? (
+          <span className="text-sm text-green-400 font-semibold shrink-0">Active</span>
+        ) : (
+          <Button variant="outline" size="sm" onClick={unlockChat} disabled={unlockingChat} className="shrink-0">
+            <Lock className="w-3.5 h-3.5 mr-1.5" /> {unlockingChat ? "Unlocking…" : "Unlock Chat"}
+          </Button>
+        )}
       </div>
 
       {/* Bankroll management */}
@@ -1157,6 +1283,7 @@ export default function CasinoHub() {
   const tabs = [
     { key: "games" as Tab, label: "Games", icon: Gamepad2 },
     { key: "stats" as Tab, label: "Stats", icon: BarChart2 },
+    { key: "chat" as Tab, label: "Chat", icon: MessageSquare, badge: casino.chatUnlocked ? undefined : "🔒" },
     ...(isOwner ? [
       { key: "logs" as Tab, label: "Logs", icon: ScrollText },
       { key: "owner" as Tab, label: "Controls", icon: Settings },
@@ -1277,6 +1404,7 @@ export default function CasinoHub() {
             >
               <Icon className="w-4 h-4" />
               <span className="hidden sm:block">{tab.label}</span>
+              {"badge" in tab && tab.badge && <span className="text-[10px] opacity-60">{tab.badge}</span>}
             </button>
           );
         })}
@@ -1295,6 +1423,7 @@ export default function CasinoHub() {
             <GamesTab casino={casino} games={games} drinks={drinks} isOwner={isOwner} onRefresh={silentRefresh} />
           )}
           {activeTab === "stats" && <StatsTab casino={casino} />}
+          {activeTab === "chat" && <ChatTab casino={casino} currentUser={user} />}
           {activeTab === "logs" && <LogsTab casinoId={casino.id} />}
           {activeTab === "owner" && (
             <OwnerTab casino={casino} drinks={drinks} games={games} onRefresh={silentRefresh} />

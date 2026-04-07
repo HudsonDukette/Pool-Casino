@@ -32,6 +32,9 @@ export const usersTable = pgTable("users", {
   permanentlyBanned: boolean("permanently_banned").notNull().default(false),
   banReason: text("ban_reason"),
   isOwner: boolean("is_owner").notNull().default(false),
+  bio: text("bio"),
+  xp: integer("xp").notNull().default(0),
+  level: integer("level").notNull().default(1),
 });
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({

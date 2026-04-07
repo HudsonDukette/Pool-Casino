@@ -59,6 +59,7 @@ import ChainReaction from "@/pages/chainreaction";
 import TimedSafe from "@/pages/timedsafe";
 import ReverseCrash from "@/pages/reversecrash";
 import Countdown from "@/pages/countdown";
+import PowerBar from "@/pages/powerbar";
 import CardStack from "@/pages/cardstack";
 import PowerGrid from "@/pages/powergrid";
 import ElimWheel from "@/pages/elimwheel";
@@ -177,6 +178,7 @@ function Router() {
         <Route path="/games/timedsafe" component={TimedSafe} />
         <Route path="/games/reversecrash" component={ReverseCrash} />
         <Route path="/games/countdown" component={Countdown} />
+        <Route path="/games/powerbar" component={PowerBar} />
         <Route path="/games/cardstack" component={CardStack} />
         <Route path="/games/powergrid" component={PowerGrid} />
         <Route path="/games/elimwheel" component={ElimWheel} />

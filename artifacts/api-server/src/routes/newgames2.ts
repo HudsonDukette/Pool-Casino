@@ -74,11 +74,18 @@ async function settle(
 
   let poolAfter = poolAmount;
 
+  // XP gain
+  const xpGain = Math.max(1, Math.floor(betAmount / 100)) + (won ? Math.floor(betAmount / 200) : 0);
+
   const result = await db.transaction(async (tx) => {
     // Re-read balance inside transaction to prevent race-condition overdrafts.
     // Only allow the update when the resulting balance would be >= 0.
     const [updatedUser] = await tx.update(usersTable)
-      .set({ balance: sql`GREATEST(${usersTable.balance} + ${net.toFixed(2)}, 0)` })
+      .set({
+        balance: sql`GREATEST(${usersTable.balance} + ${net.toFixed(2)}, 0)`,
+        xp: sql`COALESCE(${usersTable.xp}, 0) + ${xpGain}`,
+        level: sql`FLOOR(SQRT((COALESCE(${usersTable.xp}, 0) + ${xpGain})::float / 25))::int + 1`,
+      })
       .where(and(eq(usersTable.id, userId), sql`${usersTable.balance} + ${net.toFixed(2)} >= 0`))
       .returning({ balance: usersTable.balance });
     if (!updatedUser) throw Object.assign(new Error("Insufficient balance"), { status: 400 });
@@ -224,8 +231,30 @@ router.post("/targethit/click", async (req, res) => {
   return res.json({ elapsed, targetMs, diff, accuracy: Math.round(accuracy * 100), multiplier: parseFloat(multiplier.toFixed(2)), won, payout, newBalance });
 });
 
-// ── Countdown Gamble ─────────────────────────────────────────────────────────
-const countdownSessions = new Map<number, { betAmount: number; casinoId?: number; startedAt: number }>();
+// ── Countdown Gamble (Rising Multiplier with Random Crash) ───────────────────
+// Multiplier rises slowly from 1.0x. At a secret crash time it falls rapidly.
+// Player must cash out before it hits 0. Closer to crash = higher reward.
+const RISE_RATE = 0.08;   // x per second during rise phase
+const FALL_RATE = 0.6;    // x per second during crash phase
+const MAX_GAME_MS = 45000; // auto-expire after 45 seconds
+
+interface CountdownSession {
+  betAmount: number;
+  casinoId?: number;
+  startedAt: number;
+  crashAtMs: number; // ms from start when crash begins
+}
+const countdownSessions = new Map<number, CountdownSession>();
+
+function calcCountdownMultiplier(startedAt: number, crashAtMs: number, nowMs?: number): number {
+  const elapsed = (nowMs ?? Date.now()) - startedAt;
+  if (elapsed < crashAtMs) {
+    return 1 + (elapsed / 1000) * RISE_RATE;
+  }
+  const peakMult = 1 + (crashAtMs / 1000) * RISE_RATE;
+  const fallElapsed = (elapsed - crashAtMs) / 1000;
+  return Math.max(0, peakMult - fallElapsed * FALL_RATE);
+}
 
 router.post("/countdown/start", async (req, res) => {
   const userId = auth(req, res); if (!userId) return;
@@ -234,9 +263,11 @@ router.post("/countdown/start", async (req, res) => {
   if (casinoId !== undefined) { const ok = await validateCasinoPlay(casinoId, "countdown", betAmount, res as Response); if (!ok) return; }
   const { user } = await loadCtx(userId);
   if (parseFloat(user.balance) < betAmount) return res.status(400).json({ error: "Insufficient balance" });
-  await db.update(usersTable).set({ balance: sql`${usersTable.balance} - ${betAmount.toFixed(2)}` }).where(eq(usersTable.id, userId));
-  countdownSessions.set(userId, { betAmount, casinoId, startedAt: Date.now() });
-  return res.json({ started: true, durationMs: 10000 });
+  // Secret crash time: 6-24 seconds in
+  const crashAtMs = (6 + Math.random() * 18) * 1000;
+  const startedAt = Date.now();
+  countdownSessions.set(userId, { betAmount, casinoId, startedAt, crashAtMs });
+  return res.json({ started: true, riseRate: RISE_RATE, fallRate: FALL_RATE, maxMs: MAX_GAME_MS });
 });
 
 router.post("/countdown/cashout", async (req, res) => {
@@ -244,14 +275,23 @@ router.post("/countdown/cashout", async (req, res) => {
   const session = countdownSessions.get(userId);
   if (!session) return res.status(400).json({ error: "No active countdown session" });
   countdownSessions.delete(userId);
-  const { betAmount, casinoId, startedAt } = session;
-  const elapsed = Math.min(10000, Date.now() - startedAt);
-  const remaining = Math.max(0, 10000 - elapsed);
-  const secondsLeft = remaining / 1000;
-  const multiplier = 0.5 + (secondsLeft / 10) * 2.5;
+  const { betAmount, casinoId, startedAt, crashAtMs } = session;
+  const elapsed = Date.now() - startedAt;
+  const multiplier = calcCountdownMultiplier(startedAt, crashAtMs);
+  const crashed = multiplier <= 0;
+  const peakMult = parseFloat((1 + (crashAtMs / 1000) * RISE_RATE).toFixed(2));
+  const crashedAtSec = parseFloat((crashAtMs / 1000).toFixed(1));
+
+  if (crashed) {
+    // Already at 0 — immediate loss (settle as 0x)
+    const { user, pool } = await loadCtx(userId);
+    await settle(userId, "countdown", betAmount, 0, user, pool, casinoId);
+    return res.json({ won: false, payout: 0, multiplier: 0, crashed: true, crashedAtSec, peakMult, elapsedMs: elapsed });
+  }
+
   const { user, pool } = await loadCtx(userId);
-  const { won, payout, newBalance } = await settle(userId, "countdown", betAmount, multiplier, { ...user, balance: (parseFloat(user.balance) + betAmount).toString() }, pool, casinoId);
-  return res.json({ secondsLeft: parseFloat(secondsLeft.toFixed(1)), multiplier: parseFloat(multiplier.toFixed(2)), won, payout, newBalance });
+  const { won, payout, newBalance } = await settle(userId, "countdown", betAmount, multiplier, user, pool, casinoId);
+  return res.json({ won, payout, newBalance, multiplier: parseFloat(multiplier.toFixed(2)), crashed: false, crashedAtSec, peakMult, elapsedMs: elapsed });
 });
 
 // ── Card Stack ───────────────────────────────────────────────────────────────
@@ -685,4 +725,48 @@ router.post("/timedsafe/open", async (req, res) => {
   return res.json({ elapsed, crackAt: Math.round(session.crackAt), cracked, multiplier: parseFloat(multiplier.toFixed(2)), won, payout, newBalance });
 });
 
+// ── Power Bar ─────────────────────────────────────────────────────────────────
+// Bar oscillates 0→1→0 at a random period. Player stops it; payout depends on zone hit.
+const powerBarSessions = new Map<number, { betAmount: number; casinoId?: number; period: number; startedAt: number }>();
+
+router.post("/powerbar/start", async (req, res) => {
+  const userId = auth(req, res); if (!userId) return;
+  const betAmount = parseBet(req, res); if (!betAmount) return;
+  const casinoId = req.body?.casinoId ? parseInt(req.body.casinoId) : undefined;
+  if (casinoId !== undefined) { const ok = await validateCasinoPlay(casinoId, "powerbar", betAmount, res as Response); if (!ok) return; }
+  const { user } = await loadCtx(userId);
+  if (parseFloat(user.balance) < betAmount) return res.status(400).json({ error: "Insufficient balance" });
+  await db.update(usersTable).set({ balance: sql`${usersTable.balance} - ${betAmount.toFixed(2)}` }).where(eq(usersTable.id, userId));
+  // Period randomly between 1.2s and 3.5s so bar speed varies per round
+  const period = 1200 + Math.random() * 2300;
+  powerBarSessions.set(userId, { betAmount, casinoId, period, startedAt: Date.now() });
+  return res.json({ started: true, period: Math.round(period) });
+});
+
+router.post("/powerbar/stop", async (req, res) => {
+  const userId = auth(req, res); if (!userId) return;
+  const session = powerBarSessions.get(userId);
+  if (!session) return res.status(400).json({ error: "No active Power Bar session" });
+  powerBarSessions.delete(userId);
+
+  const elapsed = Date.now() - session.startedAt;
+  // Bar position: 0→1→0 oscillation via absolute sine. pos ∈ [0, 1]
+  const phase = (elapsed % session.period) / session.period; // 0→1 within one period
+  const pos = Math.sin(phase * Math.PI); // 0→1→0
+
+  // Zones: perfect = 0.85-1.0 center region, good = 0.65-0.85, fair = 0.40-0.65, poor = rest
+  let multiplier: number;
+  let zone: string;
+  if (pos >= 0.90) { multiplier = 5.0;  zone = "perfect"; }
+  else if (pos >= 0.75) { multiplier = 2.5; zone = "great";   }
+  else if (pos >= 0.55) { multiplier = 1.5; zone = "good";    }
+  else if (pos >= 0.35) { multiplier = 0.8; zone = "fair";    }
+  else                  { multiplier = 0.2; zone = "poor";    }
+
+  const { user, pool } = await loadCtx(userId);
+  const { won, payout, newBalance } = await settle(userId, "powerbar", session.betAmount, multiplier, { ...user, balance: (parseFloat(user.balance) + session.betAmount).toString() }, pool, session.casinoId);
+  return res.json({ pos: parseFloat(pos.toFixed(4)), zone, multiplier: parseFloat(multiplier.toFixed(2)), won, payout, newBalance });
+});
+
 export default router;
+

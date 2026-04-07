@@ -352,6 +352,17 @@ const games = [
     tagColor: "bg-yellow-500/20 text-yellow-400",
   },
   {
+    id: "powerbar",
+    name: "Power Bar",
+    image: countdownImg,
+    description: "A charging bar oscillates back and forth. Stop it in the perfect zone for a massive 5× payout!",
+    href: "/games/powerbar",
+    accentClass: "group-hover:border-purple-500/50 group-hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]",
+    titleClass: "group-hover:text-purple-400",
+    tag: "Timing",
+    tagColor: "bg-purple-500/20 text-purple-400",
+  },
+  {
     id: "cardstack",
     name: "Card Stack",
     image: cardstackImg,
