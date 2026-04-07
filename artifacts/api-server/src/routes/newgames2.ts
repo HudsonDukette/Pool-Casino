@@ -117,7 +117,7 @@ async function settle(
     await checkAndLockIfEmpty(poolAfter);
   }
 
-  await trackGameProgress(userId, gameType, won);
+  trackGameProgress({ userId, gameType, betAmount, won });
   return { won, payout, newBalance: result.newBalance };
 }
 

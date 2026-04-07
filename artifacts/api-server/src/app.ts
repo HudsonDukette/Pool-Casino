@@ -48,6 +48,8 @@ const sessionStore = process.env.DATABASE_URL
       pool: pool as any,
       tableName: "session",
       createTableIfMissing: true,
+      disableTouch: true,
+      ttl: 30 * 24 * 60 * 60,
     })
   : undefined;
 

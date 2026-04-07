@@ -61,7 +61,7 @@ async function settleMpPlayer(
     });
     return { newBalance: parseFloat(updatedUser?.balance ?? "0") };
   });
-  await trackGameProgress(userId, { betAmount, won, profit: net, gameType });
+  trackGameProgress({ userId, gameType, betAmount, won });
   return result;
 }
 

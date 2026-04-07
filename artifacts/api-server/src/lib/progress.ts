@@ -12,6 +12,7 @@ interface GameResult {
 }
 
 export function trackGameProgress(result: GameResult): void {
+  if (!result.userId) return;
   Promise.all([
     checkAndAwardBadges(result.userId),
     updateMonthlyChallenges(result),
