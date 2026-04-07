@@ -702,8 +702,9 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
 
   // Chat
   const [unlockingChat, setUnlockingChat] = useState(false);
+  const [showChatUnlockModal, setShowChatUnlockModal] = useState(false);
   const unlockChat = async () => {
-    if (!confirm("Unlock chat costs $5,000 chips. This is permanent. Proceed?")) return;
+    setShowChatUnlockModal(false);
     setUnlockingChat(true);
     try {
       const res = await fetch(`${BASE}api/casino-chat/${casino.id}/unlock`, {
@@ -885,19 +886,47 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
       </div>
 
       {/* Casino Chat */}
-      <div className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-card/30">
-        <div>
-          <p className="font-medium flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-400" /> Casino Chat</p>
-          <p className="text-sm text-muted-foreground">
-            {casino.chatUnlocked ? "Chat is enabled — players can message each other here." : "Enable a live chat room for your casino ($5,000 chips, permanent)."}
-          </p>
+      <div className="rounded-xl border border-white/5 bg-card/30 overflow-hidden">
+        <div className="flex items-center justify-between p-4">
+          <div>
+            <p className="font-medium flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-400" /> Casino Chat</p>
+            <p className="text-sm text-muted-foreground">
+              {casino.chatUnlocked ? "Chat is enabled — players can message each other here." : "Enable a live chat room for your casino. One-time permanent upgrade."}
+            </p>
+          </div>
+          {casino.chatUnlocked ? (
+            <span className="text-sm text-green-400 font-semibold shrink-0">Active</span>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setShowChatUnlockModal(true)} disabled={unlockingChat} className="shrink-0">
+              <Lock className="w-3.5 h-3.5 mr-1.5" /> {unlockingChat ? "Unlocking…" : "Unlock Chat"}
+            </Button>
+          )}
         </div>
-        {casino.chatUnlocked ? (
-          <span className="text-sm text-green-400 font-semibold shrink-0">Active</span>
-        ) : (
-          <Button variant="outline" size="sm" onClick={unlockChat} disabled={unlockingChat} className="shrink-0">
-            <Lock className="w-3.5 h-3.5 mr-1.5" /> {unlockingChat ? "Unlocking…" : "Unlock Chat"}
-          </Button>
+
+        {/* Chat unlock confirmation panel */}
+        {showChatUnlockModal && !casino.chatUnlocked && (
+          <div className="border-t border-white/5 bg-blue-950/30 p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">💬</div>
+              <div>
+                <p className="font-semibold text-white">Unlock Casino Chat</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  This is a <span className="text-white font-medium">permanent, one-time upgrade</span> for your casino. All players visiting your casino will be able to chat in real time.
+                </p>
+                <div className="mt-3 flex items-center gap-2 p-3 rounded-lg bg-black/30 border border-white/10">
+                  <span className="text-yellow-400 font-mono font-bold text-lg">$500,000,000</span>
+                  <span className="text-muted-foreground text-sm">chips · non-refundable</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 justify-end">
+              <Button variant="ghost" size="sm" onClick={() => setShowChatUnlockModal(false)}>Cancel</Button>
+              <Button size="sm" onClick={unlockChat} disabled={unlockingChat}
+                className="bg-blue-600 hover:bg-blue-700 text-white">
+                {unlockingChat ? "Unlocking…" : "Confirm — Unlock Chat"}
+              </Button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -1420,7 +1449,7 @@ export default function CasinoHub() {
             <GamesTab casino={casino} games={games} drinks={drinks} isOwner={isOwner} onRefresh={silentRefresh} />
           )}
           {activeTab === "stats" && <StatsTab casino={casino} />}
-          {activeTab === "chat" && <ChatTab casino={casino} currentUser={user} />}
+          {activeTab === "chat" && <ChatTab casino={casino} currentUser={me} />}
           {activeTab === "logs" && <LogsTab casinoId={casino.id} />}
           {activeTab === "owner" && (
             <OwnerTab casino={casino} drinks={drinks} games={games} onRefresh={silentRefresh} />

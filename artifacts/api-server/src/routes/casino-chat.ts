@@ -5,7 +5,7 @@ import { pool as pgPool } from "@workspace/db";
 
 const router: IRouter = Router();
 
-const CHAT_UNLOCK_COST = 5000;
+const CHAT_UNLOCK_COST = 500_000_000;
 
 // GET /casino-chat/:casinoId — fetch recent messages
 router.get("/casino-chat/:casinoId", async (req, res): Promise<void> => {
