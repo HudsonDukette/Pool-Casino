@@ -5,9 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
-import { GameShell, BetInput } from "@/components/game-shell";
+import { GameShell } from "@/components/game-shell";
 import { formatCurrency } from "@/lib/utils";
 import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
+import { MpLobbySetup } from "@/components/mp-lobby-setup";
 
 const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
@@ -20,6 +21,7 @@ interface SpeedLobbyState {
   id: string;
   hostId: number;
   betAmount: number;
+  isPublic: boolean;
   status: "waiting" | "playing" | "done";
   startedAt?: number;
   currentMult: number | null;
@@ -36,9 +38,7 @@ export default function MpSpeed() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [screen, setScreen] = useState<Screen>("setup");
-  const [betAmount, setBetAmount] = useState("100");
   const [lobbyCode, setLobbyCode] = useState("");
-  const [joinCode, setJoinCode] = useState("");
   const [lobby, setLobby] = useState<SpeedLobbyState | null>(null);
   const [loading, setLoading] = useState(false);
   const [localMult, setLocalMult] = useState(START_MULT);
@@ -99,43 +99,11 @@ export default function MpSpeed() {
     }
   }, [lobby?.status, lobby?.startedAt]);
 
-  async function handleCreate() {
-    if (!user || user.isGuest) { toast({ title: "Login required", variant: "destructive" }); return; }
-    setLoading(true);
-    try {
-      const r = await fetch(`${BASE}api/mp/speed/create`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ betAmount: parseFloat(betAmount) }),
-      });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || "Failed");
-      setLobbyCode(data.lobbyId);
-      setScreen("lobby");
-      await pollLobby(data.lobbyId);
-      startPolling(data.lobbyId);
-    } catch (e: any) { toast({ title: e.message, variant: "destructive" }); }
-    finally { setLoading(false); }
-  }
-
-  async function handleJoin() {
-    if (!user || user.isGuest) { toast({ title: "Login required", variant: "destructive" }); return; }
-    const code = joinCode.trim().toUpperCase();
-    if (!code) { toast({ title: "Enter a lobby code", variant: "destructive" }); return; }
-    setLoading(true);
-    try {
-      const r = await fetch(`${BASE}api/mp/speed/${code}/join`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || "Failed");
-      setLobbyCode(code);
-      setScreen("lobby");
-      await pollLobby(code);
-      startPolling(code);
-    } catch (e: any) { toast({ title: e.message, variant: "destructive" }); }
-    finally { setLoading(false); }
+  function handleEnterLobby(id: string) {
+    setLobbyCode(id);
+    setScreen("lobby");
+    pollLobby(id);
+    startPolling(id);
   }
 
   async function handleStart() {
@@ -172,6 +140,10 @@ export default function MpSpeed() {
     } catch (e: any) { toast({ title: e.message, variant: "destructive" }); }
   }
 
+  function copyCode() {
+    navigator.clipboard.writeText(lobbyCode).then(() => toast({ title: "Lobby code copied!" }));
+  }
+
   const multColor = localMult > 2.0 ? "#22c55e" : localMult > 1.2 ? "#eab308" : localMult > 0.5 ? "#f97316" : "#ef4444";
   const numLocked = lobby?.players.filter(p => p.locked).length ?? 0;
   const myPlayer = lobby?.players.find(p => p.isYou);
@@ -190,32 +162,13 @@ export default function MpSpeed() {
 
           {/* SETUP */}
           {screen === "setup" && (
-            <motion.div key="setup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid md:grid-cols-2 gap-4">
-              <Card className="bg-card/40 border-white/10">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold text-green-300">Create Lobby</h3>
-                  <BetInput value={betAmount} onChange={setBetAmount} />
-                  <Button className="w-full font-bold" style={{ background: "linear-gradient(135deg,#16a34a,#14532d)" }} disabled={loading} onClick={handleCreate}>
-                    {loading ? "Creating…" : "Create Lobby"}
-                  </Button>
-                </CardContent>
-              </Card>
-              <Card className="bg-card/40 border-white/10">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold text-green-300">Join Lobby</h3>
-                  <input
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono tracking-widest text-center uppercase"
-                    placeholder="LOBBY CODE"
-                    value={joinCode}
-                    onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                    maxLength={6}
-                  />
-                  <Button variant="outline" className="w-full" disabled={loading} onClick={handleJoin}>
-                    {loading ? "Joining…" : "Join"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground">Lock early = safer but lower. Wait longer = riskier but higher payout. Highest wins!</p>
-                </CardContent>
-              </Card>
+            <motion.div key="setup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <MpLobbySetup
+                gameSlug="speed"
+                accentColor="text-green-400"
+                accentGradient="linear-gradient(135deg,#16a34a,#14532d)"
+                onEnterLobby={handleEnterLobby}
+              />
             </motion.div>
           )}
 
@@ -224,11 +177,26 @@ export default function MpSpeed() {
             <motion.div key="lobby" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <Card className="bg-card/40 border-white/10">
                 <CardContent className="p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-green-300">Lobby: <span className="font-mono text-white tracking-widest">{lobby.id}</span></h3>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h3 className="font-semibold text-green-300">
+                      {lobby.isPublic ? "🌐 Public" : "🔐 Private"} Lobby
+                    </h3>
                     <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded">{lobby.players.length}/6 players</span>
                   </div>
+
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-black/30 border border-white/10">
+                    <div className="flex-1">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Lobby Code</p>
+                      <p className="font-mono text-white text-xl font-bold tracking-widest">{lobby.id}</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={copyCode}>Copy</Button>
+                  </div>
+                  {!lobby.isPublic && (
+                    <p className="text-xs text-muted-foreground text-center">Share the code above with friends to invite them.</p>
+                  )}
+
                   <p className="text-sm text-muted-foreground">Bet: <span className="text-white font-semibold">{formatCurrency(lobby.betAmount)}</span> · Pot: <span className="text-emerald-300 font-semibold">{formatCurrency(lobby.betAmount * lobby.players.length)}</span></p>
+
                   <div className="space-y-1">
                     {lobby.players.map((p, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg bg-black/20">
@@ -238,9 +206,15 @@ export default function MpSpeed() {
                       </div>
                     ))}
                   </div>
+
                   {lobby.isHost ? (
-                    <Button className="w-full font-bold" style={{ background: "linear-gradient(135deg,#16a34a,#14532d)" }} disabled={loading || lobby.players.length < 2} onClick={handleStart}>
-                      {loading ? "Starting…" : lobby.players.length < 2 ? "Need 2+ players" : "Start Speed Test!"}
+                    <Button
+                      className="w-full font-bold"
+                      style={{ background: "linear-gradient(135deg,#16a34a,#14532d)" }}
+                      disabled={loading || lobby.players.length < 2}
+                      onClick={handleStart}
+                    >
+                      {loading ? "Starting…" : lobby.players.length < 2 ? "Waiting for players (need 2+)…" : "▶ Start Speed Test!"}
                     </Button>
                   ) : (
                     <p className="text-center text-sm text-muted-foreground animate-pulse">Waiting for host to start…</p>
@@ -255,7 +229,6 @@ export default function MpSpeed() {
             <motion.div key="playing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
               <Card className="bg-card/40 border-white/10">
                 <CardContent className="p-6 space-y-5">
-                  {/* Big multiplier display */}
                   <div className="text-center space-y-2">
                     <p className="text-xs text-muted-foreground uppercase tracking-widest">Multiplier</p>
                     <motion.div
@@ -266,7 +239,6 @@ export default function MpSpeed() {
                     >
                       {crashed ? "💥" : displayMult.toFixed(3) + "×"}
                     </motion.div>
-                    {/* Fall bar */}
                     <div className="w-full bg-black/40 rounded-full h-4 overflow-hidden">
                       <motion.div
                         className="h-full rounded-full transition-none"
@@ -278,7 +250,6 @@ export default function MpSpeed() {
                     </p>
                   </div>
 
-                  {/* Player list */}
                   <div className="grid grid-cols-2 gap-1.5">
                     {lobby.players.map((p, i) => (
                       <div key={i} className={`flex items-center gap-2 text-xs px-2 py-1.5 rounded-lg ${p.locked ? "bg-emerald-950/30" : "bg-black/20"}`}>
@@ -344,7 +315,11 @@ export default function MpSpeed() {
                       </div>
                     ))}
                   </div>
-                  <Button className="w-full" style={{ background: "linear-gradient(135deg,#16a34a,#14532d)" }} onClick={() => { setScreen("setup"); setLobby(null); setLobbyCode(""); setJoinCode(""); setLocked(false); setCrashed(false); setLocalMult(START_MULT); }}>
+                  <Button
+                    className="w-full"
+                    style={{ background: "linear-gradient(135deg,#16a34a,#14532d)" }}
+                    onClick={() => { setScreen("setup"); setLobby(null); setLobbyCode(""); setLocked(false); setCrashed(false); setLocalMult(START_MULT); stopPolling(); stopRaf(); }}
+                  >
                     Play Again
                   </Button>
                 </CardContent>

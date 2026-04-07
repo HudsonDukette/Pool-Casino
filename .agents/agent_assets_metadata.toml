@@ -84,6 +84,12 @@ uri = "file://artifacts/pool-casino/src/assets/game-predchain.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "Z0IjjVL3u1acYjPqzcFfd"
+uri = "file://artifacts/pool-casino/src/assets/game-powerbar.png"
+type = "image"
+title = "power bar casino game"
+
 [[outputs]]
 id = "WSyQDI4xyjY0xvxQ3Dyx_"
 uri = "file://README.md"
