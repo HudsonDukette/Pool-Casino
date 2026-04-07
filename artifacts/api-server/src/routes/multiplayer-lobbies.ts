@@ -28,7 +28,6 @@ async function loadCtx(userId: number) {
   return { user: user!, pool };
 }
 
-// Settle one player's result. multiplier > 1 = win, < 1 = lose.
 async function settleMpPlayer(
   userId: number,
   gameType: string,
@@ -41,9 +40,7 @@ async function settleMpPlayer(
   const payout = multiplier > 1 ? Math.min(uncappedPayout, poolAmount) : uncappedPayout;
   const net = payout - betAmount;
   const won = multiplier > 1;
-
   const xpGain = Math.max(1, Math.floor(betAmount / 100)) + (won ? Math.floor(betAmount / 200) : 0);
-
   const result = await db.transaction(async (tx) => {
     const [updatedUser] = await tx.update(usersTable)
       .set({
@@ -53,12 +50,10 @@ async function settleMpPlayer(
       })
       .where(eq(usersTable.id, userId))
       .returning({ balance: usersTable.balance });
-
     const newPool = Math.max(0, poolAmount - net);
     await tx.update(poolTable).set({ totalAmount: newPool.toFixed(2) }).where(eq(poolTable.id, pool.id));
     await tx.insert(betsTable).values({
-      userId,
-      gameType,
+      userId, gameType,
       betAmount: betAmount.toFixed(2),
       result: won ? "win" : "loss",
       payout: payout.toFixed(2),
@@ -66,13 +61,11 @@ async function settleMpPlayer(
     });
     return { newBalance: parseFloat(updatedUser?.balance ?? "0") };
   });
-
   await trackGameProgress(userId, { betAmount, won, profit: net, gameType });
   return result;
 }
 
-// Purge old lobbies
-const LOBBY_TTL_MS = 30 * 60 * 1000; // 30 min
+const LOBBY_TTL_MS = 30 * 60 * 1000;
 function purgeLobby(map: Map<string, any>) {
   const now = Date.now();
   for (const [k, v] of map) {
@@ -94,32 +87,77 @@ interface ElimLobby {
   id: string;
   hostId: number;
   betAmount: number;
+  isPublic: boolean;
   status: "waiting" | "playing" | "done";
   players: ElimPlayer[];
   createdAt: number;
   startedAt?: number;
-  eliminatedNames: string[]; // in order
+  eliminatedNames: string[];
   winner?: { userId: number; username: string; payout: number; newBalance: number };
-  spinReady: boolean; // host can trigger next spin
+  spinReady: boolean;
 }
 const elimLobbies = new Map<string, ElimLobby>();
 
-// POST /mp/elim/create
-router.post("/mp/elim/create", async (req, res) => {
+// GET /mp/elim/public — list public waiting lobbies
+router.get("/mp/elim/public", async (req, res) => {
+  const userId = auth(req, res); if (!userId) return;
+  purgeLobby(elimLobbies);
+  const list = Array.from(elimLobbies.values())
+    .filter(l => l.isPublic && l.status === "waiting" && !l.players.some(p => p.userId === userId))
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .slice(0, 20)
+    .map(l => ({ id: l.id, betAmount: l.betAmount, players: l.players.length, maxPlayers: 8, hostName: l.players[0]?.username ?? "?" }));
+  return res.json(list);
+});
+
+// POST /mp/elim/matchmake — auto join or create a public lobby
+router.post("/mp/elim/matchmake", async (req, res) => {
   const userId = auth(req, res); if (!userId) return;
   const betAmount = parseFloat(req.body?.betAmount);
   if (isNaN(betAmount) || betAmount < 0.01) return res.status(400).json({ error: "Invalid bet" });
   const { user } = await loadCtx(userId);
   if (parseFloat(user.balance) < betAmount) return res.status(400).json({ error: "Insufficient balance" });
   purgeLobby(elimLobbies);
+
+  // Find best matching public lobby (same bet, not full, not joined)
+  const match = Array.from(elimLobbies.values()).find(l =>
+    l.isPublic && l.status === "waiting" &&
+    l.betAmount === betAmount &&
+    l.players.length < 8 &&
+    !l.players.some(p => p.userId === userId)
+  );
+
+  if (match) {
+    match.players.push({ userId, username: user.username, alive: true, settled: false });
+    return res.json({ lobbyId: match.id, joined: true });
+  }
+
+  // Create new public lobby
   const id = uid();
   elimLobbies.set(id, {
-    id, hostId: userId, betAmount,
+    id, hostId: userId, betAmount, isPublic: true,
     status: "waiting",
     players: [{ userId, username: user.username, alive: true, settled: false }],
-    createdAt: Date.now(),
-    eliminatedNames: [],
-    spinReady: false,
+    createdAt: Date.now(), eliminatedNames: [], spinReady: false,
+  });
+  return res.json({ lobbyId: id, created: true });
+});
+
+// POST /mp/elim/create
+router.post("/mp/elim/create", async (req, res) => {
+  const userId = auth(req, res); if (!userId) return;
+  const betAmount = parseFloat(req.body?.betAmount);
+  if (isNaN(betAmount) || betAmount < 0.01) return res.status(400).json({ error: "Invalid bet" });
+  const isPublic = req.body?.isPublic !== false;
+  const { user } = await loadCtx(userId);
+  if (parseFloat(user.balance) < betAmount) return res.status(400).json({ error: "Insufficient balance" });
+  purgeLobby(elimLobbies);
+  const id = uid();
+  elimLobbies.set(id, {
+    id, hostId: userId, betAmount, isPublic,
+    status: "waiting",
+    players: [{ userId, username: user.username, alive: true, settled: false }],
+    createdAt: Date.now(), eliminatedNames: [], spinReady: false,
   });
   return res.json({ lobbyId: id });
 });
@@ -143,16 +181,14 @@ router.post("/mp/elim/:id/start", async (req, res) => {
   const userId = auth(req, res); if (!userId) return;
   const lobby = elimLobbies.get(req.params.id);
   if (!lobby) return res.status(404).json({ error: "Lobby not found" });
-  if (lobby.hostId !== userId) return res.status(403).json({ error: "Only host can start" });
+  if (lobby.hostId !== userId) return res.status(403).json({ error: "Only the host can start the game" });
   if (lobby.status !== "waiting") return res.status(400).json({ error: "Already started" });
   if (lobby.players.length < 2) return res.status(400).json({ error: "Need at least 2 players" });
   if (await isPoolPaused()) return res.status(503).json({ error: "Pool is paused" });
 
-  // Deduct bets from all players
   for (const p of lobby.players) {
     const { user } = await loadCtx(p.userId);
     if (parseFloat(user.balance) < lobby.betAmount) {
-      // Remove them if they can no longer afford
       p.alive = false; p.settled = true;
       lobby.eliminatedNames.push(p.username + " (broke)");
       continue;
@@ -166,7 +202,6 @@ router.post("/mp/elim/:id/start", async (req, res) => {
     elimLobbies.delete(lobby.id);
     return res.status(400).json({ error: "Not enough players can afford the bet" });
   }
-
   lobby.status = "playing";
   lobby.startedAt = Date.now();
   lobby.spinReady = true;
@@ -186,15 +221,12 @@ router.post("/mp/elim/:id/spin", async (req, res) => {
   if (alive.length <= 1) return res.status(400).json({ error: "Game already over" });
 
   lobby.spinReady = false;
-
-  // Eliminate one random alive player
   const idx = Math.floor(Math.random() * alive.length);
   const eliminated = alive[idx];
   eliminated.alive = false;
   eliminated.settled = true;
   lobby.eliminatedNames.push(eliminated.username);
 
-  // Settle loser
   const loserCtx = await loadCtx(eliminated.userId);
   const pool = loserCtx.pool;
   await db.update(poolTable).set({ totalAmount: sql`${poolTable.totalAmount} + ${lobby.betAmount.toFixed(2)}` }).where(eq(poolTable.id, pool.id));
@@ -203,7 +235,6 @@ router.post("/mp/elim/:id/spin", async (req, res) => {
 
   const stillAlive = lobby.players.filter(p => p.alive);
 
-  // If last one standing, pay the winner
   if (stillAlive.length === 1) {
     lobby.status = "done";
     const winner = stillAlive[0];
@@ -238,6 +269,7 @@ router.get("/mp/elim/:id", async (req, res) => {
     id: lobby.id,
     hostId: lobby.hostId,
     betAmount: lobby.betAmount,
+    isPublic: lobby.isPublic,
     status: lobby.status,
     spinReady: lobby.spinReady,
     players: lobby.players.map(p => ({ username: p.username, alive: p.alive, isYou: p.userId === userId })),
@@ -248,44 +280,86 @@ router.get("/mp/elim/:id", async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VAULT RACE (Timed Safe Multiplayer)
-// Players join. Host starts. Server picks a secret crack time.
-// Everyone opens whenever they want. The last person to open BEFORE the crack wins.
-// If you open after the crack, you're eliminated. If all open before crack, last opener wins.
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface VaultPlayer {
   userId: number;
   username: string;
-  openedAtMs: number | null; // ms since game start
-  eliminated: boolean; // opened after crack
+  openedAtMs: number | null;
+  eliminated: boolean;
   settled: boolean;
 }
 interface VaultLobby {
   id: string;
   hostId: number;
   betAmount: number;
+  isPublic: boolean;
   status: "waiting" | "playing" | "done";
   players: VaultPlayer[];
   createdAt: number;
   startedAt?: number;
-  crackAtMs?: number; // secret
-  revealedAt?: number; // when crack is publicly shown (crack time + 5s or when all opened)
+  crackAtMs?: number;
+  revealedAt?: number;
   winner?: { userId: number; username: string; openedAtSec: number; payout: number; newBalance: number };
-  crackAtSec?: number; // revealed after game
+  crackAtSec?: number;
 }
 const vaultLobbies = new Map<string, VaultLobby>();
 
-// POST /mp/vault/create
-router.post("/mp/vault/create", async (req, res) => {
+// GET /mp/vault/public
+router.get("/mp/vault/public", async (req, res) => {
+  const userId = auth(req, res); if (!userId) return;
+  purgeLobby(vaultLobbies);
+  const list = Array.from(vaultLobbies.values())
+    .filter(l => l.isPublic && l.status === "waiting" && !l.players.some(p => p.userId === userId))
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .slice(0, 20)
+    .map(l => ({ id: l.id, betAmount: l.betAmount, players: l.players.length, maxPlayers: 6, hostName: l.players[0]?.username ?? "?" }));
+  return res.json(list);
+});
+
+// POST /mp/vault/matchmake
+router.post("/mp/vault/matchmake", async (req, res) => {
   const userId = auth(req, res); if (!userId) return;
   const betAmount = parseFloat(req.body?.betAmount);
   if (isNaN(betAmount) || betAmount < 0.01) return res.status(400).json({ error: "Invalid bet" });
   const { user } = await loadCtx(userId);
   if (parseFloat(user.balance) < betAmount) return res.status(400).json({ error: "Insufficient balance" });
   purgeLobby(vaultLobbies);
+
+  const match = Array.from(vaultLobbies.values()).find(l =>
+    l.isPublic && l.status === "waiting" &&
+    l.betAmount === betAmount &&
+    l.players.length < 6 &&
+    !l.players.some(p => p.userId === userId)
+  );
+
+  if (match) {
+    match.players.push({ userId, username: user.username, openedAtMs: null, eliminated: false, settled: false });
+    return res.json({ lobbyId: match.id, joined: true });
+  }
+
   const id = uid();
   vaultLobbies.set(id, {
-    id, hostId: userId, betAmount,
+    id, hostId: userId, betAmount, isPublic: true,
+    status: "waiting",
+    players: [{ userId, username: user.username, openedAtMs: null, eliminated: false, settled: false }],
+    createdAt: Date.now(),
+  });
+  return res.json({ lobbyId: id, created: true });
+});
+
+// POST /mp/vault/create
+router.post("/mp/vault/create", async (req, res) => {
+  const userId = auth(req, res); if (!userId) return;
+  const betAmount = parseFloat(req.body?.betAmount);
+  if (isNaN(betAmount) || betAmount < 0.01) return res.status(400).json({ error: "Invalid bet" });
+  const isPublic = req.body?.isPublic !== false;
+  const { user } = await loadCtx(userId);
+  if (parseFloat(user.balance) < betAmount) return res.status(400).json({ error: "Insufficient balance" });
+  purgeLobby(vaultLobbies);
+  const id = uid();
+  vaultLobbies.set(id, {
+    id, hostId: userId, betAmount, isPublic,
     status: "waiting",
     players: [{ userId, username: user.username, openedAtMs: null, eliminated: false, settled: false }],
     createdAt: Date.now(),
@@ -312,12 +386,11 @@ router.post("/mp/vault/:id/start", async (req, res) => {
   const userId = auth(req, res); if (!userId) return;
   const lobby = vaultLobbies.get(req.params.id);
   if (!lobby) return res.status(404).json({ error: "Lobby not found" });
-  if (lobby.hostId !== userId) return res.status(403).json({ error: "Only host can start" });
+  if (lobby.hostId !== userId) return res.status(403).json({ error: "Only the host can start the game" });
   if (lobby.status !== "waiting") return res.status(400).json({ error: "Already started" });
   if (lobby.players.length < 2) return res.status(400).json({ error: "Need at least 2 players" });
   if (await isPoolPaused()) return res.status(503).json({ error: "Pool is paused" });
 
-  // Deduct bets
   for (const p of lobby.players) {
     const r = await db.update(usersTable)
       .set({ balance: sql`${usersTable.balance} - ${lobby.betAmount.toFixed(2)}` })
@@ -328,7 +401,6 @@ router.post("/mp/vault/:id/start", async (req, res) => {
 
   const active = lobby.players.filter(p => !p.eliminated);
   if (active.length < 2) {
-    // Refund those who paid
     for (const p of lobby.players.filter(p => !p.eliminated)) {
       await db.update(usersTable).set({ balance: sql`${usersTable.balance} + ${lobby.betAmount.toFixed(2)}` }).where(eq(usersTable.id, p.userId));
     }
@@ -338,9 +410,8 @@ router.post("/mp/vault/:id/start", async (req, res) => {
 
   lobby.status = "playing";
   lobby.startedAt = Date.now();
-  lobby.crackAtMs = (10 + Math.random() * 40) * 1000; // 10–50 seconds
+  lobby.crackAtMs = (10 + Math.random() * 40) * 1000;
 
-  // Auto-resolve after 65 seconds
   setTimeout(async () => {
     if (lobby.status !== "playing") return;
     await resolveVaultLobby(lobby.id);
@@ -349,7 +420,7 @@ router.post("/mp/vault/:id/start", async (req, res) => {
   return res.json({ ok: true });
 });
 
-// POST /mp/vault/:id/open  (player opens the safe)
+// POST /mp/vault/:id/open
 router.post("/mp/vault/:id/open", async (req, res) => {
   const userId = auth(req, res); if (!userId) return;
   const lobby = vaultLobbies.get(req.params.id);
@@ -362,13 +433,10 @@ router.post("/mp/vault/:id/open", async (req, res) => {
 
   const elapsedMs = Date.now() - lobby.startedAt!;
   player.openedAtMs = elapsedMs;
-
-  // If opened after crack, eliminated
   if (elapsedMs >= lobby.crackAtMs!) {
     player.eliminated = true;
   }
 
-  // Check if all players have opened
   const activePlayers = lobby.players.filter(p => !p.settled);
   const allOpened = activePlayers.every(p => p.openedAtMs !== null);
   if (allOpened) {
@@ -385,20 +453,16 @@ async function resolveVaultLobby(lobbyId: string) {
   lobby.revealedAt = Date.now();
   lobby.crackAtSec = lobby.crackAtMs! / 1000;
 
-  // Winner: last player to open before the crack (largest openedAtMs that is < crackAtMs)
   const survived = lobby.players.filter(p => !p.eliminated && p.openedAtMs !== null && p.openedAtMs < lobby.crackAtMs!);
   const losers = lobby.players.filter(p => !survived.includes(p));
   let winnerPlayer: VaultPlayer | null = null;
   if (survived.length > 0) {
     winnerPlayer = survived.reduce((a, b) => (b.openedAtMs! > a.openedAtMs! ? b : a));
-  } else {
-    // No one survived — all lose; last player to open before crash is... none. All lose.
   }
 
   const numPlayers = lobby.players.length;
   const pool = (await db.select().from(poolTable).limit(1))[0];
 
-  // Settle losers: their bet already deducted, just log
   for (const p of losers) {
     if (p.settled) continue;
     p.settled = true;
@@ -428,11 +492,9 @@ async function resolveVaultLobby(lobbyId: string) {
     };
   }
 
-  // Refund survived non-winners (there should be only 1 winner, rest are losers)
   for (const p of survived.filter(s => s !== winnerPlayer)) {
     if (p.settled) continue;
     p.settled = true;
-    // These are non-winner survivors — they lose their bet too (only last one wins)
     await db.insert(betsTable).values({ userId: p.userId, gameType: "vault-race", betAmount: lobby.betAmount.toFixed(2), result: "loss", payout: "0.00", multiplier: "0.0000" });
     const poolNow2 = (await db.select().from(poolTable).limit(1))[0];
     await db.update(poolTable).set({ totalAmount: sql`${poolTable.totalAmount} + ${lobby.betAmount.toFixed(2)}` }).where(eq(poolTable.id, poolNow2.id));
@@ -450,9 +512,10 @@ router.get("/mp/vault/:id", async (req, res) => {
     id: lobby.id,
     hostId: lobby.hostId,
     betAmount: lobby.betAmount,
+    isPublic: lobby.isPublic,
     status: lobby.status,
     startedAt: lobby.startedAt,
-    crackAtSec: lobby.status === "done" ? lobby.crackAtSec : undefined, // hidden until done
+    crackAtSec: lobby.status === "done" ? lobby.crackAtSec : undefined,
     players: lobby.players.map(p => ({
       username: p.username,
       opened: p.openedAtMs !== null,
@@ -470,13 +533,10 @@ router.get("/mp/vault/:id", async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SPEED TEST (Reverse Crash Multiplayer)
-// All players see a shared multiplier starting HIGH (3.0×) and falling.
-// Each player independently locks their multiplier. At crash, remaining players lose.
-// Winner = player who locked the highest multiplier (most daring).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SPEED_START_MULT = 3.0;
-const SPEED_FALL_RATE = 0.12; // per second
+const SPEED_FALL_RATE = 0.12;
 
 interface SpeedPlayer {
   userId: number;
@@ -488,13 +548,14 @@ interface SpeedLobby {
   id: string;
   hostId: number;
   betAmount: number;
+  isPublic: boolean;
   status: "waiting" | "playing" | "done";
   players: SpeedPlayer[];
   createdAt: number;
   startedAt?: number;
-  crashAtMs?: number; // secret
+  crashAtMs?: number;
   winner?: { userId: number; username: string; lockedMult: number; payout: number; newBalance: number };
-  crashMult?: number; // revealed after done
+  crashMult?: number;
 }
 const speedLobbies = new Map<string, SpeedLobby>();
 
@@ -504,17 +565,61 @@ function currentSpeedMult(lobby: SpeedLobby): number {
   return Math.max(0, SPEED_START_MULT - elapsed * SPEED_FALL_RATE);
 }
 
-// POST /mp/speed/create
-router.post("/mp/speed/create", async (req, res) => {
+// GET /mp/speed/public
+router.get("/mp/speed/public", async (req, res) => {
+  const userId = auth(req, res); if (!userId) return;
+  purgeLobby(speedLobbies);
+  const list = Array.from(speedLobbies.values())
+    .filter(l => l.isPublic && l.status === "waiting" && !l.players.some(p => p.userId === userId))
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .slice(0, 20)
+    .map(l => ({ id: l.id, betAmount: l.betAmount, players: l.players.length, maxPlayers: 6, hostName: l.players[0]?.username ?? "?" }));
+  return res.json(list);
+});
+
+// POST /mp/speed/matchmake
+router.post("/mp/speed/matchmake", async (req, res) => {
   const userId = auth(req, res); if (!userId) return;
   const betAmount = parseFloat(req.body?.betAmount);
   if (isNaN(betAmount) || betAmount < 0.01) return res.status(400).json({ error: "Invalid bet" });
   const { user } = await loadCtx(userId);
   if (parseFloat(user.balance) < betAmount) return res.status(400).json({ error: "Insufficient balance" });
   purgeLobby(speedLobbies);
+
+  const match = Array.from(speedLobbies.values()).find(l =>
+    l.isPublic && l.status === "waiting" &&
+    l.betAmount === betAmount &&
+    l.players.length < 6 &&
+    !l.players.some(p => p.userId === userId)
+  );
+
+  if (match) {
+    match.players.push({ userId, username: user.username, lockedMult: null, settled: false });
+    return res.json({ lobbyId: match.id, joined: true });
+  }
+
   const id = uid();
   speedLobbies.set(id, {
-    id, hostId: userId, betAmount,
+    id, hostId: userId, betAmount, isPublic: true,
+    status: "waiting",
+    players: [{ userId, username: user.username, lockedMult: null, settled: false }],
+    createdAt: Date.now(),
+  });
+  return res.json({ lobbyId: id, created: true });
+});
+
+// POST /mp/speed/create
+router.post("/mp/speed/create", async (req, res) => {
+  const userId = auth(req, res); if (!userId) return;
+  const betAmount = parseFloat(req.body?.betAmount);
+  if (isNaN(betAmount) || betAmount < 0.01) return res.status(400).json({ error: "Invalid bet" });
+  const isPublic = req.body?.isPublic !== false;
+  const { user } = await loadCtx(userId);
+  if (parseFloat(user.balance) < betAmount) return res.status(400).json({ error: "Insufficient balance" });
+  purgeLobby(speedLobbies);
+  const id = uid();
+  speedLobbies.set(id, {
+    id, hostId: userId, betAmount, isPublic,
     status: "waiting",
     players: [{ userId, username: user.username, lockedMult: null, settled: false }],
     createdAt: Date.now(),
@@ -541,12 +646,11 @@ router.post("/mp/speed/:id/start", async (req, res) => {
   const userId = auth(req, res); if (!userId) return;
   const lobby = speedLobbies.get(req.params.id);
   if (!lobby) return res.status(404).json({ error: "Lobby not found" });
-  if (lobby.hostId !== userId) return res.status(403).json({ error: "Only host can start" });
+  if (lobby.hostId !== userId) return res.status(403).json({ error: "Only the host can start the game" });
   if (lobby.status !== "waiting") return res.status(400).json({ error: "Already started" });
   if (lobby.players.length < 2) return res.status(400).json({ error: "Need at least 2 players" });
   if (await isPoolPaused()) return res.status(503).json({ error: "Pool is paused" });
 
-  // Deduct bets
   for (const p of lobby.players) {
     const r = await db.update(usersTable)
       .set({ balance: sql`${usersTable.balance} - ${lobby.betAmount.toFixed(2)}` })
@@ -566,11 +670,9 @@ router.post("/mp/speed/:id/start", async (req, res) => {
 
   lobby.status = "playing";
   lobby.startedAt = Date.now();
-  // Crash time: 5–20 seconds (SPEED_START_MULT - SPEED_FALL_RATE * crashSec → crash mult at that point)
   const crashSec = 5 + Math.random() * 15;
   lobby.crashAtMs = crashSec * 1000;
 
-  // Auto-crash after crashSec
   setTimeout(async () => {
     if (lobby.status !== "playing") return;
     await resolveSpeedLobby(lobby.id);
@@ -579,7 +681,7 @@ router.post("/mp/speed/:id/start", async (req, res) => {
   return res.json({ ok: true, startMult: SPEED_START_MULT, fallRate: SPEED_FALL_RATE });
 });
 
-// POST /mp/speed/:id/lock  (player locks their multiplier)
+// POST /mp/speed/:id/lock
 router.post("/mp/speed/:id/lock", async (req, res) => {
   const userId = auth(req, res); if (!userId) return;
   const lobby = speedLobbies.get(req.params.id);
@@ -593,7 +695,6 @@ router.post("/mp/speed/:id/lock", async (req, res) => {
   if (mult <= 0) return res.status(400).json({ error: "Crashed! Too late" });
   player.lockedMult = parseFloat(mult.toFixed(3));
 
-  // Check if all locked
   const all = lobby.players.filter(p => !p.settled);
   if (all.every(p => p.lockedMult !== null)) {
     await resolveSpeedLobby(lobby.id);
@@ -612,19 +713,16 @@ async function resolveSpeedLobby(lobbyId: string) {
   const activePlayers = lobby.players.filter(p => !p.settled);
   const numPlayers = lobby.players.length;
 
-  // Anyone who didn't lock (or locked at 0) loses
   for (const p of activePlayers) {
-    if (p.lockedMult === null) p.lockedMult = 0; // crash victim
+    if (p.lockedMult === null) p.lockedMult = 0;
   }
 
-  // Winner: highest locked multiplier > 0
   const locked = activePlayers.filter(p => p.lockedMult! > 0).sort((a, b) => b.lockedMult! - a.lockedMult!);
   const winner = locked[0] ?? null;
   const losers = activePlayers.filter(p => p !== winner);
 
   const pool = (await db.select().from(poolTable).limit(1))[0];
 
-  // Settle losers
   for (const p of losers) {
     if (p.settled) continue;
     p.settled = true;
@@ -660,6 +758,7 @@ router.get("/mp/speed/:id", async (req, res) => {
     id: lobby.id,
     hostId: lobby.hostId,
     betAmount: lobby.betAmount,
+    isPublic: lobby.isPublic,
     status: lobby.status,
     startedAt: lobby.startedAt,
     currentMult: currentMult !== null ? parseFloat(currentMult.toFixed(3)) : null,

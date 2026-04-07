@@ -5,9 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
-import { GameShell, BetInput } from "@/components/game-shell";
+import { GameShell } from "@/components/game-shell";
 import { formatCurrency } from "@/lib/utils";
 import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
+import { MpLobbySetup } from "@/components/mp-lobby-setup";
 
 const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
@@ -17,6 +18,7 @@ interface VaultLobbyState {
   id: string;
   hostId: number;
   betAmount: number;
+  isPublic: boolean;
   status: "waiting" | "playing" | "done";
   startedAt?: number;
   crackAtSec?: number;
@@ -33,9 +35,7 @@ export default function MpVault() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [screen, setScreen] = useState<Screen>("setup");
-  const [betAmount, setBetAmount] = useState("100");
   const [lobbyCode, setLobbyCode] = useState("");
-  const [joinCode, setJoinCode] = useState("");
   const [lobby, setLobby] = useState<VaultLobbyState | null>(null);
   const [loading, setLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -90,43 +90,11 @@ export default function MpVault() {
     }
   }, [lobby?.status, lobby?.startedAt]);
 
-  async function handleCreate() {
-    if (!user || user.isGuest) { toast({ title: "Login required", variant: "destructive" }); return; }
-    setLoading(true);
-    try {
-      const r = await fetch(`${BASE}api/mp/vault/create`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ betAmount: parseFloat(betAmount) }),
-      });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || "Failed");
-      setLobbyCode(data.lobbyId);
-      setScreen("lobby");
-      await pollLobby(data.lobbyId);
-      startPolling(data.lobbyId);
-    } catch (e: any) { toast({ title: e.message, variant: "destructive" }); }
-    finally { setLoading(false); }
-  }
-
-  async function handleJoin() {
-    if (!user || user.isGuest) { toast({ title: "Login required", variant: "destructive" }); return; }
-    const code = joinCode.trim().toUpperCase();
-    if (!code) { toast({ title: "Enter a lobby code", variant: "destructive" }); return; }
-    setLoading(true);
-    try {
-      const r = await fetch(`${BASE}api/mp/vault/${code}/join`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || "Failed");
-      setLobbyCode(code);
-      setScreen("lobby");
-      await pollLobby(code);
-      startPolling(code);
-    } catch (e: any) { toast({ title: e.message, variant: "destructive" }); }
-    finally { setLoading(false); }
+  function handleEnterLobby(id: string) {
+    setLobbyCode(id);
+    setScreen("lobby");
+    pollLobby(id);
+    startPolling(id);
   }
 
   async function handleStart() {
@@ -162,10 +130,13 @@ export default function MpVault() {
     } catch (e: any) { toast({ title: e.message, variant: "destructive" }); }
   }
 
+  function copyCode() {
+    navigator.clipboard.writeText(lobbyCode).then(() => toast({ title: "Lobby code copied!" }));
+  }
+
   const numOpened = lobby?.players.filter(p => p.opened).length ?? 0;
   const myPlayer = lobby?.players.find(p => p.isYou);
 
-  // Tension color: green early, yellow mid, red near crack
   const tensionPct = Math.min(100, (elapsed / 50) * 100);
   const tensionColor = tensionPct < 40 ? "#22c55e" : tensionPct < 70 ? "#eab308" : "#ef4444";
 
@@ -182,32 +153,13 @@ export default function MpVault() {
 
           {/* SETUP */}
           {screen === "setup" && (
-            <motion.div key="setup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid md:grid-cols-2 gap-4">
-              <Card className="bg-card/40 border-white/10">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold text-amber-300">Create Lobby</h3>
-                  <BetInput value={betAmount} onChange={setBetAmount} />
-                  <Button className="w-full font-bold" style={{ background: "linear-gradient(135deg,#d97706,#92400e)" }} disabled={loading} onClick={handleCreate}>
-                    {loading ? "Creating…" : "Create Lobby"}
-                  </Button>
-                </CardContent>
-              </Card>
-              <Card className="bg-card/40 border-white/10">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold text-amber-300">Join Lobby</h3>
-                  <input
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono tracking-widest text-center uppercase"
-                    placeholder="LOBBY CODE"
-                    value={joinCode}
-                    onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                    maxLength={6}
-                  />
-                  <Button variant="outline" className="w-full" disabled={loading} onClick={handleJoin}>
-                    {loading ? "Joining…" : "Join"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground">Hold your nerve! Last to open before the safe cracks wins all bets.</p>
-                </CardContent>
-              </Card>
+            <motion.div key="setup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <MpLobbySetup
+                gameSlug="vault"
+                accentColor="text-amber-400"
+                accentGradient="linear-gradient(135deg,#d97706,#92400e)"
+                onEnterLobby={handleEnterLobby}
+              />
             </motion.div>
           )}
 
@@ -216,11 +168,26 @@ export default function MpVault() {
             <motion.div key="lobby" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <Card className="bg-card/40 border-white/10">
                 <CardContent className="p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-amber-300">Lobby: <span className="font-mono text-white tracking-widest">{lobby.id}</span></h3>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h3 className="font-semibold text-amber-300">
+                      {lobby.isPublic ? "🌐 Public" : "🔐 Private"} Lobby
+                    </h3>
                     <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded">{lobby.players.length}/6 players</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">Bet per player: <span className="text-white font-semibold">{formatCurrency(lobby.betAmount)}</span></p>
+
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-black/30 border border-white/10">
+                    <div className="flex-1">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Lobby Code</p>
+                      <p className="font-mono text-white text-xl font-bold tracking-widest">{lobby.id}</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={copyCode}>Copy</Button>
+                  </div>
+                  {!lobby.isPublic && (
+                    <p className="text-xs text-muted-foreground text-center">Share the code above with friends to invite them.</p>
+                  )}
+
+                  <p className="text-sm text-muted-foreground">Bet per player: <span className="text-white font-semibold">{formatCurrency(lobby.betAmount)}</span> · Pot: <span className="text-emerald-300 font-semibold">{formatCurrency(lobby.betAmount * lobby.players.length)}</span></p>
+
                   <div className="space-y-1">
                     {lobby.players.map((p, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg bg-black/20">
@@ -230,9 +197,15 @@ export default function MpVault() {
                       </div>
                     ))}
                   </div>
+
                   {lobby.isHost ? (
-                    <Button className="w-full font-bold" style={{ background: "linear-gradient(135deg,#d97706,#92400e)" }} disabled={loading || lobby.players.length < 2} onClick={handleStart}>
-                      {loading ? "Starting…" : lobby.players.length < 2 ? "Need 2+ players" : "Start Vault Race!"}
+                    <Button
+                      className="w-full font-bold"
+                      style={{ background: "linear-gradient(135deg,#d97706,#92400e)" }}
+                      disabled={loading || lobby.players.length < 2}
+                      onClick={handleStart}
+                    >
+                      {loading ? "Starting…" : lobby.players.length < 2 ? "Waiting for players (need 2+)…" : "▶ Start Vault Race!"}
                     </Button>
                   ) : (
                     <p className="text-center text-sm text-muted-foreground animate-pulse">Waiting for host to start…</p>
@@ -247,7 +220,6 @@ export default function MpVault() {
             <motion.div key="playing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
               <Card className="bg-card/40 border-white/10">
                 <CardContent className="p-6 space-y-5">
-                  {/* Vault & timer */}
                   <div className="text-center space-y-3">
                     <motion.div
                       animate={opened ? {} : { scale: [1, 1.02, 1] }}
@@ -259,7 +231,6 @@ export default function MpVault() {
                     <div className="text-3xl font-black" style={{ color: tensionColor, textShadow: `0 0 15px ${tensionColor}` }}>
                       {elapsed.toFixed(1)}s
                     </div>
-                    {/* Tension bar */}
                     <div className="w-full bg-black/40 rounded-full h-3">
                       <motion.div
                         className="h-full rounded-full transition-all duration-100"
@@ -271,7 +242,6 @@ export default function MpVault() {
                     </p>
                   </div>
 
-                  {/* Players */}
                   <div className="grid grid-cols-2 gap-1.5">
                     {lobby.players.map((p, i) => (
                       <div key={i} className={`flex items-center gap-2 text-xs px-2 py-1.5 rounded-lg ${p.eliminated ? "bg-red-950/30 opacity-50" : p.opened ? "bg-emerald-950/30" : "bg-black/20"}`}>
@@ -285,7 +255,7 @@ export default function MpVault() {
                   {!opened && (
                     <Button
                       className="w-full h-16 text-2xl font-black"
-                      style={{ background: "linear-gradient(135deg,#d97706,#b45309)", boxShadow: `0 0 24px rgba(217,119,6,0.5)` }}
+                      style={{ background: "linear-gradient(135deg,#d97706,#b45309)", boxShadow: "0 0 24px rgba(217,119,6,0.5)" }}
                       onClick={handleOpen}
                     >
                       🔓 OPEN SAFE NOW!
@@ -326,7 +296,11 @@ export default function MpVault() {
                       </div>
                     ))}
                   </div>
-                  <Button className="w-full" style={{ background: "linear-gradient(135deg,#d97706,#92400e)" }} onClick={() => { setScreen("setup"); setLobby(null); setLobbyCode(""); setJoinCode(""); setOpened(false); setCracked(false); setElapsed(0); }}>
+                  <Button
+                    className="w-full"
+                    style={{ background: "linear-gradient(135deg,#d97706,#92400e)" }}
+                    onClick={() => { setScreen("setup"); setLobby(null); setLobbyCode(""); setOpened(false); setCracked(false); setElapsed(0); stopPolling(); stopRaf(); }}
+                  >
                     Play Again
                   </Button>
                 </CardContent>

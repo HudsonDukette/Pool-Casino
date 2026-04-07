@@ -114,6 +114,7 @@ router.get("/casinos/:id", async (req, res): Promise<void> => {
       cheapStorageLevel: casinosTable.cheapStorageLevel,
       standardStorageLevel: casinosTable.standardStorageLevel,
       expensiveStorageLevel: casinosTable.expensiveStorageLevel,
+      chatUnlocked: casinosTable.chatUnlocked,
     })
     .from(casinosTable)
     .leftJoin(usersTable, eq(casinosTable.ownerId, usersTable.id))

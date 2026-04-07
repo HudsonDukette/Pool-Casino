@@ -5,9 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
-import { GameShell, BetInput } from "@/components/game-shell";
-import { formatCurrency, useCasinoId } from "@/lib/utils";
+import { GameShell } from "@/components/game-shell";
+import { formatCurrency } from "@/lib/utils";
 import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";
+import { MpLobbySetup } from "@/components/mp-lobby-setup";
 
 const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
@@ -17,6 +18,7 @@ interface LobbyState {
   id: string;
   hostId: number;
   betAmount: number;
+  isPublic: boolean;
   status: "waiting" | "playing" | "done";
   spinReady: boolean;
   players: { username: string; alive: boolean; isYou: boolean }[];
@@ -29,9 +31,7 @@ export default function MpElim() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [screen, setScreen] = useState<Screen>("setup");
-  const [betAmount, setBetAmount] = useState("100");
   const [lobbyCode, setLobbyCode] = useState("");
-  const [joinCode, setJoinCode] = useState("");
   const [lobby, setLobby] = useState<LobbyState | null>(null);
   const [loading, setLoading] = useState(false);
   const [spinning, setSpinning] = useState(false);
@@ -50,61 +50,22 @@ export default function MpElim() {
       const data: LobbyState = await r.json();
       setLobby(data);
       if (data.status === "playing" && screen !== "playing") setScreen("playing");
-      if (data.status === "done") {
-        setScreen("done");
-        stopPolling();
-        qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
-        qc.invalidateQueries({ queryKey: ["/api/pool"] });
-      }
+      if (data.status === "done") { setScreen("done"); stopPolling(); }
     } catch {}
   }
 
   function startPolling(id: string) {
     stopPolling();
-    pollRef.current = setInterval(() => pollLobby(id), 1200);
+    pollRef.current = setInterval(() => pollLobby(id), 1000 + Math.random() * 200);
   }
 
   useEffect(() => () => stopPolling(), []);
 
-  async function handleCreate() {
-    if (!user || user.isGuest) { toast({ title: "Login required", variant: "destructive" }); return; }
-    setLoading(true);
-    try {
-      const r = await fetch(`${BASE}api/mp/elim/create`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ betAmount: parseFloat(betAmount) }),
-      });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || "Failed");
-      setLobbyCode(data.lobbyId);
-      setScreen("lobby");
-      await pollLobby(data.lobbyId);
-      startPolling(data.lobbyId);
-    } catch (e: any) {
-      toast({ title: e.message, variant: "destructive" });
-    } finally { setLoading(false); }
-  }
-
-  async function handleJoin() {
-    if (!user || user.isGuest) { toast({ title: "Login required", variant: "destructive" }); return; }
-    const code = joinCode.trim().toUpperCase();
-    if (!code) { toast({ title: "Enter a lobby code", variant: "destructive" }); return; }
-    setLoading(true);
-    try {
-      const r = await fetch(`${BASE}api/mp/elim/${code}/join`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || "Failed");
-      setLobbyCode(code);
-      setScreen("lobby");
-      await pollLobby(code);
-      startPolling(code);
-    } catch (e: any) {
-      toast({ title: e.message, variant: "destructive" });
-    } finally { setLoading(false); }
+  function handleEnterLobby(id: string) {
+    setLobbyCode(id);
+    setScreen("lobby");
+    pollLobby(id);
+    startPolling(id);
   }
 
   async function handleStart() {
@@ -139,6 +100,10 @@ export default function MpElim() {
     } finally { setSpinning(false); }
   }
 
+  function copyCode() {
+    navigator.clipboard.writeText(lobbyCode).then(() => toast({ title: "Lobby code copied!" }));
+  }
+
   const aliveCount = lobby?.players.filter(p => p.alive).length ?? 0;
   const myPlayer = lobby?.players.find(p => p.isYou);
   const amAlive = myPlayer?.alive ?? true;
@@ -156,32 +121,13 @@ export default function MpElim() {
 
           {/* SETUP */}
           {screen === "setup" && (
-            <motion.div key="setup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid md:grid-cols-2 gap-4">
-              <Card className="bg-card/40 border-white/10">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold text-purple-300">Create Lobby</h3>
-                  <BetInput value={betAmount} onChange={setBetAmount} />
-                  <Button className="w-full font-bold" style={{ background: "linear-gradient(135deg,#7c3aed,#5b21b6)" }} disabled={loading} onClick={handleCreate}>
-                    {loading ? "Creating…" : "Create Lobby"}
-                  </Button>
-                </CardContent>
-              </Card>
-              <Card className="bg-card/40 border-white/10">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold text-purple-300">Join Lobby</h3>
-                  <input
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white font-mono tracking-widest text-center uppercase"
-                    placeholder="LOBBY CODE"
-                    value={joinCode}
-                    onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                    maxLength={6}
-                  />
-                  <Button variant="outline" className="w-full" disabled={loading} onClick={handleJoin}>
-                    {loading ? "Joining…" : "Join"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground">The lobby host picks the bet amount. You pay the same.</p>
-                </CardContent>
-              </Card>
+            <motion.div key="setup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <MpLobbySetup
+                gameSlug="elim"
+                accentColor="text-purple-400"
+                accentGradient="linear-gradient(135deg,#7c3aed,#5b21b6)"
+                onEnterLobby={handleEnterLobby}
+              />
             </motion.div>
           )}
 
@@ -190,11 +136,27 @@ export default function MpElim() {
             <motion.div key="lobby" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
               <Card className="bg-card/40 border-white/10">
                 <CardContent className="p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-purple-300">Lobby: <span className="font-mono text-white tracking-widest">{lobby.id}</span></h3>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h3 className="font-semibold text-purple-300">
+                      {lobby.isPublic ? "🌐 Public" : "🔐 Private"} Lobby
+                    </h3>
                     <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded">{lobby.players.length}/8 players</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">Bet per player: <span className="text-white font-semibold">{formatCurrency(lobby.betAmount)}</span> · Pot: <span className="text-emerald-300 font-semibold">{formatCurrency(lobby.betAmount * lobby.players.length)}</span></p>
+
+                  {/* Lobby code + copy */}
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-black/30 border border-white/10">
+                    <div className="flex-1">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Lobby Code</p>
+                      <p className="font-mono text-white text-xl font-bold tracking-widest">{lobby.id}</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={copyCode}>Copy</Button>
+                  </div>
+                  {!lobby.isPublic && (
+                    <p className="text-xs text-muted-foreground text-center">Share the code above with friends to invite them.</p>
+                  )}
+
+                  <p className="text-sm text-muted-foreground">Bet: <span className="text-white font-semibold">{formatCurrency(lobby.betAmount)}</span> · Pot: <span className="text-emerald-300 font-semibold">{formatCurrency(lobby.betAmount * lobby.players.length)}</span></p>
+
                   <div className="space-y-1">
                     {lobby.players.map((p, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg bg-black/20">
@@ -206,14 +168,21 @@ export default function MpElim() {
                       </div>
                     ))}
                   </div>
+
                   {isHost ? (
-                    <Button className="w-full font-bold" style={{ background: "linear-gradient(135deg,#7c3aed,#5b21b6)" }} disabled={loading || lobby.players.length < 2} onClick={handleStart}>
-                      {loading ? "Starting…" : lobby.players.length < 2 ? "Need 2+ players" : "Start Game!"}
+                    <Button
+                      className="w-full font-bold"
+                      style={{ background: "linear-gradient(135deg,#7c3aed,#5b21b6)" }}
+                      disabled={loading || lobby.players.length < 2}
+                      onClick={handleStart}
+                    >
+                      {loading ? "Starting…" : lobby.players.length < 2 ? "Waiting for players (need 2+)…" : "▶ Start Game"}
                     </Button>
                   ) : (
-                    <p className="text-center text-sm text-muted-foreground animate-pulse">Waiting for host to start…</p>
+                    <div className="text-center text-sm text-muted-foreground animate-pulse py-2">
+                      Waiting for the host to start…
+                    </div>
                   )}
-                  <p className="text-xs text-muted-foreground text-center">Share code <span className="text-white font-mono">{lobby.id}</span> with friends</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -230,15 +199,13 @@ export default function MpElim() {
                     <p className="text-xs text-muted-foreground">Pot: {formatCurrency(lobby.betAmount * lobby.players.length)}</p>
                   </div>
 
-                  {/* Wheel visual */}
                   <div className="flex justify-center py-2">
                     <motion.div
                       animate={spinning ? { rotate: 360 * 5 } : {}}
                       transition={spinning ? { duration: 1.8, ease: "easeOut" } : {}}
                       className="w-32 h-32 rounded-full border-4 border-purple-500/50 flex items-center justify-center text-5xl"
                       style={{ background: "conic-gradient(from 0deg, #7c3aed, #ec4899, #f97316, #22c55e, #3b82f6, #7c3aed)" }}
-                    >
-                    </motion.div>
+                    />
                   </div>
 
                   {lastElim && (
@@ -247,7 +214,6 @@ export default function MpElim() {
                     </motion.div>
                   )}
 
-                  {/* Player list */}
                   <div className="grid grid-cols-2 gap-1.5">
                     {lobby.players.map((p, i) => (
                       <div key={i} className={`flex items-center gap-2 text-sm px-2 py-1.5 rounded-lg ${p.alive ? "bg-black/20" : "bg-black/5 opacity-40"}`}>
@@ -309,7 +275,11 @@ export default function MpElim() {
                       <p key={i} className="text-muted-foreground">#{i + 1} — {n}</p>
                     ))}
                   </div>
-                  <Button className="w-full" style={{ background: "linear-gradient(135deg,#7c3aed,#5b21b6)" }} onClick={() => { setScreen("setup"); setLobby(null); setLobbyCode(""); setJoinCode(""); setLastElim(null); }}>
+                  <Button
+                    className="w-full"
+                    style={{ background: "linear-gradient(135deg,#7c3aed,#5b21b6)" }}
+                    onClick={() => { setScreen("setup"); setLobby(null); setLobbyCode(""); setLastElim(null); stopPolling(); }}
+                  >
                     Play Again
                   </Button>
                 </CardContent>
