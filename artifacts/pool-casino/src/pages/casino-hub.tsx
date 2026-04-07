@@ -110,8 +110,8 @@ const PURCHASABLE_GAMES = [
   { type: "jackpothunt", name: "Jackpot Hunt", emoji: "📦", route: "jackpothunt" },
   { type: "targethit", name: "Target Hit", emoji: "🎯", route: "targethit" },
   { type: "chainreaction", name: "Chain Reaction", emoji: "⛓️", route: "chainreaction" },
-  { type: "timedsafe", name: "Timed Safe", emoji: "🔐", route: "timedsafe" },
-  { type: "reversecrash", name: "Reverse Crash", emoji: "📉", route: "reversecrash" },
+  { type: "timedsafe", name: "Vault Race", emoji: "🔐", route: "timedsafe" },
+  { type: "reversecrash", name: "Speed Test", emoji: "⚡", route: "reversecrash" },
   { type: "countdown", name: "Countdown Gamble", emoji: "⏱️", route: "countdown" },
   { type: "cardstack", name: "Card Stack", emoji: "🃏", route: "cardstack" },
   { type: "powergrid", name: "Power Grid", emoji: "⚡", route: "powergrid" },
@@ -1198,7 +1198,7 @@ function OwnerTab({ casino, drinks, games, onRefresh }: {
           <Trash2 className="w-4 h-4" /> Sell Casino
         </h3>
         <p className="text-xs text-red-200/60">
-          Permanently delete your casino and receive back <span className="font-bold text-red-100">{fmt(Math.floor(parseFloat(casino.purchasePrice ?? "100000000") * 0.10))} chips</span> (10% of purchase price).
+          Permanently delete your casino and receive back <span className="font-bold text-red-100">{fmt(Math.floor(parseFloat(casino.purchasePrice ?? "5000000000") * 0.10))} chips</span> (10% of purchase price).
         </p>
         <Button
           variant="outline"
@@ -1283,7 +1283,7 @@ export default function CasinoHub() {
   const tabs = [
     { key: "games" as Tab, label: "Games", icon: Gamepad2 },
     { key: "stats" as Tab, label: "Stats", icon: BarChart2 },
-    { key: "chat" as Tab, label: "Chat", icon: MessageSquare, badge: casino.chatUnlocked ? undefined : "🔒" },
+    { key: "chat" as Tab, label: "Chat", icon: MessageSquare, badge: casino?.chatUnlocked ? undefined : "🔒" },
     ...(isOwner ? [
       { key: "logs" as Tab, label: "Logs", icon: ScrollText },
       { key: "owner" as Tab, label: "Controls", icon: Settings },
@@ -1384,7 +1384,7 @@ export default function CasinoHub() {
               variant="outline"
               className="border-red-500/40 text-red-300 hover:bg-red-900/30 text-sm"
             >
-              Sell Casino ({fmt(Math.floor(parseFloat(casino.purchasePrice ?? "100000000") * 0.05))} chips back)
+              Sell Casino ({fmt(Math.floor(parseFloat(casino.purchasePrice ?? "5000000000") * 0.05))} chips back)
             </Button>
           </div>
         </div>

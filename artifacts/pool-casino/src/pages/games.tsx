@@ -320,25 +320,25 @@ const games = [
   },
   {
     id: "timedsafe",
-    name: "Timed Safe",
+    name: "Vault Race",
     image: timedsafeImg,
-    description: "A safe opens over 10 seconds. Cash out early for less, or wait for a bigger prize.",
+    description: "Multiplayer. A safe cracks at a secret time — last to open before it cracks wins the pot!",
     href: "/games/timedsafe",
-    accentClass: "group-hover:border-slate-400/50 group-hover:shadow-[0_0_30px_rgba(148,163,184,0.2)]",
-    titleClass: "group-hover:text-slate-300",
-    tag: "Timing",
-    tagColor: "bg-slate-500/20 text-slate-300",
+    accentClass: "group-hover:border-amber-400/50 group-hover:shadow-[0_0_30px_rgba(251,191,36,0.2)]",
+    titleClass: "group-hover:text-amber-300",
+    tag: "Multiplayer",
+    tagColor: "bg-amber-500/20 text-amber-300",
   },
   {
     id: "reversecrash",
-    name: "Reverse Crash",
+    name: "Speed Test",
     image: reversecrashImg,
-    description: "Multiplier starts at 10× and falls fast. Cash out before it crashes below 1×.",
+    description: "Multiplayer. Multiplier falls from 3×. Lock in yours — highest multiplier before crash wins the pot!",
     href: "/games/reversecrash",
-    accentClass: "group-hover:border-pink-500/50 group-hover:shadow-[0_0_30px_rgba(236,72,153,0.2)]",
-    titleClass: "group-hover:text-pink-400",
-    tag: "Thrill",
-    tagColor: "bg-pink-500/20 text-pink-400",
+    accentClass: "group-hover:border-green-500/50 group-hover:shadow-[0_0_30px_rgba(34,197,94,0.2)]",
+    titleClass: "group-hover:text-green-400",
+    tag: "Multiplayer",
+    tagColor: "bg-green-500/20 text-green-400",
   },
   {
     id: "countdown",
@@ -388,12 +388,12 @@ const games = [
     id: "elimwheel",
     name: "Elimination Wheel",
     image: elimwheelImg,
-    description: "Each spin removes the worst segment. 5 rounds, last segment wins a massive payout.",
+    description: "Multiplayer. Each spin eliminates one real player — last survivor wins the whole pot!",
     href: "/games/elimwheel",
-    accentClass: "group-hover:border-violet-500/50 group-hover:shadow-[0_0_30px_rgba(139,92,246,0.2)]",
-    titleClass: "group-hover:text-violet-400",
-    tag: "Spin",
-    tagColor: "bg-violet-500/20 text-violet-400",
+    accentClass: "group-hover:border-purple-500/50 group-hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]",
+    titleClass: "group-hover:text-purple-400",
+    tag: "Multiplayer",
+    tagColor: "bg-purple-500/20 text-purple-400",
   },
   {
     id: "combobuilder",
@@ -454,7 +454,7 @@ export default function Games() {
       >
         <h1 className="text-4xl md:text-5xl font-display font-bold">Casino Games</h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          34 games. One global pool. Every bet matters.
+          35 games. One global pool. Every bet matters.
         </p>
       </motion.div>
 

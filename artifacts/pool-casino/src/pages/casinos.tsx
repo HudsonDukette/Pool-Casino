@@ -46,7 +46,7 @@ function CreateCasinoModal({ onClose, onCreated, userBalance }: {
   const [emoji, setEmoji] = useState("🏦");
   const [loading, setLoading] = useState(false);
 
-  const COST = 100_000_000;
+  const COST = 5_000_000_000;
   const canAfford = userBalance >= COST;
 
   const create = async () => {

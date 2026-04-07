@@ -232,10 +232,11 @@ router.post("/targethit/click", async (req, res) => {
 });
 
 // ── Countdown Gamble (Rising Multiplier with Random Crash) ───────────────────
-// Multiplier rises slowly from 1.0x. At a secret crash time it falls rapidly.
-// Player must cash out before it hits 0. Closer to crash = higher reward.
-const RISE_RATE = 0.08;   // x per second during rise phase
-const FALL_RATE = 0.6;    // x per second during crash phase
+// Multiplier rises from 0.1x. At crash time it falls rapidly.
+// Player must cash out before it hits 0. The crash time is revealed so frontend can animate.
+const COUNTDOWN_START_MULT = 0.1;
+const RISE_RATE = 0.12;   // x per second during rise phase
+const FALL_RATE = 0.7;    // x per second during crash phase
 const MAX_GAME_MS = 45000; // auto-expire after 45 seconds
 
 interface CountdownSession {
@@ -249,9 +250,9 @@ const countdownSessions = new Map<number, CountdownSession>();
 function calcCountdownMultiplier(startedAt: number, crashAtMs: number, nowMs?: number): number {
   const elapsed = (nowMs ?? Date.now()) - startedAt;
   if (elapsed < crashAtMs) {
-    return 1 + (elapsed / 1000) * RISE_RATE;
+    return COUNTDOWN_START_MULT + (elapsed / 1000) * RISE_RATE;
   }
-  const peakMult = 1 + (crashAtMs / 1000) * RISE_RATE;
+  const peakMult = COUNTDOWN_START_MULT + (crashAtMs / 1000) * RISE_RATE;
   const fallElapsed = (elapsed - crashAtMs) / 1000;
   return Math.max(0, peakMult - fallElapsed * FALL_RATE);
 }
@@ -263,11 +264,11 @@ router.post("/countdown/start", async (req, res) => {
   if (casinoId !== undefined) { const ok = await validateCasinoPlay(casinoId, "countdown", betAmount, res as Response); if (!ok) return; }
   const { user } = await loadCtx(userId);
   if (parseFloat(user.balance) < betAmount) return res.status(400).json({ error: "Insufficient balance" });
-  // Secret crash time: 6-24 seconds in
-  const crashAtMs = (6 + Math.random() * 18) * 1000;
+  // Crash time: 5-22 seconds in — revealed to client so it can animate the crash visually
+  const crashAtMs = (5 + Math.random() * 17) * 1000;
   const startedAt = Date.now();
   countdownSessions.set(userId, { betAmount, casinoId, startedAt, crashAtMs });
-  return res.json({ started: true, riseRate: RISE_RATE, fallRate: FALL_RATE, maxMs: MAX_GAME_MS });
+  return res.json({ started: true, crashAtSec: crashAtMs / 1000, riseRate: RISE_RATE, fallRate: FALL_RATE, startMult: COUNTDOWN_START_MULT, maxMs: MAX_GAME_MS });
 });
 
 router.post("/countdown/cashout", async (req, res) => {
