@@ -289,6 +289,16 @@ router.get("/user/public/:username", async (req, res): Promise<void> => {
   });
 });
 
+// ── Profile bio ───────────────────────────────────────────────────────────────
+router.patch("/user/bio", async (req, res): Promise<void> => {
+  const userId = req.session.userId;
+  if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const bio = (req.body.bio ?? "").trim();
+  if (bio.length > 300) { res.status(400).json({ error: "Bio must be 300 characters or less" }); return; }
+  await db.update(usersTable).set({ bio: bio || null }).where(eq(usersTable.id, userId));
+  res.json({ ok: true, bio: bio || null });
+});
+
 router.post("/user/appeal", async (req, res): Promise<void> => {
   const userId = req.session.userId;
   if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }

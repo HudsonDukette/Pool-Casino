@@ -56,12 +56,13 @@ import HiddenPath from "@/pages/hiddenpath";
 import JackpotHunt from "@/pages/jackpothunt";
 import TargetHit from "@/pages/targethit";
 import ChainReaction from "@/pages/chainreaction";
-import TimedSafe from "@/pages/timedsafe";
-import ReverseCrash from "@/pages/reversecrash";
+import MpVault from "@/pages/mp-vault";
+import MpSpeed from "@/pages/mp-speed";
 import Countdown from "@/pages/countdown";
+import PowerBar from "@/pages/powerbar";
 import CardStack from "@/pages/cardstack";
 import PowerGrid from "@/pages/powergrid";
-import ElimWheel from "@/pages/elimwheel";
+import MpElim from "@/pages/mp-elim";
 import ComboBuilder from "@/pages/combobuilder";
 import SafeSteps from "@/pages/safesteps";
 import PredChain from "@/pages/predchain";
@@ -174,12 +175,13 @@ function Router() {
         <Route path="/games/jackpothunt" component={JackpotHunt} />
         <Route path="/games/targethit" component={TargetHit} />
         <Route path="/games/chainreaction" component={ChainReaction} />
-        <Route path="/games/timedsafe" component={TimedSafe} />
-        <Route path="/games/reversecrash" component={ReverseCrash} />
+        <Route path="/games/timedsafe" component={MpVault} />
+        <Route path="/games/reversecrash" component={MpSpeed} />
         <Route path="/games/countdown" component={Countdown} />
+        <Route path="/games/powerbar" component={PowerBar} />
         <Route path="/games/cardstack" component={CardStack} />
         <Route path="/games/powergrid" component={PowerGrid} />
-        <Route path="/games/elimwheel" component={ElimWheel} />
+        <Route path="/games/elimwheel" component={MpElim} />
         <Route path="/games/combobuilder" component={ComboBuilder} />
         <Route path="/games/safesteps" component={SafeSteps} />
         <Route path="/games/predchain" component={PredChain} />

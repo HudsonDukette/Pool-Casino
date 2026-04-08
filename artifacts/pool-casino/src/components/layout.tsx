@@ -43,9 +43,9 @@ async function apiFetch(url: string, opts?: RequestInit) {
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { data: user, isLoading } = useGetMe({
-    query: { retry: false, refetchInterval: 3000 },
+    query: { retry: false, refetchInterval: 30000 },
   });
-  const { data: pool } = useGetPool({ query: { refetchInterval: 3000 } });
+  const { data: pool } = useGetPool({ query: { refetchInterval: 5000 } });
   const logoutMut = useLogout();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -319,15 +319,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       {[
                         {
                           href: "/games",
-                          label: "All Games",
+                          label: "Casino Games",
                           icon: <Dices className="w-3.5 h-3.5" />,
-                          sub: "34 games available",
+                          sub: "32 solo games available",
                         },
                         {
                           href: "/multiplayer",
                           label: "Multiplayer",
                           icon: <span className="text-sm">👥</span>,
-                          sub: "PvP War & Higher/Lower",
+                          sub: "24 PvP & lobby games",
                         },
                         {
                           href: "/badges",
@@ -579,7 +579,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {[
                 {
                   href: "/games",
-                  label: "All Games",
+                  label: "Casino Games",
                   icon: <Dices className="w-4 h-4" />,
                 },
                 {

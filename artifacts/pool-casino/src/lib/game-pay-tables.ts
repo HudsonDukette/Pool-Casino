@@ -162,4 +162,12 @@ export const GAME_PAY_TABLES: Record<string, PayTableEntry[]> = {
     { key: "seg4", label: "Segment 5",          emoji: "🤑", defaultValue: 5.0, min: 1.0, max: 25 },
     { key: "seg5", label: "Segment 6 (jackpot)",emoji: "💰", defaultValue: 25,  min: 5,   max: 200},
   ],
+
+  powerbar: [
+    { key: "perfect", label: "Perfect (top 10%)", emoji: "💜", defaultValue: 5.0, min: 2, max: 25 },
+    { key: "great",   label: "Great (75–90%)",    emoji: "💚", defaultValue: 2.5, min: 1.5, max: 10 },
+    { key: "good",    label: "Good (55–75%)",     emoji: "💛", defaultValue: 1.5, min: 1, max: 5  },
+    { key: "fair",    label: "Fair (35–55%)",     emoji: "🟠", defaultValue: 0.8, min: 0.5, max: 2 },
+    { key: "miss",    label: "Miss (0–35%)",      emoji: "❌", defaultValue: 0.2, min: 0, max: 1  },
+  ],
 };

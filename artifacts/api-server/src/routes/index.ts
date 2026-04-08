@@ -18,6 +18,8 @@ import newGamesRouter from "./new-games";
 import newGames2Router from "./newgames2";
 import badgesRouter from "./badges";
 import casinosRouter from "./casinos";
+import casinoChatRouter from "./casino-chat";
+import multiplayerLobbiesRouter from "./multiplayer-lobbies";
 import { isPoolPaused } from "../lib/pool-guard";
 
 const router: IRouter = Router();
@@ -61,5 +63,7 @@ router.use(newGamesRouter);
 router.use(newGames2Router);
 router.use(badgesRouter);
 router.use(casinosRouter);
+router.use(casinoChatRouter);
+router.use(multiplayerLobbiesRouter);
 
 export default router;

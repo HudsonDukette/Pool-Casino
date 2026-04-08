@@ -1,0 +1,188 @@
+1. Power Bar Click
+
+Core idea: Stop a moving bar at the perfect spot
+
+A bar moves back and forth (or fills up)
+There’s a “sweet spot” zone
+Player clicks/taps to stop it
+
+Specifics:
+
+Speed increases with bet tier
+Sweet spot size shrinks with higher rewards
+Payout tiers:
+Perfect hit → big multiplier (e.g. 5x–10x)
+Close → small profit (1.2x–2x)
+Miss → lose bet
+
+Why it works:
+Simple, addictive, skill-feeling but still tunable for house edge
+
+2. Target Tap (Reaction Game)
+
+Core idea: Hit targets as fast as possible
+
+Targets appear randomly on screen
+Player must click them quickly
+
+Specifics:
+
+Time limit (e.g. 5–10 seconds)
+Score = number of hits
+Multipliers based on score thresholds
+Optional:
+Moving targets
+Fake targets (penalty)
+
+Why it works:
+Feels skill-based but you control spawn rate + scoring curve
+
+3. Needle Drop
+
+Core idea: Drop a falling object into a narrow slot
+
+Object falls vertically
+Player taps to release it
+Must land in a moving or fixed slot
+
+Specifics:
+
+Wind/side drift for difficulty
+Moving slot = higher payout
+Miss = full loss
+Perfect center hit = jackpot multiplier
+
+Why it works:
+Looks skill-heavy but randomness (drift) gives you control
+
+4. Timing Ring
+
+Core idea: Stop expanding rings at the right moment
+
+Circle expands outward
+Player taps to lock it into a target ring
+
+Specifics:
+
+Multiple rings = multiple payout levels
+Smaller inner rings = higher reward
+Combo mode:
+Hit multiple perfects in a row for multiplier stacking
+
+Why it works:
+Visually satisfying and super clean mechanic
+
+5. Balance Bar
+
+Core idea: Keep a bar centered
+
+Bar tilts left/right automatically
+Player taps/holds to stabilize it
+
+Specifics:
+
+Survive for X seconds to win
+Difficulty ramps over time
+Early fail = partial loss
+Full survival = multiplier payout
+
+Why it works:
+Feels like pure skill but gets chaotic fast
+
+6. Moving Line Cut
+
+Core idea: Slice at the right moment
+
+A line moves across a target zone
+Player taps to “cut”
+
+Specifics:
+
+Center hit = max payout
+Off-center = reduced payout
+Miss = lose
+
+Why it works:
+Fast rounds = high engagement = more bets
+
+7. Angle Shot (Pool-Themed)
+
+Core idea: Hit a ball at the correct angle
+
+Player sets angle (drag or slider)
+Ball bounces and must land in pocket/zone
+
+Specifics:
+
+Bank shots for higher payouts
+Obstacles added at higher stakes
+Slight randomness in physics for house control
+
+Why it works:
+Fits your pool casino theme perfectly
+
+8. Charge & Release
+
+Core idea: Hold to charge power, release at right level
+
+Power meter fills while holding
+Release determines shot strength
+
+Specifics:
+
+Overcharge = fail
+Undercharge = fail
+Perfect range = payout
+
+Why it works:
+Classic mechanic, super intuitive
+
+9. Precision Drop Tower
+
+Core idea: Stack falling blocks perfectly
+
+Blocks drop from above
+Must align with previous block
+
+Specifics:
+
+Misalignment reduces platform size
+Smaller platform = harder but higher payout
+Lose when you miss completely
+
+Why it works:
+Tension builds over time → great for retention
+
+10. Multi-Zone Risk Shot
+
+Core idea: Choose when to stop for better reward
+
+Indicator cycles through zones:
+Safe (low payout)
+Risky (high payout)
+Dead zone (lose)
+
+Specifics:
+
+Player decides when to stop
+Higher tiers = faster cycling
+
+Why it works:
+Blends skill + gambling psychology perfectly
+
+⚙️ System-Level Mechanics You Should Add
+
+To make these actually work in your casino economy:
+
+🔹 House Edge Control
+Slight input delay (like 20–60ms)
+Micro-randomization of outcomes
+Dynamic difficulty based on win streak
+🔹 Progression Hooks
+“Skill level” that slightly improves odds
+Daily challenges for precision games
+Unlock harder versions with better payouts
+🔹 Multiplayer Twist (your specialty)
+1v1 precision duels
+Tournament brackets
+Spectator betting

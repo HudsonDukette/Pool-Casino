@@ -42,9 +42,9 @@ artifacts-monorepo/
 1. **Authentication**: Register/login/logout with username + password; CrazyGames SDK v3 platform-aware login; guest mode with per-device tracking + merge on login
 2. **Global Pool Economy**: $1M starting pool shared by all players; wins drain it, losses fill it
 3. **Dynamic Betting Odds**: Win probability scales with bet size relative to pool
-4. **34 Games Total**: 20 classic solo games (Roulette, Plinko, Blackjack, Crash, Slots, Dice Roll, Coin Flip, Fortune Wheel, Number Guess, Mines, High-Low, Double Dice, Risk Ladder, War, Target Multiplier, Ice Break, Advanced Wheel, Range Bet, Pyramid Pick, Lightning Round) + 14 new solo games (Blind Draw, Hidden Path, Jackpot Hunt, Target Hit, Chain Reaction, Timed Safe, Reverse Crash, Countdown Gamble, Card Stack, Power Grid, Elimination Wheel, Combo Builder, Safe Steps, Prediction Chain) — all with AI-generated banner art
+4. **35 Games Total**: 20 classic solo games (Roulette, Plinko, Blackjack, Crash, Slots, Dice Roll, Coin Flip, Fortune Wheel, Number Guess, Mines, High-Low, Double Dice, Risk Ladder, War, Target Multiplier, Ice Break, Advanced Wheel, Range Bet, Pyramid Pick, Lightning Round) + 15 new solo games (Blind Draw, Hidden Path, Jackpot Hunt, Target Hit, Chain Reaction, Timed Safe, Reverse Crash, Countdown Gamble, Card Stack, Power Grid, Elimination Wheel, Combo Builder, Safe Steps, Prediction Chain, **Power Bar**) — all with AI-generated banner art
 5. **Referral Codes**: Unique 8-char codes; new users +$20K, referrers +$10K
-6. **Profile Customization**: Avatar URL + username change (both cost coins, admin-configurable)
+6. **Profile Customization**: Avatar URL + username change (both cost coins, admin-configurable); **bio** (300-char, free to edit); **Level/XP** display with progress bar (XP earned on every game played)
 7. **Player Stats**: Profit/loss, biggest win/bet, win streak, games played, transactions
 8. **Leaderboards**: Richest players, biggest winners, high rollers — each row has a flag/report button; usernames link to player profiles
 9. **Player Profiles**: Public profile pages at `/player/:username` showing stats + report button
@@ -56,9 +56,10 @@ artifacts-monorepo/
 15. **Report System**: Players can report others from leaderboard or profile page; admins review with chat history viewer
 16. **Admin Panel** (collapsable sections): Game controls, Economy (refill/seize/reset), Balance adjustment, User Management (change username/avatar, suspend/ban/perma-ban/unban/delete), Reports inbox, Broadcast, Money requests, Settings
 17. **Real-time Multiplayer PvP**: Socket.IO-powered 1v1 matches; 21 PvP games (War, High-Low, Coin Flip, RPS, Dice Battle, BJ PvP, Poker, Memory, Speed Click, Num Guess, Reaction, Tug of War, Quick Math, Card Race, Last Man + Split or Steal, Risk Dice, Duel Flip, Risk Auction, Quick Draw, Balance Battle); matchmaking queue with 10-second accept window; no house edge — winner takes opponent's bet
-18. **Badges System**: 12 permanent badges (First Blood, High Roller, Whale, Hot Streak, etc.); auto-awarded on qualification; visible at `/badges`
+18. **Badges System**: 30+ permanent badges (level milestones, profit thresholds, streak badges, game-first, PvP tiers); auto-awarded on qualification; visible at `/badges`; supports `level`, `total_profit`, `game_first`, `pvp_wins`, `games_played`, `win_streak`, `biggest_bet` requirement types
 19. **Monthly Challenges**: 6 rotating challenges per month; progress tracking; reward payout on claim
-20. **Player-Owned Casino Hub**: Players spend 100M chips to open a casino; purchase game licenses for 1M chips each (32 games available); set bankroll/bet limits; earn from player bets; 10% monthly tax to the pool; bar menu with purchasable drinks; drag-and-drop banner image upload; enable/disable games; per-game custom payout multipliers (0.5×–2.0×); comprehensive owner edit panel with bankroll management; leaderboard tab for top casinos
+20. **Player-Owned Casino Hub**: Players spend 100M chips to open a casino; purchase game licenses for 1M chips each (32 games available); set bankroll/bet limits; earn from player bets; 10% monthly tax to the pool; bar menu with purchasable drinks; drag-and-drop banner image upload; enable/disable games; per-game custom payout multipliers (0.5×–2.0×); comprehensive owner edit panel with bankroll management; leaderboard tab for top casinos; **Casino Chat** (unlock for 5K chips — permanent live chat tab)
+21. **Leveling/XP System**: XP earned per game (bet/100 + win bonus); level = floor(sqrt(xp/25))+1; stored on `users.xp` and `users.level`; badges can require minimum level
 
 ## Money Supply Integrity
 

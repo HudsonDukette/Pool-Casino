@@ -23,6 +23,7 @@ export const casinosTable = pgTable("casinos", {
   cheapStorageLevel: integer("cheap_storage_level").notNull().default(0),
   standardStorageLevel: integer("standard_storage_level").notNull().default(0),
   expensiveStorageLevel: integer("expensive_storage_level").notNull().default(0),
+  chatUnlocked: boolean("chat_unlocked").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

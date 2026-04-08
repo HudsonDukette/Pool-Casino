@@ -78,6 +78,9 @@ export default function Profile() {
 
   const [newUsername, setNewUsername] = useState("");
   const [showUsernameForm, setShowUsernameForm] = useState(false);
+  const [bioText, setBioText] = useState("");
+  const [showBioForm, setShowBioForm] = useState(false);
+  const [bioSaving, setBioSaving] = useState(false);
   const [newAvatarUrl, setNewAvatarUrl] = useState("");
   const [showAvatarForm, setShowAvatarForm] = useState(false);
   const [referralCopied, setReferralCopied] = useState(false);
@@ -121,6 +124,31 @@ export default function Profile() {
       setAdminAvatarCost(adminSettings.avatarChangeCost.toString());
     }
   }, [adminSettings]);
+
+  React.useEffect(() => {
+    if (user?.bio) setBioText(user.bio);
+  }, [user?.bio]);
+
+  const handleBioSave = async () => {
+    if (bioText.length > 300) { toast({ title: "Bio too long", description: "Max 300 characters", variant: "destructive" }); return; }
+    setBioSaving(true);
+    try {
+      const r = await fetch(`${_apiBase}/api/user/bio`, {
+        method: "PATCH", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bio: bioText }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error ?? "Failed to save bio");
+      toast({ title: "Bio saved!", className: "bg-success text-success-foreground border-none" });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      setShowBioForm(false);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setBioSaving(false);
+    }
+  };
 
   if (!user && !userLoading) {
     return (
@@ -497,6 +525,66 @@ export default function Profile() {
               <Calendar className="w-4 h-4" />
               Joined {user ? safeFormat(user.createdAt, "MMM yyyy", "...") : "..."}
             </p>
+            {/* Level & XP bar */}
+            {!user?.isGuest && (
+              <div className="mt-2 flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded px-2 py-0.5">
+                    Lv. {user?.level ?? 1}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{(user?.xp ?? 0).toLocaleString()} XP</span>
+                </div>
+                <div className="w-48 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-yellow-400 rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(100, (((user?.xp ?? 0) - Math.pow((user?.level ?? 1) - 1, 2) * 25) / Math.max(1, Math.pow((user?.level ?? 1), 2) * 25 - Math.pow((user?.level ?? 1) - 1, 2) * 25)) * 100)}%`
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Bio */}
+            {!user?.isGuest && (
+              <div className="mt-2">
+                {!showBioForm ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground italic">
+                      {user?.bio ? user.bio : "No bio yet."}
+                    </span>
+                    <button
+                      onClick={() => { setBioText(user?.bio ?? ""); setShowBioForm(true); }}
+                      className="text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
+                      title="Edit bio"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <textarea
+                      value={bioText}
+                      onChange={(e) => setBioText(e.target.value)}
+                      maxLength={300}
+                      rows={3}
+                      placeholder="Tell the casino world about yourself..."
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-primary/50"
+                    />
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{bioText.length}/300</span>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => setShowBioForm(false)}>Cancel</Button>
+                        <Button size="sm" disabled={bioSaving} onClick={handleBioSave}>
+                          {bioSaving ? "Saving…" : "Save Bio"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Referral Code */}
             {user?.referralCode && (
               <div className="flex items-center gap-2 mt-2">

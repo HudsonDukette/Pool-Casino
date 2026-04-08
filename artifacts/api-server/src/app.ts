@@ -5,6 +5,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { pool } from "@workspace/db";
 
 const PgSession = connectPgSimple(session);
 
@@ -44,9 +45,11 @@ const isProd = process.env.NODE_ENV === "production";
 
 const sessionStore = process.env.DATABASE_URL
   ? new PgSession({
-      conString: process.env.DATABASE_URL,
+      pool: pool as any,
       tableName: "session",
       createTableIfMissing: true,
+      disableTouch: true,
+      ttl: 30 * 24 * 60 * 60,
     })
   : undefined;
 
@@ -68,9 +71,10 @@ app.use(
 
 app.use("/api", router);
 
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  logger.error({ err }, "Unhandled route error");
-  res.status(500).json({ error: err.message || "Internal server error" });
+app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
+  const status = err.status ?? 500;
+  if (status >= 500) logger.error({ err }, "Unhandled route error");
+  res.status(status).json({ error: err.message || "Internal server error" });
 });
 
 export default app;

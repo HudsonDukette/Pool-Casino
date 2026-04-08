@@ -4,8 +4,8 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-const CASINO_CREATION_COST = 100_000_000;
-const GAME_PURCHASE_COST = 1_000_000;
+const CASINO_CREATION_COST = 5_000_000_000;
+const GAME_PURCHASE_COST = 10_000_000;
 
 function authCheck(req: Request, res: Response): number | null {
   const userId = (req as Request & { session?: { userId?: number } }).session?.userId;
@@ -114,6 +114,7 @@ router.get("/casinos/:id", async (req, res): Promise<void> => {
       cheapStorageLevel: casinosTable.cheapStorageLevel,
       standardStorageLevel: casinosTable.standardStorageLevel,
       expensiveStorageLevel: casinosTable.expensiveStorageLevel,
+      chatUnlocked: casinosTable.chatUnlocked,
     })
     .from(casinosTable)
     .leftJoin(usersTable, eq(casinosTable.ownerId, usersTable.id))

@@ -12,6 +12,7 @@ interface GameResult {
 }
 
 export function trackGameProgress(result: GameResult): void {
+  if (!result.userId) return;
   Promise.all([
     checkAndAwardBadges(result.userId),
     updateMonthlyChallenges(result),
@@ -30,6 +31,8 @@ async function checkAndAwardBadges(userId: number): Promise<void> {
   const gamesPlayed = parseInt(user.gamesPlayed ?? "0");
   const winStreak = parseInt(user.winStreak ?? "0");
   const biggestBet = parseFloat(user.biggestBet ?? "0");
+  const totalProfit = parseFloat(user.totalProfit ?? "0");
+  const level = user.level ?? 1;
 
   const pvpRes = await pool.query<{ c: string }>(
     `SELECT COUNT(*) as c FROM match_players mp
@@ -47,6 +50,8 @@ async function checkAndAwardBadges(userId: number): Promise<void> {
       case "games_played":   earned = gamesPlayed >= badge.requirementValue; break;
       case "win_streak":     earned = winStreak >= badge.requirementValue;   break;
       case "biggest_bet":    earned = biggestBet >= badge.requirementValue;  break;
+      case "total_profit":   earned = totalProfit >= badge.requirementValue; break;
+      case "level":          earned = level >= badge.requirementValue;       break;
       case "pvp_wins":       earned = pvpWins >= badge.requirementValue;     break;
       case "game_first": {
         if (badge.requirementGame) {

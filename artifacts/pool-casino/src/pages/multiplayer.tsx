@@ -5,8 +5,12 @@ import { useGetMe } from "@workspace/api-client-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Swords, Trophy, Clock, Users } from "lucide-react";
 import { formatCurrency, safeLocaleDate } from "@/lib/utils";
+import elimwheelImg from "@/assets/game-elimwheel.png";
+import timedsafeImg from "@/assets/game-timedsafe.png";
+import reversecrashImg from "@/assets/game-reversecrash.png";
 
 const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
 
@@ -82,7 +86,7 @@ export default function Multiplayer() {
         </div>
         <h1 className="text-4xl font-black text-white">Multiplayer Arena</h1>
         <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-          21 PvP games. No house edge — winner takes all.
+          24 games. No house edge — real players only.
         </p>
       </motion.div>
 
@@ -92,6 +96,83 @@ export default function Multiplayer() {
             <Trophy className="w-4 h-4" /> Badges & Challenges
           </Button>
         </Link>
+      </div>
+
+      {/* Lobby-based multiplayer games */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-bold text-white">🏆 Lobby Games</h2>
+          <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">3 games · Up to 8 players</span>
+        </div>
+        <p className="text-sm text-muted-foreground">Create or join a lobby. Bet against real players — last one standing or highest score wins the pot.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            {
+              id: "elimwheel",
+              name: "Elimination Wheel",
+              image: elimwheelImg,
+              description: "Last survivor wins. Each spin eliminates one real player from the shared pot!",
+              href: "/games/elimwheel",
+              accentClass: "hover:border-purple-500/50 hover:shadow-[0_0_24px_rgba(168,85,247,0.25)]",
+              titleClass: "group-hover:text-purple-400",
+              tag: "Up to 8 players",
+              tagColor: "bg-purple-500/20 text-purple-300",
+            },
+            {
+              id: "timedsafe",
+              name: "Vault Race",
+              image: timedsafeImg,
+              description: "The safe cracks at a secret moment. Last player to open BEFORE the crack wins the pot!",
+              href: "/games/timedsafe",
+              accentClass: "hover:border-amber-400/50 hover:shadow-[0_0_24px_rgba(251,191,36,0.25)]",
+              titleClass: "group-hover:text-amber-300",
+              tag: "Up to 6 players",
+              tagColor: "bg-amber-500/20 text-amber-300",
+            },
+            {
+              id: "reversecrash",
+              name: "Speed Test",
+              image: reversecrashImg,
+              description: "Multiplier falls from 3×. Lock in yours before it crashes — highest locked mult wins!",
+              href: "/games/reversecrash",
+              accentClass: "hover:border-green-500/50 hover:shadow-[0_0_24px_rgba(34,197,94,0.25)]",
+              titleClass: "group-hover:text-green-400",
+              tag: "Up to 6 players",
+              tagColor: "bg-green-500/20 text-green-400",
+            },
+          ].map((g) => (
+            <Link key={g.id} href={g.href} className="block group">
+              <Card className={`overflow-hidden bg-card/40 border-white/10 transition-all duration-300 cursor-pointer ${g.accentClass}`}>
+                <CardContent className="p-0">
+                  <div className="h-[130px] relative overflow-hidden border-b border-white/5">
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent z-10" />
+                    <div className="absolute top-2 left-2 z-20">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-blue-500/20 text-blue-300">⚡ Lobby</span>
+                    </div>
+                    <div className="absolute top-2 right-2 z-20">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${g.tagColor}`}>{g.tag}</span>
+                    </div>
+                    <motion.img src={g.image} alt={g.name} className="w-full h-full object-cover"
+                      whileHover={{ scale: 1.05 }} transition={{ duration: 0.4, ease: "easeOut" }} />
+                  </div>
+                  <div className="p-4 space-y-1">
+                    <h3 className={`font-bold text-white transition-colors ${g.titleClass}`}>{g.name}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{g.description}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* 1v1 PvP matchmaking games */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-bold text-white">⚔️ PvP Matchmaking</h2>
+          <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-full">21 games · 1v1</span>
+        </div>
+        <p className="text-sm text-muted-foreground">Queue up and get matched with another player automatically. Winner takes the pot.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

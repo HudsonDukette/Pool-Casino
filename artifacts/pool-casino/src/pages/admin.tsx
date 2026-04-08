@@ -112,13 +112,13 @@ const ALL_GAMES = [
   { id: "countdown",     name: "Countdown",           emoji: "⏱️" },
   { id: "cardstack",     name: "Card Stack",          emoji: "🃏" },
   { id: "powergrid",     name: "Power Grid",          emoji: "⚡" },
-  { id: "elimwheel",     name: "Elimination Wheel",   emoji: "🎰" },
+  { id: "elimwheel",     name: "Elim. Wheel (MP)",    emoji: "🎡" },
   { id: "combobuilder",  name: "Combo Builder",       emoji: "🎰" },
   { id: "chainreaction", name: "Chain Reaction",      emoji: "💥" },
-  { id: "reversecrash",  name: "Reverse Crash",       emoji: "📉" },
+  { id: "reversecrash",  name: "Speed Test (MP)",      emoji: "⚡" },
   { id: "safesteps",     name: "Safe Steps",          emoji: "🪜" },
   { id: "predchain",     name: "Prediction Chain",    emoji: "🔮" },
-  { id: "timedsafe",     name: "Timed Safe",          emoji: "⏰" },
+  { id: "timedsafe",     name: "Vault Race (MP)",      emoji: "🔐" },
 ];
 
 function SectionHeader({

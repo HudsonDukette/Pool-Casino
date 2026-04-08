@@ -28,6 +28,11 @@ function getConnection(): { pool: pg.Pool; db: DbInstance } {
 
   _pool = new Pool({
     connectionString: url,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
     ...(sslEnabled ? { ssl: { rejectUnauthorized: false } } : {}),
   });
   _db = drizzle(_pool, { schema });
