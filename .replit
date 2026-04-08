@@ -35,3 +35,23 @@ packages = ["mailutils", "zip", "supabase-cli"]
 VAPID_PUBLIC_KEY = "BLKPQswCZ4UTJyjUaejIxf9e6VE5a6Bsit-yrggKGY3Bs0BMet4UatL-NFca37p0RRxORrS1cZ5o5I0WTfiiAic"
 VAPID_PRIVATE_KEY = "2vUTByIq7xyF3D_d-5BH4QlwI8IY68CJRg_pCLuIJjc"
 VAPID_EMAIL = "mailto:hudsoduk@gmail.com"
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 8082
+externalPort = 3001
+
+[[ports]]
+localPort = 23507
+externalPort = 80
+
+[[ports]]
+localPort = 23508
+externalPort = 3000
