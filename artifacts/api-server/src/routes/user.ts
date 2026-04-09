@@ -1,6 +1,4 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, settingsTable, banAppealsTable, poolTable, moneyLedgerTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
 import {
   GetUserStatsResponse,
   ClaimDailyRewardResponse,
@@ -10,11 +8,12 @@ import {
   ChangeAvatarResponse,
   GetProfileChangeCostsResponse,
 } from "@workspace/api-zod";
+import { selectOne, selectMany, insertInto, updateTable } from "../lib/supabase-db";
 
 const router: IRouter = Router();
 
 async function getSetting(key: string, defaultValue: number): Promise<number> {
-  const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, key)).limit(1);
+  const row = await selectOne("settings", ["value"], { key });
   if (!row) return defaultValue;
   return parseFloat(row.value) || defaultValue;
 }
@@ -28,7 +27,7 @@ async function addLedgerEntry(opts: {
   targetUserId?: number | null;
 }): Promise<void> {
   if (opts.amount <= 0) return;
-  await db.insert(moneyLedgerTable).values({
+  await insertInto("money_ledger", {
     eventType: opts.eventType,
     direction: opts.direction,
     amount: opts.amount.toFixed(2),
@@ -45,7 +44,7 @@ router.get("/user/stats", async (req, res): Promise<void> => {
     return;
   }
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  const user = await selectOne("users", undefined, { id: userId });
   if (!user) {
     res.status(401).json({ error: "Not authenticated" });
     return;
@@ -74,7 +73,7 @@ router.post("/user/claim-daily", async (req, res): Promise<void> => {
     return;
   }
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  const user = await selectOne("users", undefined, { id: userId });
   if (!user) {
     res.status(401).json({ error: "Not authenticated" });
     return;
@@ -85,7 +84,7 @@ router.post("/user/claim-daily", async (req, res): Promise<void> => {
 
   if (lastClaim) {
     const todayUTC = now.toISOString().slice(0, 10);
-    const lastClaimUTC = lastClaim.toISOString().slice(0, 10);
+    const lastClaimUTC = new Date(lastClaim).toISOString().slice(0, 10);
     if (todayUTC === lastClaimUTC) {
       const midnight = new Date(now);
       midnight.setUTCHours(24, 0, 0, 0);
@@ -101,13 +100,7 @@ router.post("/user/claim-daily", async (req, res): Promise<void> => {
   const reward = 500;
   const newBalance = parseFloat(user.balance) + reward;
 
-  await db
-    .update(usersTable)
-    .set({
-      balance: newBalance.toFixed(2),
-      lastDailyClaim: now,
-    })
-    .where(eq(usersTable.id, userId));
+  await updateTable("users", { balance: newBalance.toFixed(2), lastDailyClaim: now }, { id: userId });
 
   await addLedgerEntry({
     eventType: "daily_reward",
@@ -129,9 +122,7 @@ router.post("/user/claim-daily", async (req, res): Promise<void> => {
 router.get("/user/profile-change-costs", async (req, res): Promise<void> => {
   const usernameChangeCost = await getSetting("username_change_cost", 500);
   const avatarChangeCost = await getSetting("avatar_change_cost", 250);
-  res.json(
-    GetProfileChangeCostsResponse.parse({ usernameChangeCost, avatarChangeCost }),
-  );
+  res.json(GetProfileChangeCostsResponse.parse({ usernameChangeCost, avatarChangeCost }));
 });
 
 router.post("/user/change-username", async (req, res): Promise<void> => {
@@ -149,7 +140,7 @@ router.post("/user/change-username", async (req, res): Promise<void> => {
 
   const { newUsername } = parsed.data;
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  const user = await selectOne("users", undefined, { id: userId });
   if (!user) {
     res.status(401).json({ error: "Not authenticated" });
     return;
@@ -163,7 +154,7 @@ router.post("/user/change-username", async (req, res): Promise<void> => {
     return;
   }
 
-  const existing = await db.select().from(usersTable).where(eq(usersTable.username, newUsername)).limit(1);
+  const existing = await selectMany("users", undefined, { username: newUsername }, 1);
   if (existing.length > 0 && existing[0].id !== userId) {
     res.status(400).json({ error: "Username already taken" });
     return;
@@ -171,16 +162,11 @@ router.post("/user/change-username", async (req, res): Promise<void> => {
 
   const newBalance = currentBalance - cost;
 
-  await db
-    .update(usersTable)
-    .set({ username: newUsername, balance: newBalance.toFixed(2) })
-    .where(eq(usersTable.id, userId));
+  await updateTable("users", { username: newUsername, balance: newBalance.toFixed(2) }, { id: userId });
 
-  const [pool] = await db.select().from(poolTable).limit(1);
+  const pool = await selectOne("pool", undefined);
   if (pool && cost > 0) {
-    await db.update(poolTable)
-      .set({ totalAmount: (parseFloat(pool.totalAmount) + cost).toFixed(2) })
-      .where(eq(poolTable.id, pool.id));
+    await updateTable("pool", { totalAmount: (parseFloat(pool.totalAmount) + cost).toFixed(2) }, { id: pool.id });
   }
 
   res.json(
@@ -207,7 +193,7 @@ router.post("/user/change-avatar", async (req, res): Promise<void> => {
 
   const { avatarUrl } = parsed.data;
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  const user = await selectOne("users", undefined, { id: userId });
   if (!user) {
     res.status(401).json({ error: "Not authenticated" });
     return;
@@ -223,16 +209,11 @@ router.post("/user/change-avatar", async (req, res): Promise<void> => {
 
   const newBalance = currentBalance - cost;
 
-  await db
-    .update(usersTable)
-    .set({ avatarUrl, balance: newBalance.toFixed(2) })
-    .where(eq(usersTable.id, userId));
+  await updateTable("users", { avatarUrl, balance: newBalance.toFixed(2) }, { id: userId });
 
-  const [pool] = await db.select().from(poolTable).limit(1);
+  const pool = await selectOne("pool", undefined);
   if (pool && cost > 0) {
-    await db.update(poolTable)
-      .set({ totalAmount: (parseFloat(pool.totalAmount) + cost).toFixed(2) })
-      .where(eq(poolTable.id, pool.id));
+    await updateTable("pool", { totalAmount: (parseFloat(pool.totalAmount) + cost).toFixed(2) }, { id: pool.id });
   }
 
   res.json(
@@ -245,31 +226,34 @@ router.post("/user/change-avatar", async (req, res): Promise<void> => {
 });
 
 router.get("/user/public/:username", async (req, res): Promise<void> => {
-  const { username } = req.params;
-  const [user] = await db
-    .select({
-      id: usersTable.id,
-      username: usersTable.username,
-      avatarUrl: usersTable.avatarUrl,
-      isAdmin: usersTable.isAdmin,
-      gamesPlayed: usersTable.gamesPlayed,
-      totalWins: usersTable.totalWins,
-      totalLosses: usersTable.totalLosses,
-      biggestWin: usersTable.biggestWin,
-      createdAt: usersTable.createdAt,
-      suspendedUntil: usersTable.suspendedUntil,
-      bannedUntil: usersTable.bannedUntil,
-      permanentlyBanned: usersTable.permanentlyBanned,
-    })
-    .from(usersTable)
-    .where(eq(usersTable.username, username))
-    .limit(1);
+  const { username } = req.params as { username: string };
+  const user = await selectOne(
+    "users",
+    [
+      "id",
+      "username",
+      "avatarUrl",
+      "isAdmin",
+      "gamesPlayed",
+      "totalWins",
+      "totalLosses",
+      "biggestWin",
+      "createdAt",
+      "suspendedUntil",
+      "bannedUntil",
+      "permanentlyBanned",
+    ],
+    { username },
+  );
 
-  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
 
   const now = new Date();
-  const isSuspended = !!(user.suspendedUntil && user.suspendedUntil > now);
-  const isBanned = !!(user.permanentlyBanned || (user.bannedUntil && user.bannedUntil > now));
+  const isSuspended = !!(user.suspendedUntil && new Date(user.suspendedUntil) > now);
+  const isBanned = !!(user.permanentlyBanned || (user.bannedUntil && new Date(user.bannedUntil) > now));
 
   res.json({
     id: user.id,
@@ -284,33 +268,49 @@ router.get("/user/public/:username", async (req, res): Promise<void> => {
     isSuspended,
     isBanned,
     permanentlyBanned: user.permanentlyBanned,
-    suspendedUntil: user.suspendedUntil?.toISOString() ?? null,
-    bannedUntil: user.bannedUntil?.toISOString() ?? null,
+    suspendedUntil: user.suspendedUntil?.toString() ?? null,
+    bannedUntil: user.bannedUntil?.toString() ?? null,
   });
 });
 
-// ── Profile bio ───────────────────────────────────────────────────────────────
 router.patch("/user/bio", async (req, res): Promise<void> => {
   const userId = req.session.userId;
-  if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  if (!userId) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
   const bio = (req.body.bio ?? "").trim();
-  if (bio.length > 300) { res.status(400).json({ error: "Bio must be 300 characters or less" }); return; }
-  await db.update(usersTable).set({ bio: bio || null }).where(eq(usersTable.id, userId));
+  if (bio.length > 300) {
+    res.status(400).json({ error: "Bio must be 300 characters or less" });
+    return;
+  }
+  await updateTable("users", { bio: bio || null }, { id: userId });
   res.json({ ok: true, bio: bio || null });
 });
 
 router.post("/user/appeal", async (req, res): Promise<void> => {
   const userId = req.session.userId;
-  if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  if (!userId) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
   const message = (req.body.message ?? "").trim();
-  if (!message || message.length < 10) { res.status(400).json({ error: "Please provide a detailed appeal message (at least 10 characters)." }); return; }
-  if (message.length > 2000) { res.status(400).json({ error: "Appeal message too long (max 2000 characters)." }); return; }
-  const [user] = await db.select({ permanentlyBanned: usersTable.permanentlyBanned, bannedUntil: usersTable.bannedUntil })
-    .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-  const isBanned = user?.permanentlyBanned || (user?.bannedUntil && user.bannedUntil > new Date());
-  if (!isBanned) { res.status(400).json({ error: "Your account is not currently banned." }); return; }
-  const [appeal] = await db.insert(banAppealsTable).values({ userId, message }).returning();
-  res.json({ ok: true, appeal });
+  if (!message || message.length < 10) {
+    res.status(400).json({ error: "Please provide a detailed appeal message (at least 10 characters)." });
+    return;
+  }
+  if (message.length > 2000) {
+    res.status(400).json({ error: "Appeal message too long (max 2000 characters)." });
+    return;
+  }
+  const user = await selectOne("users", ["permanentlyBanned", "bannedUntil"], { id: userId });
+  const isBanned = user?.permanentlyBanned || (user?.bannedUntil && new Date(user.bannedUntil) > new Date());
+  if (!isBanned) {
+    res.status(400).json({ error: "Your account is not currently banned." });
+    return;
+  }
+  const appeal = await insertInto("ban_appeals", { userId, message }, true);
+  res.json({ ok: true, appeal: appeal?.[0] ?? null });
 });
 
 export default router;
