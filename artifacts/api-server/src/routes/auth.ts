@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { randomUUID } from "crypto";
 import { RegisterBody, LoginBody, RegisterResponse, LoginResponse, GetMeResponse, LogoutResponse } from "@workspace/api-zod";
-import { selectOne, selectMany, insertInto, updateTable, deleteFrom, transaction } from "../lib/supabase-db";
+import { selectOne, selectMany, insertInto, updateTable, deleteFrom, transaction } from "../lib/neon-db";
 
 const router: IRouter = Router();
 

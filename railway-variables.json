@@ -9,13 +9,7 @@
     { "key": "RAILWAY_ENVIRONMENT_ID", "value": "ebbfbdb0-b616-4ca7-827f-e59777cceea9" },
     { "key": "RAILWAY_SERVICE_ID", "value": "ef944286-1aba-4b23-98ee-f7e7616b8d0f" },
 
-    { "key": "SUPABASE_URL", "value": "https://envkswuvdssykdiftycs.supabase.co" },
-    { "key": "NEXT_PUBLIC_SUPABASE_URL", "value": "https://envkswuvdssykdiftycs.supabase.co" },
-    { "key": "SUPABASE_ANON_KEY", "value": "sb_publishable_2us86ssyzMHL1_gEFa7pIQ_8TFNhXs0", "secret": false },
-    { "key": "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY", "value": "sb_publishable_2us86ssyzMHL1_gEFa7pIQ_8TFNhXs0", "secret": false },
-    { "key": "SUPABASE_SERVICE_ROLE_KEY", "value": "" , "secret": true },
-
-    { "key": "DATABASE_URL", "value": "postgresql://postgres:hudsonparkerdukette@db.envkswuvdssykdiftycs.supabase.co:5432/postgres", "secret": true },
+    { "key": "DATABASE_URL", "value": "postgresql://neondb_owner:npg_ZcWSj5ezy9Qs@ep-purple-grass-ambpmgvb-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require", "secret": true },
     { "key": "DATABASE_SSL", "value": "true" },
 
     { "key": "SESSION_SECRET", "value": "" , "secret": true },

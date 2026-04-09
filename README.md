@@ -60,7 +60,6 @@ Classic house-vs-player games that use the global shared pool:
 Extra fast-paced solo games with AI-generated banner art:
 
 | Game | Description |
-|------|-------------|
 | Blind Draw | Draw a mystery face-down card — pure fate |
 | Hidden Path | Navigate 3 hidden forks — all safe = 8× |
 | Jackpot Hunt | Open 1 of 5 boxes — one holds a 10× jackpot |
@@ -84,7 +83,6 @@ Real-time head-to-head via WebSocket. Winner takes the pot — no house edge:
 **New 6:** Split or Steal, Risk Dice, Duel Flip, Risk Auction, Quick Draw, Balance Battle
 
 ---
-
 ## Player-Owned Casinos
 
 Users can create their own casinos and invite other players to gamble in them. Casino owners get:
@@ -116,126 +114,13 @@ Users can create their own casinos and invite other players to gamble in them. C
 │       │   ├── routes/         # REST API route handlers
 │       │   ├── multiplayer/    # Socket.IO PvP game engines
 │       │   └── lib/            # Gambling logic, push, scheduler
-│       └── build.mjs
-├── lib/
-│   ├── db/                     # Drizzle ORM schema + client (@workspace/db)
-│   ├── api-zod/                # Shared Zod types + validators (@workspace/api-zod)
-│   ├── api-client-react/       # Generated API client for the frontend
-│   └── api-spec/               # OpenAPI spec + Orval codegen config
-└── pnpm-workspace.yaml
-```
+## 2. Client integration notes
 
----
-
-## Connection Flow
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        USER BROWSER                          │
-│                                                             │
-│   React + Vite Frontend  ─── deployed on ──▶  Vercel       │
-│         │                                                   │
-│         │  REST API calls (HTTPS)                           │
-│         │  WebSocket (Socket.IO)                            │
-│         ▼                                                   │
-│   Express + Socket.IO API ─ deployed on ──▶  Railway       │
-│         │                                                   │
-│         │  SQL (pg / Drizzle ORM)                           │
-│         ▼                                                   │
-│   PostgreSQL Database ──── hosted on ──────▶  Supabase     │
-└─────────────────────────────────────────────────────────────┘
-```
-
-| Layer | Tech | Hosting |
-|-------|------|---------|
-| Frontend | React 19 + Vite + Tailwind | Vercel |
-| Backend | Express 5 + Socket.IO | Railway |
-| Database | PostgreSQL + Drizzle ORM | Supabase |
-| Auth | express-session + bcryptjs | Stored in Supabase `session` table |
-| Realtime | Socket.IO over Railway's persistent connections | Railway |
-
----
-
-## GitHub Codespaces Setup
-
-GitHub Codespaces gives you a full cloud development environment with zero local setup.
-
-### Step 1 — Open in Codespaces
-
-1. Go to your repository on GitHub.
-2. Click the green **Code** button → **Codespaces** tab → **Create codespace on main**.
-3. Wait for the container to build (roughly 2–3 minutes on first launch).
-
-### Step 2 — Install dependencies
-
-Once the terminal opens inside Codespaces:
-
-```bash
-# Install all workspace packages from the repo root
-pnpm install
-```
-
-### Step 3 — Configure environment variables
-
-```bash
-# API server env
-cp artifacts/api-server/.env.example artifacts/api-server/.env
-# Edit and fill in DATABASE_URL, SESSION_SECRET, VAPID keys
-nano artifacts/api-server/.env
-
-# Frontend env
-cp artifacts/pool-casino/.env.example artifacts/pool-casino/.env
-# Set VITE_API_URL to the forwarded Codespaces URL for the API port
-nano artifacts/pool-casino/.env
-```
-
-### Step 4 — Start the services
-
-Open two terminals in Codespaces:
-
-**Terminal 1 — API server:**
-```bash
-cd artifacts/api-server
-pnpm dev
-# Listens on port 8080
-```
-
-**Terminal 2 — Frontend:**
-```bash
-cd artifacts/pool-casino
-pnpm dev
-# Listens on port 23507 (or whatever PORT is assigned)
-```
-
-### Step 5 — Forward ports
-
-Codespaces automatically detects open ports. In the **Ports** panel (bottom of VS Code):
-
-1. Find the API port (8080) — right-click → **Port Visibility** → **Public**.
-2. Find the frontend port — right-click → **Port Visibility** → **Public**.
-3. Copy the forwarded HTTPS URL for port 8080.
-4. Update `VITE_API_URL` in `artifacts/pool-casino/.env` to that URL.
-5. Restart the frontend dev server.
-
-> **Tip**: Codespaces URLs look like `https://your-codespace-name-8080.preview.app.github.dev`.
-
----
-
-## 1. Supabase — Database Setup
-
-### 1a. Create a Supabase project
-
-1. Go to https://supabase.com and create a new project.
-2. Choose a region close to where you will host the API server (Railway's default is US East).
-3. Once the project is ready, go to **Settings → Database** and copy the **Connection string (URI)**:
-   ```
-   postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
-   ```
-4. Append `?sslmode=require` to the end:
-   ```
-   postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres?sslmode=require
-   ```
-   This is your `DATABASE_URL`. Keep it safe.
+This project connects directly to a Neon Postgres instance via `DATABASE_URL` and uses the Drizzle ORM (`@workspace/db`). If you previously used Supabase client libraries for Auth/Realtime/Storage, those integrations have been removed. To add client-side integrations, re-add the appropriate libraries and wiring intentionally.
+  ```
+  postgresql://neondb_owner:npg_ZcWSj5ezy9Qs@ep-purple-grass-ambpmgvb-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+  ```
+  This is your `DATABASE_URL` for the API server.
 
 ### 1b. Run the database schema
 
@@ -751,12 +636,9 @@ PORT=23507
 BASE_PATH=/
 ```
 
-### Frontend — Supabase extras (if using Supabase client directly)
+### Frontend — Client extras
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://[PROJECT-REF].supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_...
-```
+If your frontend previously used Supabase client libraries, those references were removed. The frontend talks to the API server; the API server connects to Neon Postgres directly. To add direct client-side Postgres/Supabase integrations, reintroduce the appropriate client libraries and env variables.
 
 ---
 

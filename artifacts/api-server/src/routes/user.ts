@@ -8,7 +8,7 @@ import {
   ChangeAvatarResponse,
   GetProfileChangeCostsResponse,
 } from "@workspace/api-zod";
-import { selectOne, selectMany, insertInto, updateTable } from "../lib/supabase-db";
+import { selectOne, selectMany, insertInto, updateTable } from "../lib/neon-db";
 
 const router: IRouter = Router();
 

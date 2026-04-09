@@ -23,6 +23,9 @@ function getConnection(): { pool: pg.Pool; db: DbInstance } {
   const sslEnabled =
     process.env.DATABASE_SSL === "true" ||
     url.includes("sslmode=require") ||
+    // support Neon pooled/unpooled hostnames and Supabase legacy hosts
+    url.includes("neon.tech") ||
+    url.includes("pooler.c-") ||
     url.includes("supabase.co") ||
     url.includes("pooler.supabase.com");
 
