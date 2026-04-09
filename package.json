@@ -11,8 +11,8 @@
   "private": true,
   "packageManager": "pnpm@10.26.1",
   "devDependencies": {
-    "typescript": "~5.9.2",
-    "prettier": "^3.8.1"
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2"
   },
   "pnpm": {
     "overrides": {
@@ -98,5 +98,8 @@
       "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0",
       "esbuild": "0.27.3"
     }
+  },
+  "dependencies": {
+    "pg": "8.20.0"
   }
 }
