@@ -1,0 +1,30 @@
+{
+  "variables": [
+    { "key": "RAILWAY_PUBLIC_DOMAIN", "value": "pool-casino-production.up.railway.app" },
+    { "key": "RAILWAY_PRIVATE_DOMAIN", "value": "pool-casino.railway.internal" },
+    { "key": "RAILWAY_PROJECT_NAME", "value": "lucky-delight" },
+    { "key": "RAILWAY_ENVIRONMENT_NAME", "value": "production" },
+    { "key": "RAILWAY_SERVICE_NAME", "value": "Pool-Casino" },
+    { "key": "RAILWAY_PROJECT_ID", "value": "226883c1-af57-4f33-af25-75a0002f85a2" },
+    { "key": "RAILWAY_ENVIRONMENT_ID", "value": "ebbfbdb0-b616-4ca7-827f-e59777cceea9" },
+    { "key": "RAILWAY_SERVICE_ID", "value": "ef944286-1aba-4b23-98ee-f7e7616b8d0f" },
+
+    { "key": "SUPABASE_URL", "value": "https://envkswuvdssykdiftycs.supabase.co" },
+    { "key": "NEXT_PUBLIC_SUPABASE_URL", "value": "https://envkswuvdssykdiftycs.supabase.co" },
+    { "key": "SUPABASE_ANON_KEY", "value": "sb_publishable_2us86ssyzMHL1_gEFa7pIQ_8TFNhXs0", "secret": false },
+    { "key": "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY", "value": "sb_publishable_2us86ssyzMHL1_gEFa7pIQ_8TFNhXs0", "secret": false },
+    { "key": "SUPABASE_SERVICE_ROLE_KEY", "value": "" , "secret": true },
+
+    { "key": "DATABASE_URL", "value": "postgresql://postgres:hudsonparkerdukette@db.envkswuvdssykdiftycs.supabase.co:5432/postgres", "secret": true },
+    { "key": "DATABASE_SSL", "value": "true" },
+
+    { "key": "SESSION_SECRET", "value": "" , "secret": true },
+    { "key": "PORT", "value": "8080" },
+    { "key": "ALLOWED_ORIGIN", "value": "" },
+    { "key": "LOG_LEVEL", "value": "info" },
+
+    { "key": "VAPID_PUBLIC_KEY", "value": "" },
+    { "key": "VAPID_PRIVATE_KEY", "value": "", "secret": true },
+    { "key": "VAPID_EMAIL", "value": "mailto:admin@example.com" }
+  ]
+}
