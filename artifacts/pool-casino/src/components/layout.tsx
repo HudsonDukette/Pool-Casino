@@ -26,8 +26,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useGuestSession } from "@/hooks/use-guest-session";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
+import { refreshLog } from "@/lib/refresh-debug";
 
 const BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/" : import.meta.env.BASE_URL);
+const FORCE_RELOAD_SEEN_KEY = "poolcasino:last-force-reload-at";
 
 async function apiFetch(url: string, opts?: RequestInit) {
   const r = await fetch(`${BASE}${url}`, {
@@ -42,7 +44,7 @@ async function apiFetch(url: string, opts?: RequestInit) {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { data: user, isLoading } = useGetMe({
+  const { data: user, isLoading, isError: isUserError, error: userError } = useGetMe({
     query: { retry: false, refetchInterval: 30000 },
   });
   const { data: pool } = useGetPool({ query: { refetchInterval: 5000 } });
@@ -81,18 +83,39 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     if (!pool?.forceReloadAt) return;
+    if (!Number.isFinite(pool.forceReloadAt)) return;
     if (initialForceReloadAt.current === null) {
       initialForceReloadAt.current = pool.forceReloadAt;
+      refreshLog("force-reload", "Initialized forceReloadAt baseline", {
+        baseline: pool.forceReloadAt,
+      });
       return;
     }
+
+    const alreadyHandled = Number(sessionStorage.getItem(FORCE_RELOAD_SEEN_KEY) || "0");
+    if (pool.forceReloadAt <= alreadyHandled) {
+      return;
+    }
+
     if (pool.forceReloadAt !== initialForceReloadAt.current) {
+      sessionStorage.setItem(FORCE_RELOAD_SEEN_KEY, String(pool.forceReloadAt));
+      refreshLog("force-reload", "Reloading page due to server signal", {
+        previous: initialForceReloadAt.current,
+        next: pool.forceReloadAt,
+      });
       window.location.reload();
     }
   }, [pool?.forceReloadAt]);
 
   React.useEffect(() => {
     if (!user || user.isGuest) return;
+    let isActive = true;
+    let inFlight = false;
+
     const poll = async () => {
+      if (!isActive || inFlight || document.visibilityState === "hidden") return;
+      inFlight = true;
+      const startedAt = performance.now();
       try {
         const [chatData, friendsData] = await Promise.all([
           fetch(`${BASE}api/chat/unread`, { credentials: "include" }).then(
@@ -102,13 +125,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
             r.ok ? r.json() : { incoming: [] },
           ),
         ]);
+        if (!isActive) return;
         setUnreadCount(chatData.unreadCount ?? 0);
         setPendingFriends((friendsData.incoming ?? []).length);
-      } catch {}
+        refreshLog("notifications-poll", "Poll success", {
+          unreadCount: chatData.unreadCount ?? 0,
+          pendingFriends: (friendsData.incoming ?? []).length,
+          durationMs: Math.round(performance.now() - startedAt),
+        });
+      } catch (err) {
+        refreshLog("notifications-poll", "Poll failed", {
+          error: err instanceof Error ? err.message : String(err),
+          durationMs: Math.round(performance.now() - startedAt),
+        });
+      } finally {
+        inFlight = false;
+      }
     };
-    poll();
-    const t = setInterval(poll, 5000);
-    return () => clearInterval(t);
+    void poll();
+    const t = setInterval(() => {
+      void poll();
+    }, 5000);
+    return () => {
+      isActive = false;
+      clearInterval(t);
+    };
   }, [user?.id]);
 
   React.useEffect(() => {
@@ -156,7 +197,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const isGuest = user?.isGuest === true;
-  useGuestSession(!!user && !isGuest, isLoading, location);
+  useGuestSession(!!user && !isGuest, isLoading, location, isUserError);
+
+  React.useEffect(() => {
+    if (!isUserError) return;
+    refreshLog("auth-me", "useGetMe failed; guest init paused for this cycle", {
+      error:
+        userError instanceof Error
+          ? userError.message
+          : userError
+            ? String(userError)
+            : "unknown",
+    });
+  }, [isUserError, userError]);
 
   const handleLogout = () => {
     logoutMut.mutate(undefined, {

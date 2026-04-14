@@ -10,6 +10,7 @@ export type AuthTokenGetter = () => Promise<string | null> | string | null;
 
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
+const DEBUG_STORAGE_KEY = "poolcasino:debug-refresh";
 
 // ---------------------------------------------------------------------------
 // Module-level configuration
@@ -17,6 +18,18 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+
+function isRefreshDebugEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const fromStorage = window.localStorage.getItem(DEBUG_STORAGE_KEY);
+    if (fromStorage === "1" || fromStorage === "true") return true;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("debugRefresh") === "1";
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -356,12 +369,33 @@ export async function customFetch<T = unknown>(
   }
 
   const requestInfo = { method, url: resolveUrl(input) };
+  const debug = isRefreshDebugEnabled();
+  const startedAt = debug ? Date.now() : 0;
+
+  if (debug) {
+    console.info("[refresh-debug][customFetch] request start", requestInfo);
+  }
 
   const response = await fetch(input, { credentials: "include", ...init, method, headers });
 
   if (!response.ok) {
+    if (debug) {
+      console.info("[refresh-debug][customFetch] request failed", {
+        ...requestInfo,
+        status: response.status,
+        durationMs: Date.now() - startedAt,
+      });
+    }
     const errorData = await parseErrorBody(response, method);
     throw new ApiError(response, errorData, requestInfo);
+  }
+
+  if (debug) {
+    console.info("[refresh-debug][customFetch] request success", {
+      ...requestInfo,
+      status: response.status,
+      durationMs: Date.now() - startedAt,
+    });
   }
 
   return (await parseSuccessBody(response, responseType, requestInfo)) as T;
