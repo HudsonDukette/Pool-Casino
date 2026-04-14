@@ -45,7 +45,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading } = useGetMe({
     query: { retry: false, refetchInterval: 30000 },
   });
-  const { data: pool } = useGetPool({ query: { refetchInterval: 5000 } });
   const logoutMut = useLogout();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -65,7 +64,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
-  const initialForceReloadAt = React.useRef<number | null>(null);
   usePushNotifications((user as any)?.id);
 
   const [unreadCount, setUnreadCount] = React.useState(0);
@@ -78,17 +76,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [moneyAmount, setMoneyAmount] = React.useState("10000");
   const [moneyMsg, setMoneyMsg] = React.useState("");
   const [moneyPending, setMoneyPending] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!pool?.forceReloadAt) return;
-    if (initialForceReloadAt.current === null) {
-      initialForceReloadAt.current = pool.forceReloadAt;
-      return;
-    }
-    if (pool.forceReloadAt !== initialForceReloadAt.current) {
-      window.location.reload();
-    }
-  }, [pool?.forceReloadAt]);
 
   React.useEffect(() => {
     if (!user || user.isGuest) return;
@@ -398,15 +385,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Right side: Pool + Request Money + Notifications + User */}
             <div className="flex items-center gap-2">
               {/* Live Pool Balance */}
-              {pool && (
-                <div className="hidden lg:flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-accent/30 bg-black/40 text-accent">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
-                  </span>
-                  Pool: {formatCurrency(pool.totalAmount)}
-                </div>
-              )}
+              <LivePoolStatus />
 
               {/* Request Money Button */}
               {user && !isGuest && (
@@ -907,6 +886,42 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </footer>
       )}
+    </div>
+  );
+}
+
+function LivePoolStatus() {
+  const initialForceReloadAt = React.useRef<number | null>(null);
+  const { data } = useGetPool({
+    query: {
+      refetchInterval: 5000,
+      select: (pool: any) => ({
+        totalAmount: pool.totalAmount,
+        forceReloadAt: pool.forceReloadAt,
+      }),
+    },
+  });
+
+  React.useEffect(() => {
+    if (!data?.forceReloadAt) return;
+    if (initialForceReloadAt.current === null) {
+      initialForceReloadAt.current = data.forceReloadAt;
+      return;
+    }
+    if (data.forceReloadAt !== initialForceReloadAt.current) {
+      window.location.reload();
+    }
+  }, [data?.forceReloadAt]);
+
+  if (!data) return null;
+
+  return (
+    <div className="hidden lg:flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-accent/30 bg-black/40 text-accent">
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60"></span>
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
+      </span>
+      Pool: {formatCurrency(data.totalAmount)}
     </div>
   );
 }

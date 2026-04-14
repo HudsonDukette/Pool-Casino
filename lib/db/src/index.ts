@@ -61,16 +61,36 @@ function getConnection(): { pool: pg.Pool; db: DbInstance } {
   return { pool: _pool, db: _db };
 }
 
-export const pool = new Proxy({} as pg.Pool, {
-  get(_, prop) {
-    return (getConnection().pool as any)[prop];
-  },
-});
+function createLazyProxy<T extends object>(resolveTarget: () => T): T {
+  return new Proxy({} as T, {
+    get(_, prop) {
+      const target = resolveTarget() as any;
+      const value = Reflect.get(target, prop, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+    set(_, prop, value) {
+      const target = resolveTarget() as any;
+      return Reflect.set(target, prop, value, target);
+    },
+    has(_, prop) {
+      const target = resolveTarget() as any;
+      return Reflect.has(target, prop);
+    },
+    ownKeys() {
+      const target = resolveTarget() as any;
+      return Reflect.ownKeys(target);
+    },
+    getOwnPropertyDescriptor(_, prop) {
+      const target = resolveTarget() as any;
+      const descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
+      if (!descriptor) return undefined;
+      return { ...descriptor, configurable: true };
+    },
+  });
+}
 
-export const db = new Proxy({} as DbInstance, {
-  get(_, prop) {
-    return (getConnection().db as any)[prop];
-  },
-});
+export const pool = createLazyProxy<pg.Pool>(() => getConnection().pool);
+
+export const db = createLazyProxy<DbInstance>(() => getConnection().db);
 
 export * from "./schema";
