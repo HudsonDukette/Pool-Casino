@@ -1,0 +1,17 @@
+[build]
+  command = "pnpm --filter @workspace/pool-casino build"
+  publish = "artifacts/pool-casino/dist/public"
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

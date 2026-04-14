@@ -3,9 +3,13 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
-const url = process.env.DATABASE_URL;
+const url =
+  process.env.DATABASE_URL ??
+  process.env.NETLIFY_DATABASE_URL ??
+  process.env.NEON_DATABASE_URL ??
+  process.env.POSTGRES_URL;
 if (!url) {
-  console.error('DATABASE_URL not set. Provide Neon pooled URL in env var DATABASE_URL');
+  console.error('No database URL env var set. Expected one of: DATABASE_URL, NETLIFY_DATABASE_URL, NEON_DATABASE_URL, POSTGRES_URL');
   process.exit(2);
 }
 

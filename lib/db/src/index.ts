@@ -9,14 +9,33 @@ type DbInstance = ReturnType<typeof drizzle<typeof schema>>;
 let _pool: pg.Pool | null = null;
 let _db: DbInstance | null = null;
 
+const DATABASE_URL_KEYS = [
+  "DATABASE_URL",
+  "NETLIFY_DATABASE_URL",
+  "NEON_DATABASE_URL",
+  "POSTGRES_URL",
+] as const;
+
+function resolveDatabaseUrl(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  for (const key of DATABASE_URL_KEYS) {
+    const value = env[key];
+    if (value) return value;
+  }
+  return undefined;
+}
+
+export function hasDatabaseUrl(env: NodeJS.ProcessEnv = process.env): boolean {
+  return Boolean(resolveDatabaseUrl(env));
+}
+
 function getConnection(): { pool: pg.Pool; db: DbInstance } {
   if (_db && _pool) return { pool: _pool, db: _db };
 
-  const url = process.env.DATABASE_URL;
+  const url = resolveDatabaseUrl();
 
   if (!url) {
     throw new Error(
-      "DATABASE_URL must be set. Did you forget to provision a database?",
+      `Database URL not set. Expected one of: ${DATABASE_URL_KEYS.join(", ")}`,
     );
   }
 
