@@ -2,6 +2,7 @@ import serverless from "serverless-http";
 import app from "../../artifacts/api-server/src/app";
 
 let cachedHandler: ReturnType<typeof serverless> | null = null;
+let invocationCount = 0;
 
 function getHandler() {
   if (!cachedHandler) {
@@ -20,6 +21,18 @@ function toApiPath(pathname: string): string {
 }
 
 export const handler = async (event: any, context: any) => {
-  event.path = toApiPath(event.path || "/");
+  const originalPath = event.path || "/";
+  const mappedPath = toApiPath(originalPath);
+  event.path = mappedPath;
+
+  invocationCount += 1;
+  console.info("[netlify-api] invocation", {
+    invocationCount,
+    requestId: context?.awsRequestId ?? context?.requestId ?? null,
+    method: event.httpMethod,
+    originalPath,
+    mappedPath,
+  });
+
   return getHandler()(event, context);
 };

@@ -55,3 +55,6 @@ Thumbs.db
 
 # Build artifacts
 artifacts/*/dist
+
+# Local Netlify folder
+.netlify

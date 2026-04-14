@@ -6,8 +6,21 @@ const { Pool } = pg;
 
 type DbInstance = ReturnType<typeof drizzle<typeof schema>>;
 
-let _pool: pg.Pool | null = null;
-let _db: DbInstance | null = null;
+type DbCache = {
+  pool: pg.Pool | null;
+  db: DbInstance | null;
+};
+
+const globalCache = globalThis as typeof globalThis & {
+  __poolCasinoDbCache__?: DbCache;
+};
+
+const cache: DbCache = globalCache.__poolCasinoDbCache__ ?? {
+  pool: null,
+  db: null,
+};
+
+globalCache.__poolCasinoDbCache__ = cache;
 
 const DATABASE_URL_KEYS = [
   "DATABASE_URL",
@@ -29,7 +42,7 @@ export function hasDatabaseUrl(env: NodeJS.ProcessEnv = process.env): boolean {
 }
 
 function getConnection(): { pool: pg.Pool; db: DbInstance } {
-  if (_db && _pool) return { pool: _pool, db: _db };
+  if (cache.db && cache.pool) return { pool: cache.pool, db: cache.db };
 
   const url = resolveDatabaseUrl();
 
@@ -47,18 +60,43 @@ function getConnection(): { pool: pg.Pool; db: DbInstance } {
     url.includes("pooler.c-") ||
     url.includes("supabase.co") ||
     url.includes("pooler.supabase.com");
+  const isServerlessRuntime =
+    process.env.NETLIFY === "true" ||
+    Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
+    Boolean(process.env.VERCEL);
+  const defaultPoolMax =
+    isServerlessRuntime && (url.includes("neon.tech") || url.includes("pooler"))
+      ? 5
+      : 20;
+  const poolMax = Number(process.env.PG_POOL_MAX ?? defaultPoolMax);
 
-  _pool = new Pool({
+  cache.pool = new Pool({
     connectionString: url,
-    max: 20,
+    max: Number.isFinite(poolMax) && poolMax > 0 ? poolMax : defaultPoolMax,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
     keepAlive: true,
     keepAliveInitialDelayMillis: 10000,
+    application_name: process.env.PG_APP_NAME ?? "pool-casino-api",
     ...(sslEnabled ? { ssl: { rejectUnauthorized: false } } : {}),
   });
-  _db = drizzle(_pool, { schema });
-  return { pool: _pool, db: _db };
+  cache.db = drizzle(cache.pool, { schema });
+
+  const host = (() => {
+    try {
+      return new URL(url).hostname;
+    } catch {
+      return "unknown-host";
+    }
+  })();
+
+  console.info("[db] created postgres pool", {
+    host,
+    max: Number.isFinite(poolMax) && poolMax > 0 ? poolMax : defaultPoolMax,
+    serverlessRuntime: isServerlessRuntime,
+  });
+
+  return { pool: cache.pool, db: cache.db };
 }
 
 export const pool = new Proxy({} as pg.Pool, {

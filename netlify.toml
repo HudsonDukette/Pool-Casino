@@ -1,9 +1,10 @@
 [build]
-  command = "pnpm --filter @workspace/pool-casino build"
-  publish = "artifacts/pool-casino/dist/public"
+  base = "artifacts/pool-casino"
+  command = "pnpm build"
+  publish = "dist/public"
 
 [functions]
-  directory = "netlify/functions"
+  directory = "../../netlify/functions"
 
 [[redirects]]
   from = "/api/*"
