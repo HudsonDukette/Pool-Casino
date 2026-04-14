@@ -100,6 +100,7 @@
     }
   },
   "dependencies": {
-    "pg": "8.20.0"
+    "pg": "8.20.0",
+    "serverless-http": "^4.0.0"
   }
 }

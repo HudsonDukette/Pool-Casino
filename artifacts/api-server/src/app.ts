@@ -5,7 +5,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import router from "./routes";
 import { logger } from "./lib/logger";
-import { pool } from "@workspace/db";
+import { pool, hasDatabaseUrl } from "@workspace/db";
 
 const PgSession = connectPgSimple(session);
 
@@ -43,7 +43,7 @@ app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
 
 const isProd = process.env.NODE_ENV === "production";
 
-const sessionStore = process.env.DATABASE_URL
+const sessionStore = hasDatabaseUrl()
   ? new PgSession({
       pool: pool as any,
       tableName: "session",
