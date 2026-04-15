@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe } from "@/lib/api-client-react/src";
 import { formatNumber } from "@/lib/utils";
 import {
   Building2, Plus, TrendingUp, Coins, Gamepad2,

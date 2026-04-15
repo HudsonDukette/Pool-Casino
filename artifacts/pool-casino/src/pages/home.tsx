@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { Link } from "wouter";
-import { useGetPool, useGetMe, useGetRecentBigWins } from "@workspace/api-client-react";
+import { useGetPool, useGetMe, useGetRecentBigWins } from "@/lib/api-client-react/src";
 import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

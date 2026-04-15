@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe } from "@/lib/api-client-react/src";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {

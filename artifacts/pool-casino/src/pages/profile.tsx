@@ -15,8 +15,8 @@ import {
   useGetProfileChangeCosts,
   useAdminGetSettings,
   useAdminUpdateSettings,
-} from "@workspace/api-client-react";
-import type { AdminPlayer } from "@workspace/api-client-react";
+} from "@/lib/api-client-react/src";
+import type { AdminPlayer } from "@/lib/api-client-react/src";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

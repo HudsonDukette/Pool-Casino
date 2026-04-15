@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
-import { usePlayRoulette, useGetPool, useGetMe } from "@workspace/api-client-react";
+import { usePlayRoulette, useGetPool, useGetMe } from "@/lib/api-client-react/src";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { BetInput } from "@/components/game-shell";
 import { formatCurrency } from "@/lib/utils";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe } from "@/lib/api-client-react/src";
 
 const BASE = (import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/$/, "") + "/"

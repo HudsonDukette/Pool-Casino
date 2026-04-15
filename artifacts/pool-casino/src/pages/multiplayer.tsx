@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useMultiplayer, type GameType } from "@/context/MultiplayerContext";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe } from "@/lib/api-client-react/src";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";

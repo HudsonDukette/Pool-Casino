@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe } from "@/lib/api-client-react/src";
 
 export type GameType =
   | "war" | "highlow" | "coinflip" | "rps" | "dicebattle"

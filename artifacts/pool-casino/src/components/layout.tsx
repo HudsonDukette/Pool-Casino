@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { useGetMe, useGetPool, useLogout } from "@workspace/api-client-react";
+import { useGetMe, useGetPool, useLogout } from "@/lib/api-client-react/src";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency, safeLocaleDate } from "@/lib/utils";
 import {

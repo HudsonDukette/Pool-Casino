@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, ChevronUp, ChevronDown } from "lucide-react";
-import { useGetMe, useGetPool } from "@workspace/api-client-react";
+import { useGetMe, useGetPool } from "@/lib/api-client-react/src";
 import { formatCurrency } from "@/lib/utils";
 import { CasinoGameEditor, type PayTableEntry } from "@/components/casino-game-editor";
 

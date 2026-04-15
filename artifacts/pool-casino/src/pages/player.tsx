@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe } from "@/lib/api-client-react/src";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

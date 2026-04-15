@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { useGetPool } from "@workspace/api-client-react";
+import { useGetPool } from "@/lib/api-client-react/src";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 

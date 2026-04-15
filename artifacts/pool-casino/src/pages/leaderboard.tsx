@@ -5,7 +5,7 @@ import {
   useGetBiggestWinners,
   useGetBiggestBettors,
   useGetMe,
-} from "@workspace/api-client-react";
+} from "@/lib/api-client-react/src";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { Trophy, TrendingUp, DollarSign, Crown, Medal, Flag, X, Gamepad2, Building2 } from "lucide-react";

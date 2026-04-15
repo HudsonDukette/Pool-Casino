@@ -4,7 +4,7 @@ import { useMultiplayer } from "@/context/MultiplayerContext";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe } from "@/lib/api-client-react/src";
 
 interface PvPGameShellProps {
   gameType: string;

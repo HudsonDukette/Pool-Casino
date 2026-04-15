@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe } from "@/lib/api-client-react/src";
 import { GameShell, BetInput } from "@/components/game-shell";
 import { formatCurrency, useCasinoId } from "@/lib/utils";
 import { GAME_PAY_TABLES } from "@/lib/game-pay-tables";

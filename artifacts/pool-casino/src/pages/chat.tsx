@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe } from "@/lib/api-client-react/src";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency, safeLocaleDate, safeLocaleTime } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
