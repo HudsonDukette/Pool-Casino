@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+dist
+build
+artifacts/api-server
+lib
+scripts
+supabase
+netlify
+attached_assets
+*.log
+*.tsbuildinfo
+.git
