@@ -11,3 +11,4 @@ attached_assets
 *.log
 *.tsbuildinfo
 .git
+artifacts/pool-casino/src/assets
