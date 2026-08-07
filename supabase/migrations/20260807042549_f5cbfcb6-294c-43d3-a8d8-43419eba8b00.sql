@@ -1,0 +1,1 @@
+CREATE POLICY "Public can read player usernames for wins" ON public.profiles FOR SELECT TO anon USING (true);
