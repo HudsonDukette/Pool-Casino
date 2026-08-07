@@ -74,7 +74,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         .insert({
           user_id: authData.user.id,
           username: fallbackUsername,
-          email: authData.user.email,
+          email: authData.user.email ?? null,
         })
         .select()
         .single();
