@@ -38,7 +38,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<any>(null);
   const [loadingUser, setLoadingUser] = React.useState(true);
 
-  const pool = MOCK_POOL;
+  const { data: pool } = useQuery({
+    queryKey: ["pool"],
+    queryFn: () => getPool(),
+    refetchInterval: 10000,
+  });
+
 
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
