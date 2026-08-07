@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { formatCurrency, safeLocaleDate } from "@/lib/utils";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Coins,
@@ -14,28 +14,18 @@ import {
   LayoutDashboard,
   MessageSquare,
   ShieldAlert,
-  Bell,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
-/**
- * Mock global pool state until the backend schema is wired.
- * This will be replaced with a live server function in the next phase.
- */
-const MOCK_POOL = {
-  totalAmount: 128456.78,
-  biggestBet: 15000,
-  biggestWin: 74200,
-  forceReloadAt: 0,
-};
+import { getPool } from "@/lib/pool.functions";
 
 const navLinks = [
   { to: "/", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
   { to: "/chat", label: "Chat", icon: <MessageSquare className="w-4 h-4" /> },
   { to: "/leaderboard", label: "Leaderboards", icon: <Crown className="w-4 h-4" /> },
 ];
+
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const state = useRouterState();
