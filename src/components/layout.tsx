@@ -52,11 +52,35 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user ? { id: data.user.id, email: data.user.email, balance: 1000, isGuest: false, isAdmin: false, username: data.user.user_metadata?.username ?? data.user.email } : null);
+      const meta = data.user?.user_metadata as Record<string, any> | undefined;
+      setUser(
+        data.user
+          ? {
+              id: data.user.id,
+              email: data.user.email,
+              balance: 1000,
+              isGuest: false,
+              isAdmin: false,
+              username: meta?.["username"] ?? data.user.email,
+            }
+          : null,
+      );
       setLoadingUser(false);
     });
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ? { id: session.user.id, email: session.user.email, balance: 1000, isGuest: false, isAdmin: false, username: session.user.user_metadata?.username ?? session.user.email } : null);
+      const meta = session?.user?.user_metadata as Record<string, any> | undefined;
+      setUser(
+        session?.user
+          ? {
+              id: session.user.id,
+              email: session.user.email,
+              balance: 1000,
+              isGuest: false,
+              isAdmin: false,
+              username: meta?.["username"] ?? session.user.email,
+            }
+          : null,
+      );
     });
     return () => subscription.subscription.unsubscribe();
   }, []);
