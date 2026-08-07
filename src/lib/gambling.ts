@@ -113,9 +113,12 @@ export function simulatePlinko(risk: PlinkoRisk, winChance: number): { path: Vec
   const winSlots = multipliers.map((m, i) => ({ m, i })).filter(({ m }) => m > 1.0);
   const loseSlots = multipliers.map((m, i) => ({ m, i })).filter(({ m }) => m <= 1.0);
   const candidates = doWin && winSlots.length > 0 ? winSlots : loseSlots;
-  const { m: multiplier, i: targetSlot } = candidates[Math.floor(Math.random() * candidates.length)];
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  if (!pick) return { path: [{ x: 0, y: 0 }], slot: 0, multiplier: 0 };
+  const { m: multiplier, i: targetSlot } = pick;
 
   const targetX = (targetSlot - (PLINKO_ROWS / 2)) * PLINKO_PEG_SPACING;
+
 
   const MAX_TRIES = 4;
   let bestPath: Vec2[] = [];
