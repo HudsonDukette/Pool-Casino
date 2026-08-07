@@ -10,11 +10,10 @@ export function calculateWinChance(betAmount: number, poolTotal: number): number
 }
 
 export function shouldWin(betAmount: number, poolTotal: number): boolean {
-  const chance = calculateWinChance(betAmount, poolTotal);
-  return Math.random() < chance;
+  return Math.random() < calculateWinChance(betAmount, poolTotal);
 }
 
-export const ROULETTE_NUMBERS: { number: number; color: "red" | "black" | "green" }[] = [
+export const ROULETTE_NUMBERS: Array<{ number: number; color: "red" | "black" | "green" }> = [
   { number: 0, color: "green" },
   { number: 1, color: "red" },
   { number: 2, color: "black" },
@@ -54,13 +53,18 @@ export const ROULETTE_NUMBERS: { number: number; color: "red" | "black" | "green
   { number: 36, color: "red" },
 ];
 
-export const PLINKO_MULTIPLIERS = {
+export type PlinkoRisk = "low" | "medium" | "high";
+
+export const PLINKO_MULTIPLIERS: Record<PlinkoRisk, number[]> = {
   low: [0.5, 1, 1.5, 2, 2.5, 2, 1.5, 1, 0.5],
   medium: [0.3, 0.5, 1, 2, 5, 2, 1, 0.5, 0.3],
   high: [0.1, 0.2, 0.5, 1, 10, 1, 0.5, 0.2, 0.1],
-];
+};
 
-interface Vec2 { x: number; y: number }
+interface Vec2 {
+  x: number;
+  y: number;
+}
 
 const GRAVITY = 1400;
 const DAMPING = 0.72;
@@ -74,10 +78,7 @@ function buildPegGrid(): Vec2[] {
     const count = row + 1;
     const startX = -((count - 1) * PLINKO_PEG_SPACING) / 2;
     for (let p = 0; p < count; p++) {
-      pegs.push({
-        x: startX + p * PLINKO_PEG_SPACING,
-        y: row * PLINKO_ROW_HEIGHT,
-      });
+      pegs.push({ x: startX + p * PLINKO_PEG_SPACING, y: row * PLINKO_ROW_HEIGHT });
     }
   }
   return pegs;
@@ -105,7 +106,7 @@ function resolveCollision(bx: number, by: number, vx: number, vy: number, peg: V
   return { vx: rvx, vy: rvy };
 }
 
-export function simulatePlinko(risk: "low" | "medium" | "high", winChance: number): { path: Vec2[]; slot: number; multiplier: number } {
+export function simulatePlinko(risk: PlinkoRisk, winChance: number): { path: Vec2[]; slot: number; multiplier: number } {
   const multipliers = PLINKO_MULTIPLIERS[risk];
   const doWin = Math.random() < winChance;
 
@@ -124,8 +125,10 @@ export function simulatePlinko(risk: "low" | "medium" | "high", winChance: numbe
   for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
     const vx0 = (targetX / (PLINKO_ROWS * PLINKO_ROW_HEIGHT)) * 160 + (Math.random() - 0.5) * 20;
 
-    let bx = 0, by = 0;
-    let vx = vx0, vy = 30;
+    let bx = 0;
+    let by = 0;
+    let vx = vx0;
+    let vy = 30;
 
     const raw: Vec2[] = [{ x: bx, y: by }];
     const BOARD_BOTTOM = PLINKO_ROWS * PLINKO_ROW_HEIGHT + PLINKO_ROW_HEIGHT;
