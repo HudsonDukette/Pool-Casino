@@ -144,7 +144,7 @@ export function simulatePlinko(risk: PlinkoRisk, winChance: number): { path: Vec
 
       for (let pi = 0; pi < PEG_GRID.length; pi++) {
         const peg = PEG_GRID[pi];
-        if (Math.abs(by - peg.y) > PLINKO_ROW_HEIGHT) continue;
+        if (!peg || Math.abs(by - peg.y) > PLINKO_ROW_HEIGHT) continue;
         const result = resolveCollision(bx, by, vx, vy, peg);
         if (result) {
           vx = result.vx;
@@ -152,6 +152,7 @@ export function simulatePlinko(risk: PlinkoRisk, winChance: number): { path: Vec
           break;
         }
       }
+
 
       if (step % 4 === 0) raw.push({ x: bx, y: by });
 
