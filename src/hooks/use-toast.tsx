@@ -28,12 +28,10 @@ export function toast({ title, description, variant, className, duration }: Toas
         ? "bg-success text-success-foreground border-none"
         : className;
 
-  const options: ExternalToast = {
+  const options = {
     className: baseClass,
-  };
-  if (duration !== undefined) {
-    options.duration = duration;
-  }
+    ...(duration !== undefined && { duration }),
+  } as ExternalToast;
 
   sonnerToast(message, options);
 }
