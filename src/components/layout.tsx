@@ -233,7 +233,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Coins className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium text-muted-foreground">Pool</span>
                 <span className="text-sm font-mono font-bold text-white">
-                  {formatCurrency(pool.totalAmount)}
+                  {formatCurrency(pool?.totalAmount ?? 0)}
                 </span>
               </div>
 
