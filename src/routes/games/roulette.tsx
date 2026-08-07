@@ -183,199 +183,198 @@ function Roulette() {
     "rgba(100,100,100,0.5)";
 
   return (
-    <Layout>
-      <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
-        <div className="flex items-center gap-3">
-          <Link to="/games">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-white">
-              <ArrowLeft className="w-4 h-4" />
-              All Games
-            </Button>
-          </Link>
-        </div>
-        <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-white/10">
-          <img src={rouletteImg} alt="Neon Roulette" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            <h1 className="text-3xl md:text-4xl font-display font-bold text-primary">Neon Roulette</h1>
-            <p className="text-muted-foreground text-sm mt-0.5">Classic red or black with dynamic odds based on the global pool.</p>
-          </div>
-        </div>
-        <div className="flex flex-col md:flex-row gap-8">
-          <div className="flex-1 space-y-6">
-            <Card className="bg-black/60 border-white/10 overflow-hidden relative min-h-[400px] flex items-center justify-center">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,136,0.05),transparent_70%)]" />
-
-              <AnimatePresence mode="wait">
-                {!spinning && !result ? (
-                  <motion.div
-                    key="idle"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="text-center z-10 flex flex-col items-center gap-6"
-                  >
-                    <RouletteWheel spinning={false} />
-                    <p className="text-muted-foreground text-lg">Place your bet to spin</p>
-                  </motion.div>
-                ) : spinning ? (
-                  <motion.div
-                    key="spinning"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="z-10 flex flex-col items-center gap-6"
-                  >
-                    <RouletteWheel spinning={true} />
-                    <motion.p
-                      animate={{ opacity: [0.4, 1, 0.4] }}
-                      transition={{ duration: 0.8, repeat: Infinity }}
-                      className="text-primary text-xl font-bold font-display"
-                    >
-                      Spinning…
-                    </motion.p>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="result"
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                    className="text-center z-10 flex flex-col items-center gap-4"
-                  >
-                    <motion.div
-                      animate={{ boxShadow: ["0 0 0px transparent", `0 0 50px ${resultGlowColor}`, "0 0 0px transparent"] }}
-                      transition={{ duration: 1, repeat: 2 }}
-                      className={`w-32 h-32 rounded-full flex items-center justify-center text-5xl font-display font-black shadow-2xl ${
-                        result.resultColor === "red" ? "bg-red-500 text-white" :
-                        result.resultColor === "green" ? "bg-green-500 text-white" :
-                        "bg-gray-900 border-2 border-white/20 text-white"
-                      }`}
-                    >
-                      {result.resultNumber}
-                    </motion.div>
-                    <div>
-                      <h3 className="text-2xl font-bold font-display uppercase tracking-widest text-white capitalize">
-                        {result.resultColor} {result.resultNumber}
-                      </h3>
-                      {result.won ? (
-                        <motion.p
-                          initial={{ scale: 0.5 }}
-                          animate={{ scale: 1 }}
-                          className={`mt-2 text-2xl font-mono font-bold ${result.resultColor === "green" ? "text-green-400" : "text-primary"}`}
-                        >
-                          +{formatCurrency(result.payout)}
-                          {result.resultColor === "green" && <span className="ml-2 text-base">💚 50×</span>}
-                        </motion.p>
-                      ) : (
-                        <p className="mt-2 text-xl text-destructive font-mono opacity-80">
-                          -{formatCurrency(result.betAmount)}
-                        </p>
-                      )}
-                    </div>
-                    <Button variant="outline" size="sm" className="mt-2 border-white/10" onClick={() => setResult(null)}>
-                      Play Again
-                    </Button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </Card>
-          </div>
-
-          <div className="w-full md:w-80 space-y-6">
-            <Card className="border-white/10 bg-card/80">
-              <CardContent className="p-6 space-y-6">
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-muted-foreground">Bet Amount</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      <Coins className="w-5 h-5" />
-                    </span>
-                    <Input
-                      type="number"
-                      min="0.01"
-                      step="1"
-                      value={betAmount}
-                      onChange={(e) => setBetAmount(e.target.value)}
-                      disabled={spinning}
-                      className="pl-10 font-mono text-lg h-14 bg-black/50"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 border-white/10" onClick={() => setBetAmount((numericBet / 2).toString())} disabled={spinning}>1/2</Button>
-                    <Button variant="outline" size="sm" className="flex-1 border-white/10" onClick={() => setBetAmount((numericBet * 2).toString())} disabled={spinning}>2×</Button>
-                    {user && (
-                      <Button variant="outline" size="sm" className="flex-1 border-white/10" onClick={() => setBetAmount(String(user.balance))} disabled={spinning}>Max</Button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-muted-foreground">Color</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["red", "black", "green"] as BetColor[]).map((c) => {
-                      const conf = COLOR_CONFIG[c];
-                      const isActive = color === c;
-                      return (
-                        <motion.div key={c} whileTap={{ scale: 0.95 }}>
-                          <Button
-                            variant={isActive ? "default" : "outline"}
-                            onClick={() => setColor(c)}
-                            disabled={spinning}
-                            className={`w-full h-16 font-bold flex flex-col gap-0.5 text-xs ${isActive ? `${conf.activeClass} ${conf.glow}` : conf.hoverClass}`}
-                          >
-                            <span className="text-base">{conf.emoji}</span>
-                            <span>{conf.label}</span>
-                            <span className="opacity-70">{conf.payout}</span>
-                          </Button>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                  {color === "green" && (
-                    <p className="text-xs text-green-400/80 bg-green-950/30 border border-green-500/20 rounded-lg p-2 text-center">
-                      💚 Rare bet — lands on 0 only. <strong>50× payout</strong> if you hit it!
-                    </p>
-                  )}
-                </div>
-
-                <div className="pt-2">
-                  <div className="flex justify-between items-center text-sm mb-1">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      <AlertCircle className="w-4 h-4" /> Win Chance
-                    </span>
-                    <span className="font-mono font-medium text-primary">{cfg.chance}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm mb-3">
-                    <span className="text-muted-foreground">Potential payout</span>
-                    <span className="font-mono font-medium text-primary">
-                      {numericBet > 0 ? formatCurrency(numericBet * (color === "green" ? 50 : 2)) : "—"}
-                    </span>
-                  </div>
-                  <motion.div whileTap={{ scale: 0.97 }}>
-                    <Button
-                      size="lg"
-                      className={`w-full h-16 text-xl ${color === "green" ? "bg-green-600 hover:bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]" : "shadow-[0_0_20px_rgba(0,255,136,0.2)] hover:shadow-[0_0_30px_rgba(0,255,136,0.4)]"}`}
-                      onClick={handlePlay}
-                      disabled={spinning || numericBet <= 0}
-                    >
-                      {spinning ? "Spinning…" : `🎡 Bet on ${cfg.label}`}
-                    </Button>
-                  </motion.div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {pool && (
-              <div className="text-xs text-muted-foreground text-center bg-white/5 p-4 rounded-xl border border-white/5">
-                Your Balance: <span className="text-white font-mono">{formatCurrency(user?.balance ?? 0)}</span>
-                <br />
-                Global Pool: <span className="text-white font-mono">{formatCurrency(pool.totalAmount)}</span>
-              </div>
-            )}
-          </div>
+    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
+      <div className="flex items-center gap-3">
+        <Link to="/games">
+          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-white">
+            <ArrowLeft className="w-4 h-4" />
+            All Games
+          </Button>
+        </Link>
+      </div>
+      <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-white/10">
+        <img src={rouletteImg} alt="Neon Roulette" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-5">
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-primary">Neon Roulette</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Classic red or black with dynamic odds based on the global pool.</p>
         </div>
       </div>
-    </Layout>
+      <div className="flex flex-col md:flex-row gap-8">
+        <div className="flex-1 space-y-6">
+          <Card className="bg-black/60 border-white/10 overflow-hidden relative min-h-[400px] flex items-center justify-center">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,136,0.05),transparent_70%)]" />
+
+            <AnimatePresence mode="wait">
+              {!spinning && !result ? (
+                <motion.div
+                  key="idle"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="text-center z-10 flex flex-col items-center gap-6"
+                >
+                  <RouletteWheel spinning={false} />
+                  <p className="text-muted-foreground text-lg">Place your bet to spin</p>
+                </motion.div>
+              ) : spinning ? (
+                <motion.div
+                  key="spinning"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="z-10 flex flex-col items-center gap-6"
+                >
+                  <RouletteWheel spinning={true} />
+                  <motion.p
+                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    transition={{ duration: 0.8, repeat: Infinity }}
+                    className="text-primary text-xl font-bold font-display"
+                  >
+                    Spinning…
+                  </motion.p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="result"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                  className="text-center z-10 flex flex-col items-center gap-4"
+                >
+                  <motion.div
+                    animate={{ boxShadow: ["0 0 0px transparent", `0 0 50px ${resultGlowColor}`, "0 0 0px transparent"] }}
+                    transition={{ duration: 1, repeat: 2 }}
+                    className={`w-32 h-32 rounded-full flex items-center justify-center text-5xl font-display font-black shadow-2xl ${
+                      result.resultColor === "red" ? "bg-red-500 text-white" :
+                      result.resultColor === "green" ? "bg-green-500 text-white" :
+                      "bg-gray-900 border-2 border-white/20 text-white"
+                    }`}
+                  >
+                    {result.resultNumber}
+                  </motion.div>
+                  <div>
+                    <h3 className="text-2xl font-bold font-display uppercase tracking-widest text-white capitalize">
+                      {result.resultColor} {result.resultNumber}
+                    </h3>
+                    {result.won ? (
+                      <motion.p
+                        initial={{ scale: 0.5 }}
+                        animate={{ scale: 1 }}
+                        className={`mt-2 text-2xl font-mono font-bold ${result.resultColor === "green" ? "text-green-400" : "text-primary"}`}
+                      >
+                        +{formatCurrency(result.payout)}
+                        {result.resultColor === "green" && <span className="ml-2 text-base">💚 50×</span>}
+                      </motion.p>
+                    ) : (
+                      <p className="mt-2 text-xl text-destructive font-mono opacity-80">
+                        -{formatCurrency(result.betAmount)}
+                      </p>
+                    )}
+                  </div>
+                  <Button variant="outline" size="sm" className="mt-2 border-white/10" onClick={() => setResult(null)}>
+                    Play Again
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Card>
+        </div>
+
+        <div className="w-full md:w-80 space-y-6">
+          <Card className="border-white/10 bg-card/80">
+            <CardContent className="p-6 space-y-6">
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-muted-foreground">Bet Amount</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Coins className="w-5 h-5" />
+                  </span>
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="1"
+                    value={betAmount}
+                    onChange={(e) => setBetAmount(e.target.value)}
+                    disabled={spinning}
+                    className="pl-10 font-mono text-lg h-14 bg-black/50"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1 border-white/10" onClick={() => setBetAmount((numericBet / 2).toString())} disabled={spinning}>1/2</Button>
+                  <Button variant="outline" size="sm" className="flex-1 border-white/10" onClick={() => setBetAmount((numericBet * 2).toString())} disabled={spinning}>2×</Button>
+                  {user && (
+                    <Button variant="outline" size="sm" className="flex-1 border-white/10" onClick={() => setBetAmount(String(user.balance))} disabled={spinning}>Max</Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-muted-foreground">Color</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["red", "black", "green"] as BetColor[]).map((c) => {
+                    const conf = COLOR_CONFIG[c];
+                    const isActive = color === c;
+                    return (
+                      <motion.div key={c} whileTap={{ scale: 0.95 }}>
+                        <Button
+                          variant={isActive ? "default" : "outline"}
+                          onClick={() => setColor(c)}
+                          disabled={spinning}
+                          className={`w-full h-16 font-bold flex flex-col gap-0.5 text-xs ${isActive ? `${conf.activeClass} ${conf.glow}` : conf.hoverClass}`}
+                        >
+                          <span className="text-base">{conf.emoji}</span>
+                          <span>{conf.label}</span>
+                          <span className="opacity-70">{conf.payout}</span>
+                        </Button>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                {color === "green" && (
+                  <p className="text-xs text-green-400/80 bg-green-950/30 border border-green-500/20 rounded-lg p-2 text-center">
+                    💚 Rare bet — lands on 0 only. <strong>50× payout</strong> if you hit it!
+                  </p>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <div className="flex justify-between items-center text-sm mb-1">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" /> Win Chance
+                  </span>
+                  <span className="font-mono font-medium text-primary">{cfg.chance}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm mb-3">
+                  <span className="text-muted-foreground">Potential payout</span>
+                  <span className="font-mono font-medium text-primary">
+                    {numericBet > 0 ? formatCurrency(numericBet * (color === "green" ? 50 : 2)) : "—"}
+                  </span>
+                </div>
+                <motion.div whileTap={{ scale: 0.97 }}>
+                  <Button
+                    size="lg"
+                    className={`w-full h-16 text-xl ${color === "green" ? "bg-green-600 hover:bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]" : "shadow-[0_0_20px_rgba(0,255,136,0.2)] hover:shadow-[0_0_30px_rgba(0,255,136,0.4)]"}`}
+                    onClick={handlePlay}
+                    disabled={spinning || numericBet <= 0}
+                  >
+                    {spinning ? "Spinning…" : `🎡 Bet on ${cfg.label}`}
+                  </Button>
+                </motion.div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {pool && (
+            <div className="text-xs text-muted-foreground text-center bg-white/5 p-4 rounded-xl border border-white/5">
+              Your Balance: <span className="text-white font-mono">{formatCurrency(user?.balance ?? 0)}</span>
+              <br />
+              Global Pool: <span className="text-white font-mono">{formatCurrency(pool.totalAmount)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
+
