@@ -45,40 +45,71 @@ export function Layout({ children }: { children: React.ReactNode }) {
   });
 
 
-  React.useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const meta = data.user?.user_metadata as Record<string, any> | undefined;
-      setUser(
-        data.user
-          ? {
-              id: data.user.id,
-              email: data.user.email,
-              balance: 1000,
-              isGuest: false,
-              isAdmin: false,
-              username: meta?.["username"] ?? data.user.email,
-            }
-          : null,
-      );
+  const refreshUser = React.useCallback(async () => {
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) {
+      setUser(null);
       setLoadingUser(false);
-    });
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      const meta = session?.user?.user_metadata as Record<string, any> | undefined;
-      setUser(
-        session?.user
-          ? {
-              id: session.user.id,
-              email: session.user.email,
-              balance: 1000,
-              isGuest: false,
-              isAdmin: false,
-              username: meta?.["username"] ?? session.user.email,
-            }
-          : null,
-      );
+      return;
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+    if (profile) {
+      setUser({
+        id: authData.user.id,
+        email: authData.user.email,
+        username: profile.username,
+        balance: Number(profile.balance),
+        isAdmin: profile.is_admin,
+        isGuest: false,
+      });
+    } else {
+      const metaUsername = authData.user.user_metadata?.["username"] as string | undefined;
+      const fallbackUsername = metaUsername ?? authData.user.email?.split("@")[0] ?? `player_${authData.user.id.slice(0, 8)}`;
+      const { data: newProfile, error } = await supabase
+        .from("profiles")
+        .insert({
+          user_id: authData.user.id,
+          username: fallbackUsername,
+          email: authData.user.email,
+        })
+        .select()
+        .single();
+      if (newProfile) {
+        setUser({
+          id: authData.user.id,
+          email: authData.user.email,
+          username: newProfile.username,
+          balance: Number(newProfile.balance),
+          isAdmin: newProfile.is_admin,
+          isGuest: false,
+        });
+      } else {
+        console.error("Failed to create profile:", error);
+        setUser({
+          id: authData.user.id,
+          email: authData.user.email,
+          username: fallbackUsername,
+          balance: 0,
+          isAdmin: false,
+          isGuest: false,
+        });
+      }
+    }
+    setLoadingUser(false);
+  }, []);
+
+  React.useEffect(() => {
+    refreshUser();
+    const { data: subscription } = supabase.auth.onAuthStateChange(() => {
+      refreshUser();
     });
     return () => subscription.subscription.unsubscribe();
-  }, []);
+  }, [refreshUser]);
+
 
   React.useEffect(() => {
     function handleOutside(e: MouseEvent) {
