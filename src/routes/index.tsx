@@ -319,8 +319,8 @@ function Home() {
             <div className="p-0 overflow-x-auto hide-scrollbar">
               <div className="flex items-center gap-4 p-6 min-w-max">
                 <AnimatePresence initial={false}>
-                  {MOCK_WINS.length > 0 ? (
-                    MOCK_WINS.map((win, i) => (
+                  {recentWins.length > 0 ? (
+                    recentWins.map((win, i) => (
                       <motion.div
                         key={`${win.username}-${win.gameType}-${i}`}
                         initial={{ opacity: 0, x: 40, scale: 0.9 }}
@@ -349,6 +349,7 @@ function Home() {
                       </motion.div>
                     ))
                   ) : (
+
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
