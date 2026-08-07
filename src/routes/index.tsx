@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout";
 import { Dices, ArrowRight, TrendingUp, Zap, Activity, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { getPool } from "@/lib/pool.functions";
+import { getRecentWins } from "@/lib/bets.functions";
 
 import rouletteImg from "@/assets/game-roulette.png";
 import plinkoImg from "@/assets/game-plinko.png";
@@ -117,19 +120,6 @@ const GAME_ICONS = [
   { emoji: "🎰", label: "Roulette" },
 ];
 
-const MOCK_POOL = {
-  totalAmount: 128456.78,
-  biggestBet: 15000,
-  biggestWin: 74200,
-};
-
-const MOCK_WINS = [
-  { username: "NeonRider", gameType: "Crash", payout: 42500, multiplier: "5.2" },
-  { username: "LuckyDev", gameType: "Slots", payout: 12800, multiplier: "12.8" },
-  { username: "PoolShark", gameType: "Roulette", payout: 9600, multiplier: "2.0" },
-  { username: "PlinkoKing", gameType: "Plinko", payout: 7400, multiplier: "74" },
-];
-
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -145,15 +135,30 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const pool = MOCK_POOL;
-  const poolStr = formatCurrency(pool.totalAmount);
-  const bigBetStr = formatCurrency(pool.biggestBet);
-  const bigWinStr = formatCurrency(pool.biggestWin);
+  const { data: pool } = useQuery({
+    queryKey: ["pool"],
+    queryFn: () => getPool(),
+    refetchInterval: 10000,
+  });
+
+  const { data: wins } = useQuery({
+    queryKey: ["recent-wins"],
+    queryFn: () => getRecentWins(),
+    refetchInterval: 15000,
+  });
+
+  const poolStats = pool ?? { totalAmount: 0, biggestBet: 0, biggestWin: 0 };
+  const poolStr = formatCurrency(poolStats.totalAmount);
+  const bigBetStr = formatCurrency(poolStats.biggestBet);
+  const bigWinStr = formatCurrency(poolStats.biggestWin);
 
   const prevPool = useRef<number | null>(null);
-  const poolNum = pool.totalAmount;
+  const poolNum = poolStats.totalAmount;
   const grew = prevPool.current !== null && poolNum > prevPool.current;
   prevPool.current = poolNum;
+
+  const recentWins = wins ?? [];
+
 
   return (
     <Layout>
