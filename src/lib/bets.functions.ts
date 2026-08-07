@@ -21,7 +21,7 @@ export const getRecentWins = createServerFn({ method: "GET" }).handler(async () 
 
   const { data, error } = await supabasePublic
     .from("bets")
-    .select("username, game_type, payout, multiplier")
+    .select("game_type, payout, multiplier, profiles(username)")
     .gt("payout", 0)
     .order("created_at", { ascending: false })
     .limit(12);
@@ -30,10 +30,11 @@ export const getRecentWins = createServerFn({ method: "GET" }).handler(async () 
 
   return (
     data?.map((row) => ({
-      username: row.username ?? "Anonymous",
+      username: (row.profiles as { username: string } | null)?.username ?? "Anonymous",
       gameType: row.game_type ?? "Game",
       payout: Number(row.payout),
       multiplier: row.multiplier ? Number(row.multiplier).toFixed(2) : undefined,
     })) ?? []
   );
+
 });
