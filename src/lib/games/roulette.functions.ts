@@ -26,19 +26,13 @@ export const playRoulette = createServerFn({ method: "POST" })
 
     if (!profile) throw new Error("Profile not found");
 
-    if (profile.permanently_banned) {
-      throw new Error("Your account has been permanently banned from playing games.");
-    }
-    if (profile.banned_until && new Date(profile.banned_until) > new Date()) {
-      throw new Error(`You are banned from playing games until ${new Date(profile.banned_until).toLocaleDateString()}.`);
-    }
-
     if (profile.last_bet_at) {
       const msSinceLastBet = Date.now() - new Date(profile.last_bet_at).getTime();
       if (msSinceLastBet < BET_COOLDOWN_MS) {
         throw new Error(`Please wait ${Math.ceil((BET_COOLDOWN_MS - msSinceLastBet) / 1000)} second(s) between bets`);
       }
     }
+
 
     const currentBalance = Number(profile.balance);
     if (currentBalance < betAmount) {
