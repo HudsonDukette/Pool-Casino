@@ -1,5 +1,5 @@
 import React from "react";
-import { toast as sonnerToast } from "sonner";
+import { toast as sonnerToast, type ExternalToast } from "sonner";
 
 export type ToastVariant = "default" | "destructive" | "success";
 
@@ -28,10 +28,14 @@ export function toast({ title, description, variant, className, duration }: Toas
         ? "bg-success text-success-foreground border-none"
         : className;
 
-  sonnerToast(message, {
+  const options: ExternalToast = {
     className: baseClass,
-    duration,
-  });
+  };
+  if (duration !== undefined) {
+    options.duration = duration;
+  }
+
+  sonnerToast(message, options);
 }
 
 export function useToast() {
@@ -40,5 +44,3 @@ export function useToast() {
     dismiss: sonnerToast.dismiss,
   };
 }
-
-export { toast };
