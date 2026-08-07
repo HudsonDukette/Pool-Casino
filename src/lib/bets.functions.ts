@@ -30,10 +30,11 @@ export const getRecentWins = createServerFn({ method: "GET" }).handler(async () 
 
   return (
     data?.map((row) => ({
-      username: (row.profiles as { username: string } | null)?.username ?? "Anonymous",
+      username: ((row.profiles as unknown) as { username: string } | null)?.username ?? "Anonymous",
       gameType: row.game_type ?? "Game",
       payout: Number(row.payout),
       multiplier: row.multiplier ? Number(row.multiplier).toFixed(2) : undefined,
+
     })) ?? []
   );
 
