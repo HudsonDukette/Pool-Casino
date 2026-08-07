@@ -14,7 +14,204 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bets: {
+        Row: {
+          bet_amount: number
+          created_at: string
+          game_type: string
+          id: string
+          metadata: Json | null
+          multiplier: number | null
+          payout: number
+          result: string
+          user_id: string
+        }
+        Insert: {
+          bet_amount: number
+          created_at?: string
+          game_type: string
+          id?: string
+          metadata?: Json | null
+          multiplier?: number | null
+          payout: number
+          result: string
+          user_id: string
+        }
+        Update: {
+          bet_amount?: number
+          created_at?: string
+          game_type?: string
+          id?: string
+          metadata?: Json | null
+          multiplier?: number | null
+          payout?: number
+          result?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      money_ledger: {
+        Row: {
+          actor_user_id: string | null
+          amount: number
+          created_at: string
+          description: string
+          direction: string
+          event_type: string
+          id: string
+          target_user_id: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          amount: number
+          created_at?: string
+          description?: string
+          direction: string
+          event_type: string
+          id?: string
+          target_user_id?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          amount?: number
+          created_at?: string
+          description?: string
+          direction?: string
+          event_type?: string
+          id?: string
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
+      pool: {
+        Row: {
+          biggest_bet: number
+          biggest_win: number
+          created_at: string
+          disabled_games: string[]
+          id: number
+          pool_paused: boolean
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          biggest_bet?: number
+          biggest_win?: number
+          created_at?: string
+          disabled_games?: string[]
+          id?: number
+          pool_paused?: boolean
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          biggest_bet?: number
+          biggest_win?: number
+          created_at?: string
+          disabled_games?: string[]
+          id?: number
+          pool_paused?: boolean
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          balance: number
+          biggest_bet: number
+          biggest_win: number
+          bio: string | null
+          created_at: string
+          current_streak: number
+          email: string | null
+          games_played: number
+          id: string
+          is_admin: boolean
+          is_owner: boolean
+          last_bet_at: string | null
+          last_daily_claim: string | null
+          level: number
+          total_losses: number
+          total_profit: number
+          total_wins: number
+          updated_at: string
+          user_id: string
+          username: string
+          win_streak: number
+          xp: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          balance?: number
+          biggest_bet?: number
+          biggest_win?: number
+          bio?: string | null
+          created_at?: string
+          current_streak?: number
+          email?: string | null
+          games_played?: number
+          id?: string
+          is_admin?: boolean
+          is_owner?: boolean
+          last_bet_at?: string | null
+          last_daily_claim?: string | null
+          level?: number
+          total_losses?: number
+          total_profit?: number
+          total_wins?: number
+          updated_at?: string
+          user_id: string
+          username: string
+          win_streak?: number
+          xp?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          balance?: number
+          biggest_bet?: number
+          biggest_win?: number
+          bio?: string | null
+          created_at?: string
+          current_streak?: number
+          email?: string | null
+          games_played?: number
+          id?: string
+          is_admin?: boolean
+          is_owner?: boolean
+          last_bet_at?: string | null
+          last_daily_claim?: string | null
+          level?: number
+          total_losses?: number
+          total_profit?: number
+          total_wins?: number
+          updated_at?: string
+          user_id?: string
+          username?: string
+          win_streak?: number
+          xp?: number
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
