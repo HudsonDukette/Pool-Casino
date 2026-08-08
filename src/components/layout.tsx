@@ -334,7 +334,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       <Button className="w-full">Sign up</Button>
                     </Link>
                   </div>
+                  </div>
                 )}
+
               </div>
             </motion.div>
           )}
