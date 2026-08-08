@@ -23,7 +23,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getPool } from "@/lib/pool.functions";
 import { useSession } from "@/hooks/use-session";
-import { clearGuest } from "@/lib/guest";
 
 const navLinks = [
   { to: "/", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
