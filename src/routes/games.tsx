@@ -10,23 +10,28 @@ export const Route = createFileRoute("/games")({
 });
 
 function GamesLayout() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isIndex = pathname === "/games" || pathname === "/games/";
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center space-y-4 pt-8 pb-8"
-        >
-          <div className="flex items-center justify-center gap-2">
-            <Dices className="w-7 h-7 text-primary" />
-            <h1 className="text-4xl md:text-5xl font-display font-bold">Casino Games</h1>
-          </div>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            32 solo games. One global pool. Every bet matters.
-          </p>
-        </motion.div>
+        {isIndex && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center space-y-4 pt-8 pb-8"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Dices className="w-7 h-7 text-primary" />
+              <h1 className="text-4xl md:text-5xl font-display font-bold">Casino Games</h1>
+            </div>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              32 solo games. One global pool. Every bet matters.
+            </p>
+          </motion.div>
+        )}
+
 
         <AnimatePresence mode="wait">
           <motion.div
