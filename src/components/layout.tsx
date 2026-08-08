@@ -208,7 +208,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </span>
               </div>
 
-              {user ? (
+              {user && !isGuest ? (
                 <div className="hidden sm:flex items-center gap-2">
                   <AnyLink
                     to="/wallet"
@@ -236,6 +236,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               ) : (
                 <div className="hidden sm:flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-accent/10 border border-accent/30">
+                    <Coins className="w-4 h-4 text-accent" />
+                    <span className="text-sm font-mono font-bold text-white">
+                      {formatCurrency(user?.balance ?? 0)}
+                    </span>
+                    <span className="text-[10px] uppercase tracking-wider text-accent font-semibold">Guest</span>
+                  </div>
                   <Link to="/login">
                     <Button variant="ghost" size="sm">
                       Log in
@@ -288,7 +295,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Dices className="w-4 h-4" />
                   All Games
                 </Link>
-                {user ? (
+                {user && !isGuest ? (
                   <>
                     <AnyLink
                       to="/wallet"
@@ -310,7 +317,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </button>
                   </>
                 ) : (
-                  <div className="pt-2 flex gap-2">
+                  <div className="pt-2 space-y-2">
+                    <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-accent/10 border border-accent/30">
+                      <span className="text-sm text-muted-foreground">Guest tokens</span>
+                      <span className="text-sm font-mono font-bold text-white">
+                        {formatCurrency(user?.balance ?? 0)}
+                      </span>
+                    </div>
+                  <div className="flex gap-2">
                     <Link to="/login" className="flex-1">
                       <Button variant="outline" className="w-full">
                         Log in
