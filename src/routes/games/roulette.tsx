@@ -12,7 +12,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
 import { playRoulette } from "@/lib/games/roulette.functions";
 import { getPool } from "@/lib/pool.functions";
-import { getMyProfile } from "@/lib/profiles.functions";
+import { useSession } from "@/hooks/use-session";
+import { ROULETTE_NUMBERS, calculateWinChance } from "@/lib/gambling";
 import rouletteImg from "@/assets/game-roulette.png";
 
 type BetColor = "red" | "black" | "green";
@@ -93,11 +94,7 @@ function Roulette() {
     refetchInterval: 10000,
   });
 
-  const { data: user } = useQuery({
-    queryKey: ["my-profile"],
-    queryFn: () => getMyProfile(),
-    retry: false,
-  });
+  const { user, isGuest, updateGuestBalance, refresh } = useSession();
 
   const playFn = useServerFn(playRoulette);
   const queryClient = useQueryClient();
@@ -125,10 +122,7 @@ function Roulette() {
   };
 
   const handlePlay = async () => {
-    if (!user) {
-      toast({ title: "Not Authenticated", description: "Please log in to play.", variant: "destructive" });
-      return;
-    }
+    if (!user) return;
     if (numericBet <= 0) {
       toast({ title: "Invalid Bet", description: "Bet amount must be greater than 0.", variant: "destructive" });
       return;
@@ -147,12 +141,45 @@ function Roulette() {
     }, 6000);
 
     try {
+      if (isGuest) {
+        const winChance = calculateWinChance(numericBet, pool?.totalAmount ?? 0);
+        const won = Math.random() < (color === "green" ? Math.min(winChance, 0.025) : winChance);
+        const candidates = ROULETTE_NUMBERS.filter((n) => (won ? n.color === color : n.color !== color));
+        const pick = candidates[Math.floor(Math.random() * candidates.length)] ?? ROULETTE_NUMBERS[0]!;
+        const payout = won ? numericBet * (color === "green" ? 50 : 2) : 0;
+        const newBalance = user.balance - numericBet + payout;
+        const data = {
+          won,
+          payout,
+          betAmount: numericBet,
+          resultNumber: pick.number,
+          resultColor: pick.color,
+          newBalance,
+        };
+        if (watchdogRef.current) clearTimeout(watchdogRef.current);
+        setTimeout(() => {
+          updateGuestBalance(newBalance);
+          setResult(data);
+          stopSpinning();
+          if (won) {
+            toast({
+              title: color === "green" ? "💚 GREEN! Jackpot!" : "🎉 You Won!",
+              description: `Payout: ${formatCurrency(payout)}`,
+              variant: "success",
+            });
+          } else {
+            toast({ title: "No luck this time", description: `Lost ${formatCurrency(numericBet)}`, variant: "destructive" });
+          }
+        }, 2300);
+        return;
+      }
+
       const data = await playFn({ data: { betAmount: numericBet, color } });
       if (watchdogRef.current) clearTimeout(watchdogRef.current);
       setTimeout(() => {
         setResult(data);
         stopSpinning();
-        queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+        refresh();
         queryClient.invalidateQueries({ queryKey: ["pool"] });
         queryClient.invalidateQueries({ queryKey: ["recent-wins"] });
 
