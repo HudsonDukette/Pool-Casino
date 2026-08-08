@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Layout } from "@/components/layout";
+import { clearGuest } from "@/lib/guest";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -44,6 +45,7 @@ function Login() {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
       return;
     }
+    clearGuest();
     toast({ title: "Welcome back!", description: "Successfully logged in." });
     navigate({ to: "/" });
   };
@@ -56,6 +58,7 @@ function Login() {
     if (result.redirected) {
       return;
     }
+    clearGuest();
     toast({ title: "Signed in with Google", description: "Welcome to PoolCasino!" });
     navigate({ to: "/" });
   };

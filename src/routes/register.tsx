@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { User, Lock, Mail, AlertCircle, Tag } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useServerFn } from "@tanstack/react-start";
-import { createProfile } from "@/lib/profiles.functions";
+import { clearGuest } from "@/lib/guest";
 import { Layout } from "@/components/layout";
 
 export const Route = createFileRoute("/register")({
@@ -31,7 +30,6 @@ function Register() {
   const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const createProfileFn = useServerFn(createProfile);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -50,36 +48,29 @@ function Register() {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { username } } });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { username }, emailRedirectTo: window.location.origin },
+    });
+    setLoading(false);
     if (error) {
-      setLoading(false);
       toast({ title: "Registration failed", description: error.message, variant: "destructive" });
       return;
     }
-    if (!data.user) {
-      setLoading(false);
-      toast({ title: "Registration failed", description: "Could not create account." });
-      return;
-    }
-    try {
-      const result = await createProfileFn({ data: { username } });
-      if (!result.created) {
-        toast({ title: "Account already exists", description: "A profile already exists for this account." });
-      }
-    } catch (err) {
-      console.error("Profile creation error:", err);
+    clearGuest();
+    if (!data.session) {
       toast({
-        title: "Profile creation failed",
-        description: err instanceof Error ? err.message : "Could not set up your profile.",
-        variant: "destructive",
+        title: "Almost there!",
+        description: "Check your email to confirm your account, then log in.",
+        className: "bg-success text-success-foreground border-none",
       });
-      setLoading(false);
+      navigate({ to: "/login" });
       return;
     }
-    setLoading(false);
     toast({
       title: "Account created!",
-      description: "Check your email to confirm, then start playing.",
+      description: "Your balance is ready — good luck.",
       className: "bg-success text-success-foreground border-none",
     });
     navigate({ to: "/" });
