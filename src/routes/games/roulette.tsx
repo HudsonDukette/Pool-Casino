@@ -392,6 +392,12 @@ function Roulette() {
             </CardContent>
           </Card>
 
+          {isGuest && (
+            <div className="text-xs text-accent/90 bg-accent/10 border border-accent/30 p-4 rounded-xl text-center">
+              You&apos;re playing as a guest with free tokens.{" "}
+              <Link to="/register" className="underline font-semibold">Sign up</Link> to play with the real pool and keep your stats.
+            </div>
+          )}
           {pool && (
             <div className="text-xs text-muted-foreground text-center bg-white/5 p-4 rounded-xl border border-white/5">
               Your Balance: <span className="text-white font-mono">{formatCurrency(user?.balance ?? 0)}</span>
