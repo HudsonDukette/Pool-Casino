@@ -38,8 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [gamesDropdownOpen, setGamesDropdownOpen] = React.useState(false);
   const gamesDropdownRef = React.useRef<HTMLDivElement>(null);
-  const [user, setUser] = React.useState<any>(null);
-  const [loadingUser, setLoadingUser] = React.useState(true);
+  const { user, isGuest } = useSession();
 
   const { data: pool } = useQuery({
     queryKey: ["pool"],
@@ -47,71 +46,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     refetchInterval: 10000,
   });
 
-
-  const refreshUser = React.useCallback(async () => {
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData.user) {
-      setUser(null);
-      setLoadingUser(false);
-      return;
-    }
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", authData.user.id)
-      .maybeSingle();
-    if (profile) {
-      setUser({
-        id: authData.user.id,
-        email: authData.user.email,
-        username: profile.username,
-        balance: Number(profile.balance),
-        isAdmin: profile.is_admin,
-        isGuest: false,
-      });
-    } else {
-      const metaUsername = authData.user.user_metadata?.["username"] as string | undefined;
-      const fallbackUsername = metaUsername ?? authData.user.email?.split("@")[0] ?? `player_${authData.user.id.slice(0, 8)}`;
-      const { data: newProfile, error } = await supabase
-        .from("profiles")
-        .insert({
-          user_id: authData.user.id,
-          username: fallbackUsername,
-          email: authData.user.email ?? null,
-        })
-        .select()
-        .single();
-      if (newProfile) {
-        setUser({
-          id: authData.user.id,
-          email: authData.user.email,
-          username: newProfile.username,
-          balance: Number(newProfile.balance),
-          isAdmin: newProfile.is_admin,
-          isGuest: false,
-        });
-      } else {
-        console.error("Failed to create profile:", error);
-        setUser({
-          id: authData.user.id,
-          email: authData.user.email,
-          username: fallbackUsername,
-          balance: 0,
-          isAdmin: false,
-          isGuest: false,
-        });
-      }
-    }
-    setLoadingUser(false);
-  }, []);
-
-  React.useEffect(() => {
-    refreshUser();
-    const { data: subscription } = supabase.auth.onAuthStateChange(() => {
-      refreshUser();
-    });
-    return () => subscription.subscription.unsubscribe();
-  }, [refreshUser]);
 
 
   React.useEffect(() => {
