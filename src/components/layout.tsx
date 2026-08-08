@@ -22,6 +22,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getPool } from "@/lib/pool.functions";
+import { useSession } from "@/hooks/use-session";
+import { clearGuest } from "@/lib/guest";
 
 const navLinks = [
   { to: "/", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -62,8 +64,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await queryClient.cancelQueries();
     queryClient.clear();
+    await supabase.auth.signOut();
     toast({ title: "Logged out", variant: "default" });
   };
 
