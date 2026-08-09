@@ -138,8 +138,8 @@ export const setModeration = createServerFn({ method: "POST" })
     (input: {
       userId: string;
       action: "suspend" | "ban" | "perma_ban" | "unban";
-      reason?: string;
-      days?: number;
+      reason?: string | undefined;
+      days?: number | undefined;
     }) => input,
   )
   .handler(async ({ data, context }) => {
