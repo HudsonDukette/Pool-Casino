@@ -1,5 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
+
+type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
+type PoolUpdate = Database["public"]["Tables"]["pool"]["Update"];
 
 type StaffContext = {
   supabase: import("@supabase/supabase-js").SupabaseClient<
@@ -141,7 +145,7 @@ export const setModeration = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireStaff(context as StaffContext);
     const supabase = (context as StaffContext).supabase;
-    const patch: Record<string, unknown> = { ban_reason: data.reason ?? null };
+    const patch: ProfileUpdate = { ban_reason: data.reason ?? null };
     if (data.action === "suspend") {
       patch["is_suspended"] = true;
       patch["banned_until"] = new Date(Date.now() + (data.days ?? 1) * 86400000).toISOString();
@@ -176,7 +180,7 @@ export const setUsername = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-async function supabase_update(context: StaffContext, userId: string, patch: Record<string, unknown>) {
+async function supabase_update(context: StaffContext, userId: string, patch: ProfileUpdate) {
   return context.supabase.from("profiles").update(patch).eq("user_id", userId);
 }
 
@@ -202,7 +206,7 @@ export const updateCasinoSettings = createServerFn({ method: "POST" })
     const supabase = (context as StaffContext).supabase;
     const { data: pool } = await supabase.from("pool").select("id").order("id").limit(1).maybeSingle();
     if (!pool) throw new Error("Pool not found");
-    const patch: Record<string, unknown> = {};
+    const patch: PoolUpdate = {};
     if (data.poolPaused !== undefined) patch["pool_paused"] = data.poolPaused;
     if (data.disabledGames !== undefined) patch["disabled_games"] = data.disabledGames;
     const { error } = await supabase.from("pool").update(patch).eq("id", pool.id);
