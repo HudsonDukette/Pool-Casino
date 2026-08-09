@@ -120,6 +120,8 @@ export type Database = {
         Row: {
           avatar_url: string | null
           balance: number
+          ban_reason: string | null
+          banned_until: string | null
           biggest_bet: number
           biggest_win: number
           bio: string | null
@@ -129,7 +131,10 @@ export type Database = {
           games_played: number
           id: string
           is_admin: boolean
+          is_banned: boolean
           is_owner: boolean
+          is_perma_banned: boolean
+          is_suspended: boolean
           last_bet_at: string | null
           last_daily_claim: string | null
           level: number
@@ -145,6 +150,8 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           balance?: number
+          ban_reason?: string | null
+          banned_until?: string | null
           biggest_bet?: number
           biggest_win?: number
           bio?: string | null
@@ -154,7 +161,10 @@ export type Database = {
           games_played?: number
           id?: string
           is_admin?: boolean
+          is_banned?: boolean
           is_owner?: boolean
+          is_perma_banned?: boolean
+          is_suspended?: boolean
           last_bet_at?: string | null
           last_daily_claim?: string | null
           level?: number
@@ -170,6 +180,8 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           balance?: number
+          ban_reason?: string | null
+          banned_until?: string | null
           biggest_bet?: number
           biggest_win?: number
           bio?: string | null
@@ -179,7 +191,10 @@ export type Database = {
           games_played?: number
           id?: string
           is_admin?: boolean
+          is_banned?: boolean
           is_owner?: boolean
+          is_perma_banned?: boolean
+          is_suspended?: boolean
           last_bet_at?: string | null
           last_daily_claim?: string | null
           level?: number
@@ -217,7 +232,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
