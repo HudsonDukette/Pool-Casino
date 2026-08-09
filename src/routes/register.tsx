@@ -43,10 +43,6 @@ function Register() {
       toast({ title: "Username too short", description: "Username must be at least 3 characters.", variant: "destructive" });
       return;
     }
-    if (password.length < 6) {
-      toast({ title: "Password too short", description: "Password must be at least 6 characters.", variant: "destructive" });
-      return;
-    }
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -116,11 +112,10 @@ function Register() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="password"
-                  placeholder="Password (min 6 chars)"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
                   className="bg-black/50 pl-10"
                 />
               </div>
