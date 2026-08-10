@@ -151,7 +151,9 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <SessionProvider>
+        <Outlet />
+      </SessionProvider>
       <Toaster />
     </QueryClientProvider>
   );
