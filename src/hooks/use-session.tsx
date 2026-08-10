@@ -14,7 +14,18 @@ export type SessionUser = {
   username: string;
   balance: number;
   isAdmin: boolean;
+  isOwner: boolean;
   isGuest: boolean;
+};
+
+export type SessionValue = {
+  user: SessionUser | null;
+  isGuest: boolean;
+  isAuthenticated: boolean;
+  loading: boolean;
+  refresh: () => Promise<void>;
+  updateGuestBalance: (balance: number) => void;
+  setBalance: (balance: number) => void;
 };
 
 async function loadAuthedUser(): Promise<SessionUser | null> {
@@ -34,7 +45,8 @@ async function loadAuthedUser(): Promise<SessionUser | null> {
       email: authUser.email ?? null,
       username: profile.username,
       balance: Number(profile.balance),
-      isAdmin: profile.is_admin,
+      isAdmin: profile.is_admin || profile.is_owner,
+      isOwner: profile.is_owner,
       isGuest: false,
     };
   }
@@ -58,16 +70,19 @@ async function loadAuthedUser(): Promise<SessionUser | null> {
     email: authUser.email ?? null,
     username: created?.username ?? fallbackUsername,
     balance: created ? Number(created.balance) : 0,
-    isAdmin: created?.is_admin ?? false,
+    isAdmin: (created?.is_admin ?? false) || (created?.is_owner ?? false),
+    isOwner: created?.is_owner ?? false,
     isGuest: false,
   };
 }
 
+const SessionContext = React.createContext<SessionValue | null>(null);
+
 /**
- * Single source of truth for "who is playing": a signed-in account, or a
- * local guest wallet seeded with free tokens.
+ * Holds "who is playing" once for the whole app so the signed-in state survives
+ * client-side navigation between pages instead of re-resolving on every mount.
  */
-export function useSession() {
+export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [authedUser, setAuthedUser] = React.useState<SessionUser | null>(null);
   const [guest, setGuest] = React.useState<GuestState | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -83,7 +98,8 @@ export function useSession() {
   React.useEffect(() => {
     setGuest(readGuest());
     refresh();
-    const { data } = supabase.auth.onAuthStateChange(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED") return;
       refresh();
     });
     return () => data.subscription.unsubscribe();
@@ -100,21 +116,36 @@ export function useSession() {
           username: guest.username,
           balance: guest.balance,
           isAdmin: false,
+          isOwner: false,
           isGuest: true,
         }
       : null;
 
   const updateGuestBalance = React.useCallback((balance: number) => {
-    const next = setGuestBalance(balance);
-    setGuest(next);
+    setGuest(setGuestBalance(balance));
   }, []);
 
-  return {
+  const setBalance = React.useCallback((balance: number) => {
+    setAuthedUser((prev) => (prev ? { ...prev, balance } : prev));
+  }, []);
+
+  const value: SessionValue = {
     user,
     isGuest: !authedUser,
     isAuthenticated: !!authedUser,
     loading,
     refresh,
     updateGuestBalance,
+    setBalance,
   };
+
+  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+}
+
+export function useSession(): SessionValue {
+  const ctx = React.useContext(SessionContext);
+  if (!ctx) {
+    throw new Error("useSession must be used inside <SessionProvider>");
+  }
+  return ctx;
 }
