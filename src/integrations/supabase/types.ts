@@ -234,6 +234,37 @@ export type Database = {
     Functions: {
       is_owner: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      public_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          biggest_win: number
+          games_played: number
+          level: number
+          total_profit: number
+          username: string
+        }[]
+      }
+      public_recent_wins: {
+        Args: { _limit?: number }
+        Returns: {
+          created_at: string
+          game_type: string
+          multiplier: number
+          payout: number
+          username: string
+        }[]
+      }
+      settle_bet: {
+        Args: {
+          _bet_amount: number
+          _game_type: string
+          _metadata?: Json
+          _multiplier?: number
+          _payout: number
+          _result?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
