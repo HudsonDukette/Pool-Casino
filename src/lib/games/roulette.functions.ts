@@ -67,15 +67,6 @@ export const playRoulette = createServerFn({ method: "POST" })
     const rawPayoutMultiplier = isGreen ? 50 : 2;
     const uncappedPayout = won ? betAmount * rawPayoutMultiplier : 0;
     const payout = uncappedPayout > betAmount ? Math.min(uncappedPayout, poolAmount) : uncappedPayout;
-    const newBalance = currentBalance - betAmount + payout;
-    const newPoolAmount = Math.max(0, poolAmount + betAmount - payout);
-    const newBiggestWin = won && payout > Number(poolRow.biggest_win) ? payout : Number(poolRow.biggest_win);
-    const newBiggestBet = betAmount > Number(poolRow.biggest_bet) ? betAmount : Number(poolRow.biggest_bet);
-
-    const profit = payout - betAmount;
-    const newGamesPlayed = Number(profile.games_played) + 1;
-    const newCurrentStreak = won ? Number(profile.current_streak) + 1 : 0;
-    const newWinStreak = Math.max(Number(profile.win_streak), newCurrentStreak);
 
     const { data: settled, error: settleError } = await supabase.rpc("settle_bet", {
       _game_type: "roulette",
