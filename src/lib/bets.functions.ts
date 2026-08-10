@@ -21,21 +21,29 @@ export const getRecentWins = createServerFn({ method: "GET" }).handler(async () 
 
   const { data, error } = await supabasePublic
     .from("bets")
-    .select("game_type, payout, multiplier, profiles(username)")
+    .select("user_id, game_type, payout, multiplier")
     .gt("payout", 0)
     .order("created_at", { ascending: false })
     .limit(12);
 
   if (error) throw error;
 
-  return (
-    data?.map((row) => ({
-      username: ((row.profiles as unknown) as { username: string } | null)?.username ?? "Anonymous",
-      gameType: row.game_type ?? "Game",
-      payout: Number(row.payout),
-      multiplier: row.multiplier ? Number(row.multiplier).toFixed(2) : undefined,
+  const rows = data ?? [];
+  const userIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))] as string[];
 
-    })) ?? []
-  );
+  let names: Record<string, string> = {};
+  if (userIds.length) {
+    const { data: profiles } = await supabasePublic
+      .from("profiles")
+      .select("user_id, username")
+      .in("user_id", userIds);
+    names = Object.fromEntries((profiles ?? []).map((p) => [p.user_id, p.username]));
+  }
 
+  return rows.map((row) => ({
+    username: (row.user_id && names[row.user_id]) || "Anonymous",
+    gameType: row.game_type ?? "Game",
+    payout: Number(row.payout),
+    multiplier: row.multiplier ? Number(row.multiplier).toFixed(2) : undefined,
+  }));
 });
