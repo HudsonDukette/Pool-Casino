@@ -11,6 +11,7 @@
       "_origin": "ast",
       "id": "components",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "components.json"
     },
     {
@@ -21,6 +22,7 @@
       "_origin": "ast",
       "id": "components_schema",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "$schema"
     },
     {
@@ -31,6 +33,7 @@
       "_origin": "ast",
       "id": "components_style",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "style"
     },
     {
@@ -41,6 +44,7 @@
       "_origin": "ast",
       "id": "components_rsc",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "rsc"
     },
     {
@@ -51,6 +55,7 @@
       "_origin": "ast",
       "id": "components_tsx",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "tsx"
     },
     {
@@ -61,6 +66,7 @@
       "_origin": "ast",
       "id": "components_tailwind",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "tailwind"
     },
     {
@@ -71,6 +77,7 @@
       "_origin": "ast",
       "id": "components_tailwind_css",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "css"
     },
     {
@@ -81,6 +88,7 @@
       "_origin": "ast",
       "id": "components_tailwind_basecolor",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "basecolor"
     },
     {
@@ -91,6 +99,7 @@
       "_origin": "ast",
       "id": "components_tailwind_cssvariables",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "cssvariables"
     },
     {
@@ -101,6 +110,7 @@
       "_origin": "ast",
       "id": "components_tailwind_prefix",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "prefix"
     },
     {
@@ -111,6 +121,7 @@
       "_origin": "ast",
       "id": "components_iconlibrary",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "iconlibrary"
     },
     {
@@ -121,6 +132,7 @@
       "_origin": "ast",
       "id": "components_rtl",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "rtl"
     },
     {
@@ -131,6 +143,7 @@
       "_origin": "ast",
       "id": "components_aliases",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "aliases"
     },
     {
@@ -141,6 +154,7 @@
       "_origin": "ast",
       "id": "components_aliases_components",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "components"
     },
     {
@@ -151,6 +165,7 @@
       "_origin": "ast",
       "id": "components_aliases_utils",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "utils"
     },
     {
@@ -161,6 +176,7 @@
       "_origin": "ast",
       "id": "components_aliases_ui",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "ui"
     },
     {
@@ -171,6 +187,7 @@
       "_origin": "ast",
       "id": "components_aliases_lib",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "lib"
     },
     {
@@ -181,6 +198,7 @@
       "_origin": "ast",
       "id": "components_aliases_hooks",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "hooks"
     },
     {
@@ -191,6 +209,7 @@
       "_origin": "ast",
       "id": "components_registries",
       "community": 11,
+      "community_name": "shadcn Component Registry",
       "norm_label": "registries"
     },
     {
@@ -201,6 +220,7 @@
       "_origin": "ast",
       "id": "eslint_config",
       "community": 75,
+      "community_name": "eslint.config",
       "norm_label": "eslint.config.js"
     },
     {
@@ -211,6 +231,7 @@
       "_origin": "ast",
       "id": "package",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "package.json"
     },
     {
@@ -221,6 +242,7 @@
       "_origin": "ast",
       "id": "package_name",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "name"
     },
     {
@@ -231,6 +253,7 @@
       "_origin": "ast",
       "id": "package_private",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "private"
     },
     {
@@ -241,6 +264,7 @@
       "_origin": "ast",
       "id": "package_sideeffects",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "sideeffects"
     },
     {
@@ -251,6 +275,7 @@
       "_origin": "ast",
       "id": "package_type",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "type"
     },
     {
@@ -261,6 +286,7 @@
       "_origin": "ast",
       "id": "package_scripts",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "scripts"
     },
     {
@@ -271,6 +297,7 @@
       "_origin": "ast",
       "id": "package_scripts_dev",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "dev"
     },
     {
@@ -281,6 +308,7 @@
       "_origin": "ast",
       "id": "package_scripts_build",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "build"
     },
     {
@@ -291,6 +319,7 @@
       "_origin": "ast",
       "id": "package_scripts_build_dev",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "build:dev"
     },
     {
@@ -301,6 +330,7 @@
       "_origin": "ast",
       "id": "package_scripts_preview",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "preview"
     },
     {
@@ -311,6 +341,7 @@
       "_origin": "ast",
       "id": "package_scripts_lint",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "lint"
     },
     {
@@ -321,6 +352,7 @@
       "_origin": "ast",
       "id": "package_scripts_format",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "format"
     },
     {
@@ -331,6 +363,7 @@
       "_origin": "ast",
       "id": "package_dependencies",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "dependencies"
     },
     {
@@ -341,6 +374,7 @@
       "_origin": "ast",
       "id": "package_dependencies_hookform_resolvers",
       "community": 31,
+      "community_name": "@hookform/resolvers",
       "norm_label": "@hookform/resolvers"
     },
     {
@@ -351,6 +385,7 @@
       "_origin": "ast",
       "id": "hookform_resolvers",
       "community": 31,
+      "community_name": "@hookform/resolvers",
       "norm_label": "@hookform/resolvers"
     },
     {
@@ -361,6 +396,7 @@
       "_origin": "ast",
       "id": "package_dependencies_lovable_dev_cloud_auth_js",
       "community": 33,
+      "community_name": "@lovable.dev/cloud-auth-js",
       "norm_label": "@lovable.dev/cloud-auth-js"
     },
     {
@@ -371,6 +407,7 @@
       "_origin": "ast",
       "id": "lovable_dev_cloud_auth_js",
       "community": 33,
+      "community_name": "@lovable.dev/cloud-auth-js",
       "norm_label": "@lovable.dev/cloud-auth-js"
     },
     {
@@ -381,6 +418,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_accordion",
       "community": 35,
+      "community_name": "@radix-ui/react-accordion",
       "norm_label": "@radix-ui/react-accordion"
     },
     {
@@ -391,6 +429,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_accordion",
       "community": 35,
+      "community_name": "@radix-ui/react-accordion",
       "norm_label": "@radix-ui/react-accordion"
     },
     {
@@ -401,6 +440,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_alert_dialog",
       "community": 36,
+      "community_name": "@radix-ui/react-alert-dialog",
       "norm_label": "@radix-ui/react-alert-dialog"
     },
     {
@@ -411,6 +451,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_alert_dialog",
       "community": 36,
+      "community_name": "@radix-ui/react-alert-dialog",
       "norm_label": "@radix-ui/react-alert-dialog"
     },
     {
@@ -421,6 +462,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_aspect_ratio",
       "community": 37,
+      "community_name": "@radix-ui/react-aspect-ratio",
       "norm_label": "@radix-ui/react-aspect-ratio"
     },
     {
@@ -431,6 +473,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_aspect_ratio",
       "community": 37,
+      "community_name": "@radix-ui/react-aspect-ratio",
       "norm_label": "@radix-ui/react-aspect-ratio"
     },
     {
@@ -441,6 +484,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_avatar",
       "community": 38,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "@radix-ui/react-avatar"
     },
     {
@@ -451,6 +495,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_avatar",
       "community": 38,
+      "community_name": "@radix-ui/react-avatar",
       "norm_label": "@radix-ui/react-avatar"
     },
     {
@@ -461,6 +506,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_checkbox",
       "community": 39,
+      "community_name": "@radix-ui/react-checkbox",
       "norm_label": "@radix-ui/react-checkbox"
     },
     {
@@ -471,6 +517,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_checkbox",
       "community": 39,
+      "community_name": "@radix-ui/react-checkbox",
       "norm_label": "@radix-ui/react-checkbox"
     },
     {
@@ -481,6 +528,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_collapsible",
       "community": 40,
+      "community_name": "@radix-ui/react-collapsible",
       "norm_label": "@radix-ui/react-collapsible"
     },
     {
@@ -491,6 +539,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_collapsible",
       "community": 40,
+      "community_name": "@radix-ui/react-collapsible",
       "norm_label": "@radix-ui/react-collapsible"
     },
     {
@@ -501,6 +550,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_context_menu",
       "community": 41,
+      "community_name": "@radix-ui/react-context-menu",
       "norm_label": "@radix-ui/react-context-menu"
     },
     {
@@ -511,6 +561,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_context_menu",
       "community": 41,
+      "community_name": "@radix-ui/react-context-menu",
       "norm_label": "@radix-ui/react-context-menu"
     },
     {
@@ -521,6 +572,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_dialog",
       "community": 42,
+      "community_name": "@radix-ui/react-dialog",
       "norm_label": "@radix-ui/react-dialog"
     },
     {
@@ -531,6 +583,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_dialog",
       "community": 42,
+      "community_name": "@radix-ui/react-dialog",
       "norm_label": "@radix-ui/react-dialog"
     },
     {
@@ -541,6 +594,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_dropdown_menu",
       "community": 43,
+      "community_name": "@radix-ui/react-dropdown-menu",
       "norm_label": "@radix-ui/react-dropdown-menu"
     },
     {
@@ -551,6 +605,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_dropdown_menu",
       "community": 43,
+      "community_name": "@radix-ui/react-dropdown-menu",
       "norm_label": "@radix-ui/react-dropdown-menu"
     },
     {
@@ -561,6 +616,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_hover_card",
       "community": 44,
+      "community_name": "@radix-ui/react-hover-card",
       "norm_label": "@radix-ui/react-hover-card"
     },
     {
@@ -571,6 +627,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_hover_card",
       "community": 44,
+      "community_name": "@radix-ui/react-hover-card",
       "norm_label": "@radix-ui/react-hover-card"
     },
     {
@@ -581,6 +638,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_label",
       "community": 45,
+      "community_name": "@radix-ui/react-label",
       "norm_label": "@radix-ui/react-label"
     },
     {
@@ -591,6 +649,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_label",
       "community": 45,
+      "community_name": "@radix-ui/react-label",
       "norm_label": "@radix-ui/react-label"
     },
     {
@@ -601,6 +660,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_menubar",
       "community": 46,
+      "community_name": "@radix-ui/react-menubar",
       "norm_label": "@radix-ui/react-menubar"
     },
     {
@@ -611,6 +671,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_menubar",
       "community": 46,
+      "community_name": "@radix-ui/react-menubar",
       "norm_label": "@radix-ui/react-menubar"
     },
     {
@@ -621,6 +682,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_navigation_menu",
       "community": 47,
+      "community_name": "@radix-ui/react-navigation-menu",
       "norm_label": "@radix-ui/react-navigation-menu"
     },
     {
@@ -631,6 +693,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_navigation_menu",
       "community": 47,
+      "community_name": "@radix-ui/react-navigation-menu",
       "norm_label": "@radix-ui/react-navigation-menu"
     },
     {
@@ -641,6 +704,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_popover",
       "community": 48,
+      "community_name": "@radix-ui/react-popover",
       "norm_label": "@radix-ui/react-popover"
     },
     {
@@ -651,6 +715,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_popover",
       "community": 48,
+      "community_name": "@radix-ui/react-popover",
       "norm_label": "@radix-ui/react-popover"
     },
     {
@@ -661,6 +726,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_progress",
       "community": 49,
+      "community_name": "@radix-ui/react-progress",
       "norm_label": "@radix-ui/react-progress"
     },
     {
@@ -671,6 +737,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_progress",
       "community": 49,
+      "community_name": "@radix-ui/react-progress",
       "norm_label": "@radix-ui/react-progress"
     },
     {
@@ -681,6 +748,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_radio_group",
       "community": 50,
+      "community_name": "@radix-ui/react-radio-group",
       "norm_label": "@radix-ui/react-radio-group"
     },
     {
@@ -691,6 +759,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_radio_group",
       "community": 50,
+      "community_name": "@radix-ui/react-radio-group",
       "norm_label": "@radix-ui/react-radio-group"
     },
     {
@@ -701,6 +770,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_scroll_area",
       "community": 51,
+      "community_name": "@radix-ui/react-scroll-area",
       "norm_label": "@radix-ui/react-scroll-area"
     },
     {
@@ -711,6 +781,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_scroll_area",
       "community": 51,
+      "community_name": "@radix-ui/react-scroll-area",
       "norm_label": "@radix-ui/react-scroll-area"
     },
     {
@@ -721,6 +792,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_select",
       "community": 52,
+      "community_name": "@radix-ui/react-select",
       "norm_label": "@radix-ui/react-select"
     },
     {
@@ -731,6 +803,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_select",
       "community": 52,
+      "community_name": "@radix-ui/react-select",
       "norm_label": "@radix-ui/react-select"
     },
     {
@@ -741,6 +814,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_separator",
       "community": 53,
+      "community_name": "@radix-ui/react-separator",
       "norm_label": "@radix-ui/react-separator"
     },
     {
@@ -751,6 +825,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_separator",
       "community": 53,
+      "community_name": "@radix-ui/react-separator",
       "norm_label": "@radix-ui/react-separator"
     },
     {
@@ -761,6 +836,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_slider",
       "community": 54,
+      "community_name": "@radix-ui/react-slider",
       "norm_label": "@radix-ui/react-slider"
     },
     {
@@ -771,6 +847,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_slider",
       "community": 54,
+      "community_name": "@radix-ui/react-slider",
       "norm_label": "@radix-ui/react-slider"
     },
     {
@@ -781,6 +858,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_slot",
       "community": 55,
+      "community_name": "@radix-ui/react-slot",
       "norm_label": "@radix-ui/react-slot"
     },
     {
@@ -791,6 +869,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_slot",
       "community": 55,
+      "community_name": "@radix-ui/react-slot",
       "norm_label": "@radix-ui/react-slot"
     },
     {
@@ -801,6 +880,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_switch",
       "community": 56,
+      "community_name": "@radix-ui/react-switch",
       "norm_label": "@radix-ui/react-switch"
     },
     {
@@ -811,6 +891,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_switch",
       "community": 56,
+      "community_name": "@radix-ui/react-switch",
       "norm_label": "@radix-ui/react-switch"
     },
     {
@@ -821,6 +902,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_tabs",
       "community": 57,
+      "community_name": "@radix-ui/react-tabs",
       "norm_label": "@radix-ui/react-tabs"
     },
     {
@@ -831,6 +913,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_tabs",
       "community": 57,
+      "community_name": "@radix-ui/react-tabs",
       "norm_label": "@radix-ui/react-tabs"
     },
     {
@@ -841,6 +924,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_toggle",
       "community": 58,
+      "community_name": "@radix-ui/react-toggle",
       "norm_label": "@radix-ui/react-toggle"
     },
     {
@@ -851,6 +935,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_toggle",
       "community": 58,
+      "community_name": "@radix-ui/react-toggle",
       "norm_label": "@radix-ui/react-toggle"
     },
     {
@@ -861,6 +946,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_toggle_group",
       "community": 59,
+      "community_name": "@radix-ui/react-toggle-group",
       "norm_label": "@radix-ui/react-toggle-group"
     },
     {
@@ -871,6 +957,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_toggle_group",
       "community": 59,
+      "community_name": "@radix-ui/react-toggle-group",
       "norm_label": "@radix-ui/react-toggle-group"
     },
     {
@@ -881,6 +968,7 @@
       "_origin": "ast",
       "id": "package_dependencies_radix_ui_react_tooltip",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "@radix-ui/react-tooltip"
     },
     {
@@ -891,6 +979,7 @@
       "_origin": "ast",
       "id": "radix_ui_react_tooltip",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "@radix-ui/react-tooltip"
     },
     {
@@ -901,6 +990,7 @@
       "_origin": "ast",
       "id": "package_dependencies_supabase_supabase_js",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "@supabase/supabase-js"
     },
     {
@@ -911,6 +1001,7 @@
       "_origin": "ast",
       "id": "supabase_supabase_js",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "@supabase/supabase-js"
     },
     {
@@ -921,6 +1012,7 @@
       "_origin": "ast",
       "id": "package_dependencies_tailwindcss_vite",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "@tailwindcss/vite"
     },
     {
@@ -931,6 +1023,7 @@
       "_origin": "ast",
       "id": "tailwindcss_vite",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "@tailwindcss/vite"
     },
     {
@@ -941,6 +1034,7 @@
       "_origin": "ast",
       "id": "package_dependencies_tanstack_react_query",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "@tanstack/react-query"
     },
     {
@@ -951,6 +1045,7 @@
       "_origin": "ast",
       "id": "tanstack_react_query",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "@tanstack/react-query"
     },
     {
@@ -961,6 +1056,7 @@
       "_origin": "ast",
       "id": "package_dependencies_tanstack_react_router",
       "community": 68,
+      "community_name": "@tanstack/react-router",
       "norm_label": "@tanstack/react-router"
     },
     {
@@ -971,6 +1067,7 @@
       "_origin": "ast",
       "id": "tanstack_react_router",
       "community": 68,
+      "community_name": "@tanstack/react-router",
       "norm_label": "@tanstack/react-router"
     },
     {
@@ -981,6 +1078,7 @@
       "_origin": "ast",
       "id": "package_dependencies_tanstack_react_start",
       "community": 69,
+      "community_name": "@tanstack/react-start",
       "norm_label": "@tanstack/react-start"
     },
     {
@@ -991,6 +1089,7 @@
       "_origin": "ast",
       "id": "tanstack_react_start",
       "community": 69,
+      "community_name": "@tanstack/react-start",
       "norm_label": "@tanstack/react-start"
     },
     {
@@ -1001,6 +1100,7 @@
       "_origin": "ast",
       "id": "package_dependencies_tanstack_router_plugin",
       "community": 70,
+      "community_name": "@tanstack/router-plugin",
       "norm_label": "@tanstack/router-plugin"
     },
     {
@@ -1011,6 +1111,7 @@
       "_origin": "ast",
       "id": "tanstack_router_plugin",
       "community": 70,
+      "community_name": "@tanstack/router-plugin",
       "norm_label": "@tanstack/router-plugin"
     },
     {
@@ -1021,6 +1122,7 @@
       "_origin": "ast",
       "id": "package_dependencies_class_variance_authority",
       "community": 26,
+      "community_name": "class-variance-authority",
       "norm_label": "class-variance-authority"
     },
     {
@@ -1031,6 +1133,7 @@
       "_origin": "ast",
       "id": "class_variance_authority",
       "community": 26,
+      "community_name": "class-variance-authority",
       "norm_label": "class-variance-authority"
     },
     {
@@ -1041,6 +1144,7 @@
       "_origin": "ast",
       "id": "package_dependencies_clsx",
       "community": 27,
+      "community_name": "clsx",
       "norm_label": "clsx"
     },
     {
@@ -1051,6 +1155,7 @@
       "_origin": "ast",
       "id": "clsx",
       "community": 27,
+      "community_name": "clsx",
       "norm_label": "clsx"
     },
     {
@@ -1061,6 +1166,7 @@
       "_origin": "ast",
       "id": "package_dependencies_cmdk",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "cmdk"
     },
     {
@@ -1071,6 +1177,7 @@
       "_origin": "ast",
       "id": "cmdk",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "cmdk"
     },
     {
@@ -1081,6 +1188,7 @@
       "_origin": "ast",
       "id": "package_dependencies_date_fns",
       "community": 28,
+      "community_name": "date-fns",
       "norm_label": "date-fns"
     },
     {
@@ -1091,6 +1199,7 @@
       "_origin": "ast",
       "id": "date_fns",
       "community": 28,
+      "community_name": "date-fns",
       "norm_label": "date-fns"
     },
     {
@@ -1101,6 +1210,7 @@
       "_origin": "ast",
       "id": "package_dependencies_embla_carousel_react",
       "community": 29,
+      "community_name": "embla-carousel-react",
       "norm_label": "embla-carousel-react"
     },
     {
@@ -1111,6 +1221,7 @@
       "_origin": "ast",
       "id": "embla_carousel_react",
       "community": 29,
+      "community_name": "embla-carousel-react",
       "norm_label": "embla-carousel-react"
     },
     {
@@ -1121,6 +1232,7 @@
       "_origin": "ast",
       "id": "package_dependencies_framer_motion",
       "community": 30,
+      "community_name": "framer-motion",
       "norm_label": "framer-motion"
     },
     {
@@ -1131,6 +1243,7 @@
       "_origin": "ast",
       "id": "framer_motion",
       "community": 30,
+      "community_name": "framer-motion",
       "norm_label": "framer-motion"
     },
     {
@@ -1141,6 +1254,7 @@
       "_origin": "ast",
       "id": "package_dependencies_input_otp",
       "community": 32,
+      "community_name": "input-otp",
       "norm_label": "input-otp"
     },
     {
@@ -1151,6 +1265,7 @@
       "_origin": "ast",
       "id": "input_otp",
       "community": 32,
+      "community_name": "input-otp",
       "norm_label": "input-otp"
     },
     {
@@ -1161,6 +1276,7 @@
       "_origin": "ast",
       "id": "package_dependencies_lucide_react",
       "community": 34,
+      "community_name": "lucide-react",
       "norm_label": "lucide-react"
     },
     {
@@ -1171,6 +1287,7 @@
       "_origin": "ast",
       "id": "lucide_react",
       "community": 34,
+      "community_name": "lucide-react",
       "norm_label": "lucide-react"
     },
     {
@@ -1181,6 +1298,7 @@
       "_origin": "ast",
       "id": "package_dependencies_react",
       "community": 60,
+      "community_name": "react",
       "norm_label": "react"
     },
     {
@@ -1191,6 +1309,7 @@
       "_origin": "ast",
       "id": "react",
       "community": 60,
+      "community_name": "react",
       "norm_label": "react"
     },
     {
@@ -1201,6 +1320,7 @@
       "_origin": "ast",
       "id": "package_dependencies_react_day_picker",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "react-day-picker"
     },
     {
@@ -1211,6 +1331,7 @@
       "_origin": "ast",
       "id": "react_day_picker",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "react-day-picker"
     },
     {
@@ -1221,6 +1342,7 @@
       "_origin": "ast",
       "id": "package_dependencies_react_dom",
       "community": 61,
+      "community_name": "react-dom",
       "norm_label": "react-dom"
     },
     {
@@ -1231,6 +1353,7 @@
       "_origin": "ast",
       "id": "react_dom",
       "community": 61,
+      "community_name": "react-dom",
       "norm_label": "react-dom"
     },
     {
@@ -1241,6 +1364,7 @@
       "_origin": "ast",
       "id": "package_dependencies_react_hook_form",
       "community": 62,
+      "community_name": "react-hook-form",
       "norm_label": "react-hook-form"
     },
     {
@@ -1251,6 +1375,7 @@
       "_origin": "ast",
       "id": "react_hook_form",
       "community": 62,
+      "community_name": "react-hook-form",
       "norm_label": "react-hook-form"
     },
     {
@@ -1261,6 +1386,7 @@
       "_origin": "ast",
       "id": "package_dependencies_react_icons",
       "community": 63,
+      "community_name": "react-icons",
       "norm_label": "react-icons"
     },
     {
@@ -1271,6 +1397,7 @@
       "_origin": "ast",
       "id": "react_icons",
       "community": 63,
+      "community_name": "react-icons",
       "norm_label": "react-icons"
     },
     {
@@ -1281,6 +1408,7 @@
       "_origin": "ast",
       "id": "package_dependencies_react_resizable_panels",
       "community": 64,
+      "community_name": "react-resizable-panels",
       "norm_label": "react-resizable-panels"
     },
     {
@@ -1291,6 +1419,7 @@
       "_origin": "ast",
       "id": "react_resizable_panels",
       "community": 64,
+      "community_name": "react-resizable-panels",
       "norm_label": "react-resizable-panels"
     },
     {
@@ -1301,6 +1430,7 @@
       "_origin": "ast",
       "id": "package_dependencies_recharts",
       "community": 65,
+      "community_name": "recharts",
       "norm_label": "recharts"
     },
     {
@@ -1311,6 +1441,7 @@
       "_origin": "ast",
       "id": "recharts",
       "community": 65,
+      "community_name": "recharts",
       "norm_label": "recharts"
     },
     {
@@ -1321,6 +1452,7 @@
       "_origin": "ast",
       "id": "package_dependencies_sonner",
       "community": 66,
+      "community_name": "sonner",
       "norm_label": "sonner"
     },
     {
@@ -1331,6 +1463,7 @@
       "_origin": "ast",
       "id": "sonner",
       "community": 66,
+      "community_name": "sonner",
       "norm_label": "sonner"
     },
     {
@@ -1341,6 +1474,7 @@
       "_origin": "ast",
       "id": "package_dependencies_tailwind_merge",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "tailwind-merge"
     },
     {
@@ -1351,6 +1485,7 @@
       "_origin": "ast",
       "id": "tailwind_merge",
       "community": 14,
+      "community_name": "Package Dependencies",
       "norm_label": "tailwind-merge"
     },
     {
@@ -1361,6 +1496,7 @@
       "_origin": "ast",
       "id": "package_dependencies_tailwindcss",
       "community": 67,
+      "community_name": "tailwindcss",
       "norm_label": "tailwindcss"
     },
     {
@@ -1371,6 +1507,7 @@
       "_origin": "ast",
       "id": "tailwindcss",
       "community": 67,
+      "community_name": "tailwindcss",
       "norm_label": "tailwindcss"
     },
     {
@@ -1381,6 +1518,7 @@
       "_origin": "ast",
       "id": "package_dependencies_tw_animate_css",
       "community": 71,
+      "community_name": "tw-animate-css",
       "norm_label": "tw-animate-css"
     },
     {
@@ -1391,6 +1529,7 @@
       "_origin": "ast",
       "id": "tw_animate_css",
       "community": 71,
+      "community_name": "tw-animate-css",
       "norm_label": "tw-animate-css"
     },
     {
@@ -1401,6 +1540,7 @@
       "_origin": "ast",
       "id": "package_dependencies_vaul",
       "community": 72,
+      "community_name": "vaul",
       "norm_label": "vaul"
     },
     {
@@ -1411,6 +1551,7 @@
       "_origin": "ast",
       "id": "vaul",
       "community": 72,
+      "community_name": "vaul",
       "norm_label": "vaul"
     },
     {
@@ -1421,6 +1562,7 @@
       "_origin": "ast",
       "id": "package_dependencies_vite_tsconfig_paths",
       "community": 73,
+      "community_name": "vite-tsconfig-paths",
       "norm_label": "vite-tsconfig-paths"
     },
     {
@@ -1431,6 +1573,7 @@
       "_origin": "ast",
       "id": "vite_tsconfig_paths",
       "community": 73,
+      "community_name": "vite-tsconfig-paths",
       "norm_label": "vite-tsconfig-paths"
     },
     {
@@ -1441,6 +1584,7 @@
       "_origin": "ast",
       "id": "package_dependencies_zod",
       "community": 74,
+      "community_name": "zod",
       "norm_label": "zod"
     },
     {
@@ -1451,6 +1595,7 @@
       "_origin": "ast",
       "id": "zod",
       "community": 74,
+      "community_name": "zod",
       "norm_label": "zod"
     },
     {
@@ -1461,6 +1606,7 @@
       "_origin": "ast",
       "id": "package_devdependencies",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "devdependencies"
     },
     {
@@ -1471,6 +1617,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_eslint_js",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "@eslint/js"
     },
     {
@@ -1481,6 +1628,7 @@
       "_origin": "ast",
       "id": "eslint_js",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "@eslint/js"
     },
     {
@@ -1491,6 +1639,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_lovable_dev_vite_tanstack_config",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "@lovable.dev/vite-tanstack-config"
     },
     {
@@ -1501,6 +1650,7 @@
       "_origin": "ast",
       "id": "lovable_dev_vite_tanstack_config",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "@lovable.dev/vite-tanstack-config"
     },
     {
@@ -1511,6 +1661,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_types_node",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "@types/node"
     },
     {
@@ -1521,6 +1672,7 @@
       "_origin": "ast",
       "id": "types_node",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "@types/node"
     },
     {
@@ -1531,6 +1683,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_types_react",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "@types/react"
     },
     {
@@ -1541,6 +1694,7 @@
       "_origin": "ast",
       "id": "types_react",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "@types/react"
     },
     {
@@ -1551,6 +1705,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_types_react_dom",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "@types/react-dom"
     },
     {
@@ -1561,6 +1716,7 @@
       "_origin": "ast",
       "id": "types_react_dom",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "@types/react-dom"
     },
     {
@@ -1571,6 +1727,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_vitejs_plugin_react",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "@vitejs/plugin-react"
     },
     {
@@ -1581,6 +1738,7 @@
       "_origin": "ast",
       "id": "vitejs_plugin_react",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "@vitejs/plugin-react"
     },
     {
@@ -1591,6 +1749,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_eslint",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "eslint"
     },
     {
@@ -1601,6 +1760,7 @@
       "_origin": "ast",
       "id": "eslint",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "eslint"
     },
     {
@@ -1611,6 +1771,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_eslint_config_prettier",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "eslint-config-prettier"
     },
     {
@@ -1621,6 +1782,7 @@
       "_origin": "ast",
       "id": "eslint_config_prettier",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "eslint-config-prettier"
     },
     {
@@ -1631,6 +1793,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_eslint_plugin_prettier",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "eslint-plugin-prettier"
     },
     {
@@ -1641,6 +1804,7 @@
       "_origin": "ast",
       "id": "eslint_plugin_prettier",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "eslint-plugin-prettier"
     },
     {
@@ -1651,6 +1815,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_eslint_plugin_react_hooks",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "eslint-plugin-react-hooks"
     },
     {
@@ -1661,6 +1826,7 @@
       "_origin": "ast",
       "id": "eslint_plugin_react_hooks",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "eslint-plugin-react-hooks"
     },
     {
@@ -1671,6 +1837,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_eslint_plugin_react_refresh",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "eslint-plugin-react-refresh"
     },
     {
@@ -1681,6 +1848,7 @@
       "_origin": "ast",
       "id": "eslint_plugin_react_refresh",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "eslint-plugin-react-refresh"
     },
     {
@@ -1691,6 +1859,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_globals",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "globals"
     },
     {
@@ -1701,6 +1870,7 @@
       "_origin": "ast",
       "id": "globals",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "globals"
     },
     {
@@ -1711,6 +1881,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_nitro",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "nitro"
     },
     {
@@ -1721,6 +1892,7 @@
       "_origin": "ast",
       "id": "nitro",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "nitro"
     },
     {
@@ -1731,6 +1903,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_prettier",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "prettier"
     },
     {
@@ -1741,6 +1914,7 @@
       "_origin": "ast",
       "id": "prettier",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "prettier"
     },
     {
@@ -1751,6 +1925,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_typescript",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "typescript"
     },
     {
@@ -1761,6 +1936,7 @@
       "_origin": "ast",
       "id": "typescript",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "typescript"
     },
     {
@@ -1771,6 +1947,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_typescript_eslint",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "typescript-eslint"
     },
     {
@@ -1781,6 +1958,7 @@
       "_origin": "ast",
       "id": "typescript_eslint",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "typescript-eslint"
     },
     {
@@ -1791,6 +1969,7 @@
       "_origin": "ast",
       "id": "package_devdependencies_vite",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "vite"
     },
     {
@@ -1801,6 +1980,7 @@
       "_origin": "ast",
       "id": "vite",
       "community": 1,
+      "community_name": "Build & Lint Config",
       "norm_label": "vite"
     },
     {
@@ -1811,6 +1991,7 @@
       "_origin": "ast",
       "id": "src_components_layout",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "layout.tsx"
     },
     {
@@ -1821,6 +2002,7 @@
       "_origin": "ast",
       "id": "src_components_layout_anylink",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "anylink"
     },
     {
@@ -1831,6 +2013,7 @@
       "_origin": "ast",
       "id": "src_components_layout_navlinks",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "navlinks"
     },
     {
@@ -1842,6 +2025,7 @@
       "_origin": "ast",
       "id": "src_components_layout_layout",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "layout()"
     },
     {
@@ -1852,6 +2036,7 @@
       "_origin": "ast",
       "id": "src_components_ui_accordion",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "accordion.tsx"
     },
     {
@@ -1862,6 +2047,7 @@
       "_origin": "ast",
       "id": "src_components_ui_accordion_accordionitem",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "accordionitem"
     },
     {
@@ -1872,6 +2058,7 @@
       "_origin": "ast",
       "id": "src_components_ui_accordion_accordiontrigger",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "accordiontrigger"
     },
     {
@@ -1882,6 +2069,7 @@
       "_origin": "ast",
       "id": "src_components_ui_accordion_accordioncontent",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "accordioncontent"
     },
     {
@@ -1892,6 +2080,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "alert-dialog.tsx"
     },
     {
@@ -1902,6 +2091,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogoverlay",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "alertdialogoverlay"
     },
     {
@@ -1912,6 +2102,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogcontent",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "alertdialogcontent"
     },
     {
@@ -1923,6 +2114,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogheader",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "alertdialogheader()"
     },
     {
@@ -1934,6 +2126,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogfooter",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "alertdialogfooter()"
     },
     {
@@ -1944,6 +2137,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogtitle",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "alertdialogtitle"
     },
     {
@@ -1954,6 +2148,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogdescription",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "alertdialogdescription"
     },
     {
@@ -1964,6 +2159,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogaction",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "alertdialogaction"
     },
     {
@@ -1974,6 +2170,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_dialog_alertdialogcancel",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "alertdialogcancel"
     },
     {
@@ -1984,6 +2181,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert",
       "community": 24,
+      "community_name": "alert",
       "norm_label": "alert.tsx"
     },
     {
@@ -1994,6 +2192,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_alertvariants",
       "community": 24,
+      "community_name": "alert",
       "norm_label": "alertvariants"
     },
     {
@@ -2004,6 +2203,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_alert",
       "community": 24,
+      "community_name": "alert",
       "norm_label": "alert"
     },
     {
@@ -2014,6 +2214,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_alerttitle",
       "community": 24,
+      "community_name": "alert",
       "norm_label": "alerttitle"
     },
     {
@@ -2024,6 +2225,7 @@
       "_origin": "ast",
       "id": "src_components_ui_alert_alertdescription",
       "community": 24,
+      "community_name": "alert",
       "norm_label": "alertdescription"
     },
     {
@@ -2034,6 +2236,7 @@
       "_origin": "ast",
       "id": "src_components_ui_aspect_ratio",
       "community": 76,
+      "community_name": "aspect-ratio",
       "norm_label": "aspect-ratio.tsx"
     },
     {
@@ -2044,6 +2247,7 @@
       "_origin": "ast",
       "id": "src_components_ui_avatar",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "avatar.tsx"
     },
     {
@@ -2054,6 +2258,7 @@
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "avatar"
     },
     {
@@ -2064,6 +2269,7 @@
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatarimage",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "avatarimage"
     },
     {
@@ -2074,6 +2280,7 @@
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatarfallback",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "avatarfallback"
     },
     {
@@ -2084,6 +2291,7 @@
       "_origin": "ast",
       "id": "src_components_ui_badge",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "badge.tsx"
     },
     {
@@ -2094,6 +2302,7 @@
       "_origin": "ast",
       "id": "src_components_ui_badge_badgevariants",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "badgevariants"
     },
     {
@@ -2106,6 +2315,7 @@
       "_origin": "ast",
       "id": "src_components_ui_badge_badgeprops",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "badgeprops"
     },
     {
@@ -2117,6 +2327,7 @@
       "_origin": "ast",
       "id": "src_components_ui_badge_badge",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "badge()"
     },
     {
@@ -2127,6 +2338,7 @@
       "_origin": "ast",
       "id": "src_components_ui_breadcrumb",
       "community": 20,
+      "community_name": "breadcrumb",
       "norm_label": "breadcrumb.tsx"
     },
     {
@@ -2137,6 +2349,7 @@
       "_origin": "ast",
       "id": "src_components_ui_breadcrumb_breadcrumb",
       "community": 20,
+      "community_name": "breadcrumb",
       "norm_label": "breadcrumb"
     },
     {
@@ -2147,6 +2360,7 @@
       "_origin": "ast",
       "id": "src_components_ui_breadcrumb_breadcrumblist",
       "community": 20,
+      "community_name": "breadcrumb",
       "norm_label": "breadcrumblist"
     },
     {
@@ -2157,6 +2371,7 @@
       "_origin": "ast",
       "id": "src_components_ui_breadcrumb_breadcrumbitem",
       "community": 20,
+      "community_name": "breadcrumb",
       "norm_label": "breadcrumbitem"
     },
     {
@@ -2167,6 +2382,7 @@
       "_origin": "ast",
       "id": "src_components_ui_breadcrumb_breadcrumblink",
       "community": 20,
+      "community_name": "breadcrumb",
       "norm_label": "breadcrumblink"
     },
     {
@@ -2177,6 +2393,7 @@
       "_origin": "ast",
       "id": "src_components_ui_breadcrumb_breadcrumbpage",
       "community": 20,
+      "community_name": "breadcrumb",
       "norm_label": "breadcrumbpage"
     },
     {
@@ -2188,6 +2405,7 @@
       "_origin": "ast",
       "id": "src_components_ui_breadcrumb_breadcrumbseparator",
       "community": 20,
+      "community_name": "breadcrumb",
       "norm_label": "breadcrumbseparator()"
     },
     {
@@ -2199,6 +2417,7 @@
       "_origin": "ast",
       "id": "src_components_ui_breadcrumb_breadcrumbellipsis",
       "community": 20,
+      "community_name": "breadcrumb",
       "norm_label": "breadcrumbellipsis()"
     },
     {
@@ -2209,6 +2428,7 @@
       "_origin": "ast",
       "id": "src_components_ui_button",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "button.tsx"
     },
     {
@@ -2219,6 +2439,7 @@
       "_origin": "ast",
       "id": "src_components_ui_button_buttonvariants",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "buttonvariants"
     },
     {
@@ -2231,6 +2452,7 @@
       "_origin": "ast",
       "id": "src_components_ui_button_buttonprops",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "buttonprops"
     },
     {
@@ -2241,6 +2463,7 @@
       "_origin": "ast",
       "id": "src_components_ui_button_button",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "button"
     },
     {
@@ -2251,6 +2474,7 @@
       "_origin": "ast",
       "id": "src_components_ui_calendar",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "calendar.tsx"
     },
     {
@@ -2262,6 +2486,7 @@
       "_origin": "ast",
       "id": "src_components_ui_calendar_calendar",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "calendar()"
     },
     {
@@ -2273,6 +2498,7 @@
       "_origin": "ast",
       "id": "src_components_ui_calendar_calendardaybutton",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "calendardaybutton()"
     },
     {
@@ -2283,6 +2509,7 @@
       "_origin": "ast",
       "id": "src_components_ui_card",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "card.tsx"
     },
     {
@@ -2293,6 +2520,7 @@
       "_origin": "ast",
       "id": "src_components_ui_card_card",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "card"
     },
     {
@@ -2303,6 +2531,7 @@
       "_origin": "ast",
       "id": "src_components_ui_card_cardheader",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "cardheader"
     },
     {
@@ -2313,6 +2542,7 @@
       "_origin": "ast",
       "id": "src_components_ui_card_cardtitle",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "cardtitle"
     },
     {
@@ -2323,6 +2553,7 @@
       "_origin": "ast",
       "id": "src_components_ui_card_carddescription",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "carddescription"
     },
     {
@@ -2333,6 +2564,7 @@
       "_origin": "ast",
       "id": "src_components_ui_card_cardcontent",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "cardcontent"
     },
     {
@@ -2343,6 +2575,7 @@
       "_origin": "ast",
       "id": "src_components_ui_card_cardfooter",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "cardfooter"
     },
     {
@@ -2353,6 +2586,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "carousel.tsx"
     },
     {
@@ -2365,6 +2599,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_carouselapi",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "carouselapi"
     },
     {
@@ -2377,6 +2612,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_usecarouselparameters",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "usecarouselparameters"
     },
     {
@@ -2389,6 +2625,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_carouseloptions",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "carouseloptions"
     },
     {
@@ -2401,6 +2638,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_carouselplugin",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "carouselplugin"
     },
     {
@@ -2413,6 +2651,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_carouselprops",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "carouselprops"
     },
     {
@@ -2425,6 +2664,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_carouselcontextprops",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "carouselcontextprops"
     },
     {
@@ -2435,6 +2675,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_carouselcontext",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "carouselcontext"
     },
     {
@@ -2446,6 +2687,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_usecarousel",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "usecarousel()"
     },
     {
@@ -2456,6 +2698,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_carousel",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "carousel"
     },
     {
@@ -2466,6 +2709,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_carouselcontent",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "carouselcontent"
     },
     {
@@ -2476,6 +2720,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_carouselitem",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "carouselitem"
     },
     {
@@ -2486,6 +2731,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_carouselprevious",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "carouselprevious"
     },
     {
@@ -2496,6 +2742,7 @@
       "_origin": "ast",
       "id": "src_components_ui_carousel_carouselnext",
       "community": 17,
+      "community_name": "Carousel UI",
       "norm_label": "carouselnext"
     },
     {
@@ -2506,6 +2753,7 @@
       "_origin": "ast",
       "id": "src_components_ui_chart",
       "community": 18,
+      "community_name": "Charts",
       "norm_label": "chart.tsx"
     },
     {
@@ -2516,6 +2764,7 @@
       "_origin": "ast",
       "id": "src_components_ui_chart_themes",
       "community": 18,
+      "community_name": "Charts",
       "norm_label": "themes"
     },
     {
@@ -2528,6 +2777,7 @@
       "_origin": "ast",
       "id": "src_components_ui_chart_chartconfig",
       "community": 18,
+      "community_name": "Charts",
       "norm_label": "chartconfig"
     },
     {
@@ -2540,6 +2790,7 @@
       "_origin": "ast",
       "id": "src_components_ui_chart_chartcontextprops",
       "community": 18,
+      "community_name": "Charts",
       "norm_label": "chartcontextprops"
     },
     {
@@ -2550,6 +2801,7 @@
       "_origin": "ast",
       "id": "src_components_ui_chart_chartcontext",
       "community": 18,
+      "community_name": "Charts",
       "norm_label": "chartcontext"
     },
     {
@@ -2561,6 +2813,7 @@
       "_origin": "ast",
       "id": "src_components_ui_chart_usechart",
       "community": 18,
+      "community_name": "Charts",
       "norm_label": "usechart()"
     },
     {
@@ -2571,6 +2824,7 @@
       "_origin": "ast",
       "id": "src_components_ui_chart_chartcontainer",
       "community": 18,
+      "community_name": "Charts",
       "norm_label": "chartcontainer"
     },
     {
@@ -2582,6 +2836,7 @@
       "_origin": "ast",
       "id": "src_components_ui_chart_chartstyle",
       "community": 18,
+      "community_name": "Charts",
       "norm_label": "chartstyle()"
     },
     {
@@ -2592,6 +2847,7 @@
       "_origin": "ast",
       "id": "src_components_ui_chart_charttooltipcontent",
       "community": 18,
+      "community_name": "Charts",
       "norm_label": "charttooltipcontent"
     },
     {
@@ -2602,6 +2858,7 @@
       "_origin": "ast",
       "id": "src_components_ui_chart_chartlegendcontent",
       "community": 18,
+      "community_name": "Charts",
       "norm_label": "chartlegendcontent"
     },
     {
@@ -2613,6 +2870,7 @@
       "_origin": "ast",
       "id": "src_components_ui_chart_getpayloadconfigfrompayload",
       "community": 18,
+      "community_name": "Charts",
       "norm_label": "getpayloadconfigfrompayload()"
     },
     {
@@ -2623,6 +2881,7 @@
       "_origin": "ast",
       "id": "src_components_ui_checkbox",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "checkbox.tsx"
     },
     {
@@ -2633,6 +2892,7 @@
       "_origin": "ast",
       "id": "src_components_ui_checkbox_checkbox",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "checkbox"
     },
     {
@@ -2643,6 +2903,7 @@
       "_origin": "ast",
       "id": "src_components_ui_collapsible",
       "community": 77,
+      "community_name": "collapsible",
       "norm_label": "collapsible.tsx"
     },
     {
@@ -2653,6 +2914,7 @@
       "_origin": "ast",
       "id": "src_components_ui_command",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "command.tsx"
     },
     {
@@ -2663,6 +2925,7 @@
       "_origin": "ast",
       "id": "src_components_ui_command_command",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "command"
     },
     {
@@ -2674,6 +2937,7 @@
       "_origin": "ast",
       "id": "src_components_ui_command_commanddialog",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "commanddialog()"
     },
     {
@@ -2684,6 +2948,7 @@
       "_origin": "ast",
       "id": "src_components_ui_command_commandinput",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "commandinput"
     },
     {
@@ -2694,6 +2959,7 @@
       "_origin": "ast",
       "id": "src_components_ui_command_commandlist",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "commandlist"
     },
     {
@@ -2704,6 +2970,7 @@
       "_origin": "ast",
       "id": "src_components_ui_command_commandempty",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "commandempty"
     },
     {
@@ -2714,6 +2981,7 @@
       "_origin": "ast",
       "id": "src_components_ui_command_commandgroup",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "commandgroup"
     },
     {
@@ -2724,6 +2992,7 @@
       "_origin": "ast",
       "id": "src_components_ui_command_commandseparator",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "commandseparator"
     },
     {
@@ -2734,6 +3003,7 @@
       "_origin": "ast",
       "id": "src_components_ui_command_commanditem",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "commanditem"
     },
     {
@@ -2745,6 +3015,7 @@
       "_origin": "ast",
       "id": "src_components_ui_command_commandshortcut",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "commandshortcut()"
     },
     {
@@ -2755,6 +3026,7 @@
       "_origin": "ast",
       "id": "src_components_ui_context_menu",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "context-menu.tsx"
     },
     {
@@ -2765,6 +3037,7 @@
       "_origin": "ast",
       "id": "src_components_ui_context_menu_contextmenusubtrigger",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "contextmenusubtrigger"
     },
     {
@@ -2775,6 +3048,7 @@
       "_origin": "ast",
       "id": "src_components_ui_context_menu_contextmenusubcontent",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "contextmenusubcontent"
     },
     {
@@ -2785,6 +3059,7 @@
       "_origin": "ast",
       "id": "src_components_ui_context_menu_contextmenucontent",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "contextmenucontent"
     },
     {
@@ -2795,6 +3070,7 @@
       "_origin": "ast",
       "id": "src_components_ui_context_menu_contextmenuitem",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "contextmenuitem"
     },
     {
@@ -2805,6 +3081,7 @@
       "_origin": "ast",
       "id": "src_components_ui_context_menu_contextmenucheckboxitem",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "contextmenucheckboxitem"
     },
     {
@@ -2815,6 +3092,7 @@
       "_origin": "ast",
       "id": "src_components_ui_context_menu_contextmenuradioitem",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "contextmenuradioitem"
     },
     {
@@ -2825,6 +3103,7 @@
       "_origin": "ast",
       "id": "src_components_ui_context_menu_contextmenulabel",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "contextmenulabel"
     },
     {
@@ -2835,6 +3114,7 @@
       "_origin": "ast",
       "id": "src_components_ui_context_menu_contextmenuseparator",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "contextmenuseparator"
     },
     {
@@ -2846,6 +3126,7 @@
       "_origin": "ast",
       "id": "src_components_ui_context_menu_contextmenushortcut",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "contextmenushortcut()"
     },
     {
@@ -2856,6 +3137,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dialog",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "dialog.tsx"
     },
     {
@@ -2866,6 +3148,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dialog_dialogoverlay",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "dialogoverlay"
     },
     {
@@ -2876,6 +3159,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dialog_dialogcontent",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "dialogcontent"
     },
     {
@@ -2887,6 +3171,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dialog_dialogheader",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "dialogheader()"
     },
     {
@@ -2898,6 +3183,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dialog_dialogfooter",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "dialogfooter()"
     },
     {
@@ -2908,6 +3194,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dialog_dialogtitle",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "dialogtitle"
     },
     {
@@ -2918,6 +3205,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dialog_dialogdescription",
       "community": 12,
+      "community_name": "Command Palette",
       "norm_label": "dialogdescription"
     },
     {
@@ -2928,6 +3216,7 @@
       "_origin": "ast",
       "id": "src_components_ui_drawer",
       "community": 21,
+      "community_name": "drawer",
       "norm_label": "drawer.tsx"
     },
     {
@@ -2939,6 +3228,7 @@
       "_origin": "ast",
       "id": "src_components_ui_drawer_drawer",
       "community": 21,
+      "community_name": "drawer",
       "norm_label": "drawer()"
     },
     {
@@ -2949,6 +3239,7 @@
       "_origin": "ast",
       "id": "src_components_ui_drawer_draweroverlay",
       "community": 21,
+      "community_name": "drawer",
       "norm_label": "draweroverlay"
     },
     {
@@ -2959,6 +3250,7 @@
       "_origin": "ast",
       "id": "src_components_ui_drawer_drawercontent",
       "community": 21,
+      "community_name": "drawer",
       "norm_label": "drawercontent"
     },
     {
@@ -2970,6 +3262,7 @@
       "_origin": "ast",
       "id": "src_components_ui_drawer_drawerheader",
       "community": 21,
+      "community_name": "drawer",
       "norm_label": "drawerheader()"
     },
     {
@@ -2981,6 +3274,7 @@
       "_origin": "ast",
       "id": "src_components_ui_drawer_drawerfooter",
       "community": 21,
+      "community_name": "drawer",
       "norm_label": "drawerfooter()"
     },
     {
@@ -2991,6 +3285,7 @@
       "_origin": "ast",
       "id": "src_components_ui_drawer_drawertitle",
       "community": 21,
+      "community_name": "drawer",
       "norm_label": "drawertitle"
     },
     {
@@ -3001,6 +3296,7 @@
       "_origin": "ast",
       "id": "src_components_ui_drawer_drawerdescription",
       "community": 21,
+      "community_name": "drawer",
       "norm_label": "drawerdescription"
     },
     {
@@ -3011,6 +3307,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu",
       "community": 19,
+      "community_name": "Dropdown Menu UI",
       "norm_label": "dropdown-menu.tsx"
     },
     {
@@ -3021,6 +3318,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenusubtrigger",
       "community": 19,
+      "community_name": "Dropdown Menu UI",
       "norm_label": "dropdownmenusubtrigger"
     },
     {
@@ -3031,6 +3329,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenusubcontent",
       "community": 19,
+      "community_name": "Dropdown Menu UI",
       "norm_label": "dropdownmenusubcontent"
     },
     {
@@ -3041,6 +3340,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenucontent",
       "community": 19,
+      "community_name": "Dropdown Menu UI",
       "norm_label": "dropdownmenucontent"
     },
     {
@@ -3051,6 +3351,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenuitem",
       "community": 19,
+      "community_name": "Dropdown Menu UI",
       "norm_label": "dropdownmenuitem"
     },
     {
@@ -3061,6 +3362,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenucheckboxitem",
       "community": 19,
+      "community_name": "Dropdown Menu UI",
       "norm_label": "dropdownmenucheckboxitem"
     },
     {
@@ -3071,6 +3373,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenuradioitem",
       "community": 19,
+      "community_name": "Dropdown Menu UI",
       "norm_label": "dropdownmenuradioitem"
     },
     {
@@ -3081,6 +3384,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenulabel",
       "community": 19,
+      "community_name": "Dropdown Menu UI",
       "norm_label": "dropdownmenulabel"
     },
     {
@@ -3091,6 +3395,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenuseparator",
       "community": 19,
+      "community_name": "Dropdown Menu UI",
       "norm_label": "dropdownmenuseparator"
     },
     {
@@ -3102,6 +3407,7 @@
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenushortcut",
       "community": 19,
+      "community_name": "Dropdown Menu UI",
       "norm_label": "dropdownmenushortcut()"
     },
     {
@@ -3112,6 +3418,7 @@
       "_origin": "ast",
       "id": "src_components_ui_form",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "form.tsx"
     },
     {
@@ -3124,6 +3431,7 @@
       "_origin": "ast",
       "id": "src_components_ui_form_formfieldcontextvalue",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "formfieldcontextvalue"
     },
     {
@@ -3134,6 +3442,7 @@
       "_origin": "ast",
       "id": "src_components_ui_form_formfieldcontext",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "formfieldcontext"
     },
     {
@@ -3145,6 +3454,7 @@
       "_origin": "ast",
       "id": "src_components_ui_form_formfield",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "formfield()"
     },
     {
@@ -3156,6 +3466,7 @@
       "_origin": "ast",
       "id": "src_components_ui_form_useformfield",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "useformfield()"
     },
     {
@@ -3168,6 +3479,7 @@
       "_origin": "ast",
       "id": "src_components_ui_form_formitemcontextvalue",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "formitemcontextvalue"
     },
     {
@@ -3178,6 +3490,7 @@
       "_origin": "ast",
       "id": "src_components_ui_form_formitemcontext",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "formitemcontext"
     },
     {
@@ -3188,6 +3501,7 @@
       "_origin": "ast",
       "id": "src_components_ui_form_formitem",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "formitem"
     },
     {
@@ -3198,6 +3512,7 @@
       "_origin": "ast",
       "id": "src_components_ui_form_formlabel",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "formlabel"
     },
     {
@@ -3208,6 +3523,7 @@
       "_origin": "ast",
       "id": "src_components_ui_form_formcontrol",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "formcontrol"
     },
     {
@@ -3218,6 +3534,7 @@
       "_origin": "ast",
       "id": "src_components_ui_form_formdescription",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "formdescription"
     },
     {
@@ -3228,6 +3545,7 @@
       "_origin": "ast",
       "id": "src_components_ui_form_formmessage",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "formmessage"
     },
     {
@@ -3238,6 +3556,7 @@
       "_origin": "ast",
       "id": "src_components_ui_hover_card",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "hover-card.tsx"
     },
     {
@@ -3248,6 +3567,7 @@
       "_origin": "ast",
       "id": "src_components_ui_hover_card_hovercardcontent",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "hovercardcontent"
     },
     {
@@ -3258,6 +3578,7 @@
       "_origin": "ast",
       "id": "src_components_ui_input_otp",
       "community": 25,
+      "community_name": "input-otp",
       "norm_label": "input-otp.tsx"
     },
     {
@@ -3268,6 +3589,7 @@
       "_origin": "ast",
       "id": "src_components_ui_input_otp_inputotp",
       "community": 25,
+      "community_name": "input-otp",
       "norm_label": "inputotp"
     },
     {
@@ -3278,6 +3600,7 @@
       "_origin": "ast",
       "id": "src_components_ui_input_otp_inputotpgroup",
       "community": 25,
+      "community_name": "input-otp",
       "norm_label": "inputotpgroup"
     },
     {
@@ -3288,6 +3611,7 @@
       "_origin": "ast",
       "id": "src_components_ui_input_otp_inputotpslot",
       "community": 25,
+      "community_name": "input-otp",
       "norm_label": "inputotpslot"
     },
     {
@@ -3298,6 +3622,7 @@
       "_origin": "ast",
       "id": "src_components_ui_input_otp_inputotpseparator",
       "community": 25,
+      "community_name": "input-otp",
       "norm_label": "inputotpseparator"
     },
     {
@@ -3308,6 +3633,7 @@
       "_origin": "ast",
       "id": "src_components_ui_input",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "input.tsx"
     },
     {
@@ -3318,6 +3644,7 @@
       "_origin": "ast",
       "id": "src_components_ui_input_input",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "input"
     },
     {
@@ -3328,6 +3655,7 @@
       "_origin": "ast",
       "id": "src_components_ui_label",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "label.tsx"
     },
     {
@@ -3338,6 +3666,7 @@
       "_origin": "ast",
       "id": "src_components_ui_label_labelvariants",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "labelvariants"
     },
     {
@@ -3348,6 +3677,7 @@
       "_origin": "ast",
       "id": "src_components_ui_label_label",
       "community": 15,
+      "community_name": "Form Primitives",
       "norm_label": "label"
     },
     {
@@ -3358,6 +3688,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubar.tsx"
     },
     {
@@ -3369,6 +3700,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubarmenu",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubarmenu()"
     },
     {
@@ -3380,6 +3712,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubargroup",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubargroup()"
     },
     {
@@ -3391,6 +3724,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubarportal",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubarportal()"
     },
     {
@@ -3402,6 +3736,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubarradiogroup",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubarradiogroup()"
     },
     {
@@ -3413,6 +3748,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubarsub",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubarsub()"
     },
     {
@@ -3423,6 +3759,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubar",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubar"
     },
     {
@@ -3433,6 +3770,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubartrigger",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubartrigger"
     },
     {
@@ -3443,6 +3781,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubarsubtrigger",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubarsubtrigger"
     },
     {
@@ -3453,6 +3792,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubarsubcontent",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubarsubcontent"
     },
     {
@@ -3463,6 +3803,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubarcontent",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubarcontent"
     },
     {
@@ -3473,6 +3814,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubaritem",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubaritem"
     },
     {
@@ -3483,6 +3825,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubarcheckboxitem",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubarcheckboxitem"
     },
     {
@@ -3493,6 +3836,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubarradioitem",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubarradioitem"
     },
     {
@@ -3503,6 +3847,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubarlabel",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubarlabel"
     },
     {
@@ -3513,6 +3858,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubarseparator",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubarseparator"
     },
     {
@@ -3524,6 +3870,7 @@
       "_origin": "ast",
       "id": "src_components_ui_menubar_menubarshortcut",
       "community": 13,
+      "community_name": "Menubar UI",
       "norm_label": "menubarshortcut()"
     },
     {
@@ -3534,6 +3881,7 @@
       "_origin": "ast",
       "id": "src_components_ui_navigation_menu",
       "community": 22,
+      "community_name": "navigation-menu",
       "norm_label": "navigation-menu.tsx"
     },
     {
@@ -3544,6 +3892,7 @@
       "_origin": "ast",
       "id": "src_components_ui_navigation_menu_navigationmenu",
       "community": 22,
+      "community_name": "navigation-menu",
       "norm_label": "navigationmenu"
     },
     {
@@ -3554,6 +3903,7 @@
       "_origin": "ast",
       "id": "src_components_ui_navigation_menu_navigationmenulist",
       "community": 22,
+      "community_name": "navigation-menu",
       "norm_label": "navigationmenulist"
     },
     {
@@ -3564,6 +3914,7 @@
       "_origin": "ast",
       "id": "src_components_ui_navigation_menu_navigationmenutriggerstyle",
       "community": 22,
+      "community_name": "navigation-menu",
       "norm_label": "navigationmenutriggerstyle"
     },
     {
@@ -3574,6 +3925,7 @@
       "_origin": "ast",
       "id": "src_components_ui_navigation_menu_navigationmenutrigger",
       "community": 22,
+      "community_name": "navigation-menu",
       "norm_label": "navigationmenutrigger"
     },
     {
@@ -3584,6 +3936,7 @@
       "_origin": "ast",
       "id": "src_components_ui_navigation_menu_navigationmenucontent",
       "community": 22,
+      "community_name": "navigation-menu",
       "norm_label": "navigationmenucontent"
     },
     {
@@ -3594,6 +3947,7 @@
       "_origin": "ast",
       "id": "src_components_ui_navigation_menu_navigationmenuviewport",
       "community": 22,
+      "community_name": "navigation-menu",
       "norm_label": "navigationmenuviewport"
     },
     {
@@ -3604,6 +3958,7 @@
       "_origin": "ast",
       "id": "src_components_ui_navigation_menu_navigationmenuindicator",
       "community": 22,
+      "community_name": "navigation-menu",
       "norm_label": "navigationmenuindicator"
     },
     {
@@ -3614,6 +3969,7 @@
       "_origin": "ast",
       "id": "src_components_ui_pagination",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "pagination.tsx"
     },
     {
@@ -3625,6 +3981,7 @@
       "_origin": "ast",
       "id": "src_components_ui_pagination_pagination",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "pagination()"
     },
     {
@@ -3635,6 +3992,7 @@
       "_origin": "ast",
       "id": "src_components_ui_pagination_paginationcontent",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "paginationcontent"
     },
     {
@@ -3645,6 +4003,7 @@
       "_origin": "ast",
       "id": "src_components_ui_pagination_paginationitem",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "paginationitem"
     },
     {
@@ -3657,6 +4016,7 @@
       "_origin": "ast",
       "id": "src_components_ui_pagination_paginationlinkprops",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "paginationlinkprops"
     },
     {
@@ -3668,6 +4028,7 @@
       "_origin": "ast",
       "id": "src_components_ui_pagination_paginationlink",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "paginationlink()"
     },
     {
@@ -3679,6 +4040,7 @@
       "_origin": "ast",
       "id": "src_components_ui_pagination_paginationprevious",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "paginationprevious()"
     },
     {
@@ -3690,6 +4052,7 @@
       "_origin": "ast",
       "id": "src_components_ui_pagination_paginationnext",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "paginationnext()"
     },
     {
@@ -3701,6 +4064,7 @@
       "_origin": "ast",
       "id": "src_components_ui_pagination_paginationellipsis",
       "community": 8,
+      "community_name": "Alert Dialog UI",
       "norm_label": "paginationellipsis()"
     },
     {
@@ -3711,6 +4075,7 @@
       "_origin": "ast",
       "id": "src_components_ui_popover",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "popover.tsx"
     },
     {
@@ -3721,6 +4086,7 @@
       "_origin": "ast",
       "id": "src_components_ui_popover_popovercontent",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "popovercontent"
     },
     {
@@ -3731,6 +4097,7 @@
       "_origin": "ast",
       "id": "src_components_ui_progress",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "progress.tsx"
     },
     {
@@ -3741,6 +4108,7 @@
       "_origin": "ast",
       "id": "src_components_ui_progress_progress",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "progress"
     },
     {
@@ -3751,6 +4119,7 @@
       "_origin": "ast",
       "id": "src_components_ui_radio_group",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "radio-group.tsx"
     },
     {
@@ -3761,6 +4130,7 @@
       "_origin": "ast",
       "id": "src_components_ui_radio_group_radiogroup",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "radiogroup"
     },
     {
@@ -3771,6 +4141,7 @@
       "_origin": "ast",
       "id": "src_components_ui_radio_group_radiogroupitem",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "radiogroupitem"
     },
     {
@@ -3781,6 +4152,7 @@
       "_origin": "ast",
       "id": "src_components_ui_resizable",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "resizable.tsx"
     },
     {
@@ -3792,6 +4164,7 @@
       "_origin": "ast",
       "id": "src_components_ui_resizable_resizablepanelgroup",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "resizablepanelgroup()"
     },
     {
@@ -3803,6 +4176,7 @@
       "_origin": "ast",
       "id": "src_components_ui_resizable_resizablehandle",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "resizablehandle()"
     },
     {
@@ -3813,6 +4187,7 @@
       "_origin": "ast",
       "id": "src_components_ui_scroll_area",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "scroll-area.tsx"
     },
     {
@@ -3823,6 +4198,7 @@
       "_origin": "ast",
       "id": "src_components_ui_scroll_area_scrollarea",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "scrollarea"
     },
     {
@@ -3833,6 +4209,7 @@
       "_origin": "ast",
       "id": "src_components_ui_scroll_area_scrollbar",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "scrollbar"
     },
     {
@@ -3843,6 +4220,7 @@
       "_origin": "ast",
       "id": "src_components_ui_select",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "select.tsx"
     },
     {
@@ -3853,6 +4231,7 @@
       "_origin": "ast",
       "id": "src_components_ui_select_selecttrigger",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "selecttrigger"
     },
     {
@@ -3863,6 +4242,7 @@
       "_origin": "ast",
       "id": "src_components_ui_select_selectscrollupbutton",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "selectscrollupbutton"
     },
     {
@@ -3873,6 +4253,7 @@
       "_origin": "ast",
       "id": "src_components_ui_select_selectscrolldownbutton",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "selectscrolldownbutton"
     },
     {
@@ -3883,6 +4264,7 @@
       "_origin": "ast",
       "id": "src_components_ui_select_selectcontent",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "selectcontent"
     },
     {
@@ -3893,6 +4275,7 @@
       "_origin": "ast",
       "id": "src_components_ui_select_selectlabel",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "selectlabel"
     },
     {
@@ -3903,6 +4286,7 @@
       "_origin": "ast",
       "id": "src_components_ui_select_selectitem",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "selectitem"
     },
     {
@@ -3913,6 +4297,7 @@
       "_origin": "ast",
       "id": "src_components_ui_select_selectseparator",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "selectseparator"
     },
     {
@@ -3923,6 +4308,7 @@
       "_origin": "ast",
       "id": "src_components_ui_separator",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "separator.tsx"
     },
     {
@@ -3933,6 +4319,7 @@
       "_origin": "ast",
       "id": "src_components_ui_separator_separator",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "separator"
     },
     {
@@ -3943,6 +4330,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sheet",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sheet.tsx"
     },
     {
@@ -3953,6 +4341,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetoverlay",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sheetoverlay"
     },
     {
@@ -3963,6 +4352,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetvariants",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sheetvariants"
     },
     {
@@ -3975,6 +4365,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetcontentprops",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sheetcontentprops"
     },
     {
@@ -3985,6 +4376,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetcontent",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sheetcontent"
     },
     {
@@ -3996,6 +4388,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetheader",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sheetheader()"
     },
     {
@@ -4007,6 +4400,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetfooter",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sheetfooter()"
     },
     {
@@ -4017,6 +4411,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheettitle",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sheettitle"
     },
     {
@@ -4027,6 +4422,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sheet_sheetdescription",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sheetdescription"
     },
     {
@@ -4037,6 +4433,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebar.tsx"
     },
     {
@@ -4049,6 +4446,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarcontextprops",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarcontextprops"
     },
     {
@@ -4059,6 +4457,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarcontext",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarcontext"
     },
     {
@@ -4070,6 +4469,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_usesidebar",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "usesidebar()"
     },
     {
@@ -4080,6 +4480,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarprovider",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarprovider"
     },
     {
@@ -4090,6 +4491,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebar",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebar"
     },
     {
@@ -4100,6 +4502,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebartrigger",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebartrigger"
     },
     {
@@ -4110,6 +4513,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarrail",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarrail"
     },
     {
@@ -4120,6 +4524,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarinset",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarinset"
     },
     {
@@ -4130,6 +4535,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarinput",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarinput"
     },
     {
@@ -4140,6 +4546,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarheader",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarheader"
     },
     {
@@ -4150,6 +4557,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarfooter",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarfooter"
     },
     {
@@ -4160,6 +4568,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarseparator",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarseparator"
     },
     {
@@ -4170,6 +4579,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarcontent",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarcontent"
     },
     {
@@ -4180,6 +4590,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebargroup",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebargroup"
     },
     {
@@ -4190,6 +4601,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebargrouplabel",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebargrouplabel"
     },
     {
@@ -4200,6 +4612,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebargroupaction",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebargroupaction"
     },
     {
@@ -4210,6 +4623,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebargroupcontent",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebargroupcontent"
     },
     {
@@ -4220,6 +4634,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarmenu",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarmenu"
     },
     {
@@ -4230,6 +4645,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarmenuitem",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarmenuitem"
     },
     {
@@ -4240,6 +4656,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarmenubuttonvariants",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarmenubuttonvariants"
     },
     {
@@ -4250,6 +4667,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarmenubutton",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarmenubutton"
     },
     {
@@ -4260,6 +4678,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarmenuaction",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarmenuaction"
     },
     {
@@ -4270,6 +4689,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarmenubadge",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarmenubadge"
     },
     {
@@ -4280,6 +4700,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarmenuskeleton",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarmenuskeleton"
     },
     {
@@ -4290,6 +4711,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarmenusub",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarmenusub"
     },
     {
@@ -4300,6 +4722,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarmenusubitem",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarmenusubitem"
     },
     {
@@ -4310,6 +4733,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sidebar_sidebarmenusubbutton",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "sidebarmenusubbutton"
     },
     {
@@ -4320,6 +4744,7 @@
       "_origin": "ast",
       "id": "src_components_ui_skeleton",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "skeleton.tsx"
     },
     {
@@ -4331,6 +4756,7 @@
       "_origin": "ast",
       "id": "src_components_ui_skeleton_skeleton",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "skeleton()"
     },
     {
@@ -4341,6 +4767,7 @@
       "_origin": "ast",
       "id": "src_components_ui_slider",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "slider.tsx"
     },
     {
@@ -4351,6 +4778,7 @@
       "_origin": "ast",
       "id": "src_components_ui_slider_slider",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "slider"
     },
     {
@@ -4361,6 +4789,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sonner",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "sonner.tsx"
     },
     {
@@ -4373,6 +4802,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sonner_toasterprops",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "toasterprops"
     },
     {
@@ -4384,6 +4814,7 @@
       "_origin": "ast",
       "id": "src_components_ui_sonner_toaster",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "toaster()"
     },
     {
@@ -4394,6 +4825,7 @@
       "_origin": "ast",
       "id": "src_components_ui_switch",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "switch.tsx"
     },
     {
@@ -4404,6 +4836,7 @@
       "_origin": "ast",
       "id": "src_components_ui_switch_switch",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "switch"
     },
     {
@@ -4414,6 +4847,7 @@
       "_origin": "ast",
       "id": "src_components_ui_table",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "table.tsx"
     },
     {
@@ -4424,6 +4858,7 @@
       "_origin": "ast",
       "id": "src_components_ui_table_table",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "table"
     },
     {
@@ -4434,6 +4869,7 @@
       "_origin": "ast",
       "id": "src_components_ui_table_tableheader",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "tableheader"
     },
     {
@@ -4444,6 +4880,7 @@
       "_origin": "ast",
       "id": "src_components_ui_table_tablebody",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "tablebody"
     },
     {
@@ -4454,6 +4891,7 @@
       "_origin": "ast",
       "id": "src_components_ui_table_tablefooter",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "tablefooter"
     },
     {
@@ -4464,6 +4902,7 @@
       "_origin": "ast",
       "id": "src_components_ui_table_tablerow",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "tablerow"
     },
     {
@@ -4474,6 +4913,7 @@
       "_origin": "ast",
       "id": "src_components_ui_table_tablehead",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "tablehead"
     },
     {
@@ -4484,6 +4924,7 @@
       "_origin": "ast",
       "id": "src_components_ui_table_tablecell",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "tablecell"
     },
     {
@@ -4494,6 +4935,7 @@
       "_origin": "ast",
       "id": "src_components_ui_table_tablecaption",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "tablecaption"
     },
     {
@@ -4504,6 +4946,7 @@
       "_origin": "ast",
       "id": "src_components_ui_tabs",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "tabs.tsx"
     },
     {
@@ -4514,6 +4957,7 @@
       "_origin": "ast",
       "id": "src_components_ui_tabs_tabslist",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "tabslist"
     },
     {
@@ -4524,6 +4968,7 @@
       "_origin": "ast",
       "id": "src_components_ui_tabs_tabstrigger",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "tabstrigger"
     },
     {
@@ -4534,6 +4979,7 @@
       "_origin": "ast",
       "id": "src_components_ui_tabs_tabscontent",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "tabscontent"
     },
     {
@@ -4544,6 +4990,7 @@
       "_origin": "ast",
       "id": "src_components_ui_textarea",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "textarea.tsx"
     },
     {
@@ -4554,6 +5001,7 @@
       "_origin": "ast",
       "id": "src_components_ui_textarea_textarea",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "textarea"
     },
     {
@@ -4564,6 +5012,7 @@
       "_origin": "ast",
       "id": "src_components_ui_toggle_group",
       "community": 23,
+      "community_name": "toggle",
       "norm_label": "toggle-group.tsx"
     },
     {
@@ -4574,6 +5023,7 @@
       "_origin": "ast",
       "id": "src_components_ui_toggle_group_togglegroupcontext",
       "community": 23,
+      "community_name": "toggle",
       "norm_label": "togglegroupcontext"
     },
     {
@@ -4584,6 +5034,7 @@
       "_origin": "ast",
       "id": "src_components_ui_toggle_group_togglegroup",
       "community": 23,
+      "community_name": "toggle",
       "norm_label": "togglegroup"
     },
     {
@@ -4594,6 +5045,7 @@
       "_origin": "ast",
       "id": "src_components_ui_toggle_group_togglegroupitem",
       "community": 23,
+      "community_name": "toggle",
       "norm_label": "togglegroupitem"
     },
     {
@@ -4604,6 +5056,7 @@
       "_origin": "ast",
       "id": "src_components_ui_toggle",
       "community": 23,
+      "community_name": "toggle",
       "norm_label": "toggle.tsx"
     },
     {
@@ -4614,6 +5067,7 @@
       "_origin": "ast",
       "id": "src_components_ui_toggle_togglevariants",
       "community": 23,
+      "community_name": "toggle",
       "norm_label": "togglevariants"
     },
     {
@@ -4624,6 +5078,7 @@
       "_origin": "ast",
       "id": "src_components_ui_toggle_toggle",
       "community": 23,
+      "community_name": "toggle",
       "norm_label": "toggle"
     },
     {
@@ -4634,6 +5089,7 @@
       "_origin": "ast",
       "id": "src_components_ui_tooltip",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "tooltip.tsx"
     },
     {
@@ -4644,6 +5100,7 @@
       "_origin": "ast",
       "id": "src_components_ui_tooltip_tooltipcontent",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "tooltipcontent"
     },
     {
@@ -4654,6 +5111,7 @@
       "_origin": "ast",
       "id": "src_hooks_use_mobile",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "use-mobile.tsx"
     },
     {
@@ -4665,6 +5123,7 @@
       "_origin": "ast",
       "id": "src_hooks_use_mobile_useismobile",
       "community": 2,
+      "community_name": "Sheet & Separator UI",
       "norm_label": "useismobile()"
     },
     {
@@ -4675,6 +5134,7 @@
       "_origin": "ast",
       "id": "src_hooks_use_session",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "use-session.tsx"
     },
     {
@@ -4687,6 +5147,7 @@
       "_origin": "ast",
       "id": "src_hooks_use_session_sessionuser",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "sessionuser"
     },
     {
@@ -4698,6 +5159,7 @@
       "_origin": "ast",
       "id": "src_hooks_use_session_loadautheduser",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "loadautheduser()"
     },
     {
@@ -4709,6 +5171,7 @@
       "_origin": "ast",
       "id": "src_hooks_use_session_usesession",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "usesession()"
     },
     {
@@ -4719,6 +5182,7 @@
       "_origin": "ast",
       "id": "src_hooks_use_toast",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "use-toast.tsx"
     },
     {
@@ -4731,6 +5195,7 @@
       "_origin": "ast",
       "id": "src_hooks_use_toast_toastvariant",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "toastvariant"
     },
     {
@@ -4743,6 +5208,7 @@
       "_origin": "ast",
       "id": "src_hooks_use_toast_toastoptions",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "toastoptions"
     },
     {
@@ -4754,6 +5220,7 @@
       "_origin": "ast",
       "id": "src_hooks_use_toast_toast",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "toast()"
     },
     {
@@ -4765,6 +5232,7 @@
       "_origin": "ast",
       "id": "src_hooks_use_toast_usetoast",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "usetoast()"
     },
     {
@@ -4775,6 +5243,7 @@
       "_origin": "ast",
       "id": "src_integrations_lovable_index",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "index.ts"
     },
     {
@@ -4785,6 +5254,7 @@
       "_origin": "ast",
       "id": "src_integrations_lovable_index_lovableauth",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "lovableauth"
     },
     {
@@ -4797,6 +5267,7 @@
       "_origin": "ast",
       "id": "src_integrations_lovable_index_signinoptions",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "signinoptions"
     },
     {
@@ -4807,6 +5278,7 @@
       "_origin": "ast",
       "id": "src_integrations_lovable_index_lovable",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "lovable"
     },
     {
@@ -4817,6 +5289,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_auth_attacher",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "auth-attacher.ts"
     },
     {
@@ -4827,6 +5300,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_auth_attacher_attachsupabaseauth",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "attachsupabaseauth"
     },
     {
@@ -4837,6 +5311,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_auth_middleware",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "auth-middleware.ts"
     },
     {
@@ -4848,6 +5323,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_auth_middleware_isnewsupabaseapikey",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "isnewsupabaseapikey()"
     },
     {
@@ -4859,6 +5335,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_auth_middleware_createsupabasefetch",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "createsupabasefetch()"
     },
     {
@@ -4869,6 +5346,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_auth_middleware_requiresupabaseauth",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "requiresupabaseauth"
     },
     {
@@ -4879,6 +5357,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_client_server",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "client.server.ts"
     },
     {
@@ -4890,6 +5369,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_client_server_isnewsupabaseapikey",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "isnewsupabaseapikey()"
     },
     {
@@ -4901,6 +5381,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_client_server_createsupabasefetch",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "createsupabasefetch()"
     },
     {
@@ -4912,6 +5393,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_client_server_createsupabaseadminclient",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "createsupabaseadminclient()"
     },
     {
@@ -4922,6 +5404,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_client_server_supabaseadmin",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "supabaseadmin"
     },
     {
@@ -4932,6 +5415,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_client",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "client.ts"
     },
     {
@@ -4943,6 +5427,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_client_isnewsupabaseapikey",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "isnewsupabaseapikey()"
     },
     {
@@ -4954,6 +5439,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_client_createsupabasefetch",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "createsupabasefetch()"
     },
     {
@@ -4965,6 +5451,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_client_createsupabaseclient",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "createsupabaseclient()"
     },
     {
@@ -4975,6 +5462,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_client_supabase",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "supabase"
     },
     {
@@ -4985,6 +5473,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_types",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "types.ts"
     },
     {
@@ -4997,6 +5486,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_types_json",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "json"
     },
     {
@@ -5009,6 +5499,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_types_database",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "database"
     },
     {
@@ -5021,6 +5512,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_types_databasewithoutinternals",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "databasewithoutinternals"
     },
     {
@@ -5033,6 +5525,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_types_defaultschema",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "defaultschema"
     },
     {
@@ -5045,6 +5538,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_types_tables",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "tables"
     },
     {
@@ -5057,6 +5551,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_types_tablesinsert",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "tablesinsert"
     },
     {
@@ -5069,6 +5564,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_types_tablesupdate",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "tablesupdate"
     },
     {
@@ -5081,6 +5577,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_types_enums",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "enums"
     },
     {
@@ -5093,6 +5590,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_types_compositetypes",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "compositetypes"
     },
     {
@@ -5103,6 +5601,7 @@
       "_origin": "ast",
       "id": "src_integrations_supabase_types_constants",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "constants"
     },
     {
@@ -5113,6 +5612,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "admin.functions.ts"
     },
     {
@@ -5125,6 +5625,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_profileupdate",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "profileupdate"
     },
     {
@@ -5137,6 +5638,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_poolupdate",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "poolupdate"
     },
     {
@@ -5149,6 +5651,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_staffcontext",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "staffcontext"
     },
     {
@@ -5160,6 +5663,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_requirestaff",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "requirestaff()"
     },
     {
@@ -5171,6 +5675,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_logledger",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "logledger()"
     },
     {
@@ -5181,6 +5686,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_getadminoverview",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "getadminoverview"
     },
     {
@@ -5191,6 +5697,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_refillpool",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "refillpool"
     },
     {
@@ -5201,6 +5708,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_adjustplayerbalance",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "adjustplayerbalance"
     },
     {
@@ -5211,6 +5719,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_setmoderation",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "setmoderation"
     },
     {
@@ -5221,6 +5730,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_setusername",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "setusername"
     },
     {
@@ -5232,6 +5742,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_supabase_update",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "supabase_update()"
     },
     {
@@ -5242,6 +5753,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_setrole",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "setrole"
     },
     {
@@ -5252,6 +5764,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_updatecasinosettings",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "updatecasinosettings"
     },
     {
@@ -5262,6 +5775,7 @@
       "_origin": "ast",
       "id": "src_lib_admin_functions_reseteconomy",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "reseteconomy"
     },
     {
@@ -5272,6 +5786,7 @@
       "_origin": "ast",
       "id": "supabase_js",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "@supabase/supabase-js"
     },
     {
@@ -5282,6 +5797,7 @@
       "_origin": "ast",
       "id": "src_lib_bets_functions",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "bets.functions.ts"
     },
     {
@@ -5292,6 +5808,7 @@
       "_origin": "ast",
       "id": "src_lib_bets_functions_getrecentwins",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "getrecentwins"
     },
     {
@@ -5302,6 +5819,7 @@
       "_origin": "ast",
       "id": "src_lib_error_capture",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "error-capture.ts"
     },
     {
@@ -5313,6 +5831,7 @@
       "_origin": "ast",
       "id": "src_lib_error_capture_record",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "record()"
     },
     {
@@ -5324,6 +5843,7 @@
       "_origin": "ast",
       "id": "src_lib_error_capture_describeerror",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "describeerror()"
     },
     {
@@ -5335,6 +5855,7 @@
       "_origin": "ast",
       "id": "src_lib_error_capture_describestatus",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "describestatus()"
     },
     {
@@ -5346,6 +5867,7 @@
       "_origin": "ast",
       "id": "src_lib_error_capture_safestringify",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "safestringify()"
     },
     {
@@ -5357,6 +5879,7 @@
       "_origin": "ast",
       "id": "src_lib_error_capture_iserrorlike",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "iserrorlike()"
     },
     {
@@ -5367,6 +5890,7 @@
       "_origin": "ast",
       "id": "src_lib_error_capture_originalconsoleerror",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "originalconsoleerror"
     },
     {
@@ -5378,6 +5902,7 @@
       "_origin": "ast",
       "id": "src_lib_error_capture_consumelastcapturederror",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "consumelastcapturederror()"
     },
     {
@@ -5388,6 +5913,7 @@
       "_origin": "ast",
       "id": "src_lib_error_page",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "error-page.ts"
     },
     {
@@ -5399,6 +5925,7 @@
       "_origin": "ast",
       "id": "src_lib_error_page_rendererrorpage",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "rendererrorpage()"
     },
     {
@@ -5409,6 +5936,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "gambling.ts"
     },
     {
@@ -5419,6 +5947,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_plinko_rows",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "plinko_rows"
     },
     {
@@ -5429,6 +5958,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_plinko_row_height",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "plinko_row_height"
     },
     {
@@ -5439,6 +5969,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_plinko_peg_spacing",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "plinko_peg_spacing"
     },
     {
@@ -5450,6 +5981,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_calculatewinchance",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "calculatewinchance()"
     },
     {
@@ -5461,6 +5993,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_shouldwin",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "shouldwin()"
     },
     {
@@ -5471,6 +6004,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_roulette_numbers",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "roulette_numbers"
     },
     {
@@ -5483,6 +6017,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_plinkorisk",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "plinkorisk"
     },
     {
@@ -5493,6 +6028,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_plinko_multipliers",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "plinko_multipliers"
     },
     {
@@ -5505,6 +6041,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_vec2",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "vec2"
     },
     {
@@ -5516,6 +6053,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_buildpeggrid",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "buildpeggrid()"
     },
     {
@@ -5526,6 +6064,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_peg_grid",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "peg_grid"
     },
     {
@@ -5537,6 +6076,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_resolvecollision",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "resolvecollision()"
     },
     {
@@ -5548,6 +6088,7 @@
       "_origin": "ast",
       "id": "src_lib_gambling_simulateplinko",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "simulateplinko()"
     },
     {
@@ -5558,6 +6099,7 @@
       "_origin": "ast",
       "id": "src_lib_games_roulette_functions",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "roulette.functions.ts"
     },
     {
@@ -5568,6 +6110,7 @@
       "_origin": "ast",
       "id": "src_lib_games_roulette_functions_playroulettebody",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "playroulettebody"
     },
     {
@@ -5578,6 +6121,7 @@
       "_origin": "ast",
       "id": "src_lib_games_roulette_functions_playroulette",
       "community": 5,
+      "community_name": "Admin & Staff Server Functions",
       "norm_label": "playroulette"
     },
     {
@@ -5588,6 +6132,7 @@
       "_origin": "ast",
       "id": "src_lib_guest",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "guest.ts"
     },
     {
@@ -5598,6 +6143,7 @@
       "_origin": "ast",
       "id": "src_lib_guest_guest_starting_balance",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "guest_starting_balance"
     },
     {
@@ -5610,6 +6156,7 @@
       "_origin": "ast",
       "id": "src_lib_guest_gueststate",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "gueststate"
     },
     {
@@ -5621,6 +6168,7 @@
       "_origin": "ast",
       "id": "src_lib_guest_randomname",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "randomname()"
     },
     {
@@ -5632,6 +6180,7 @@
       "_origin": "ast",
       "id": "src_lib_guest_fresh",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "fresh()"
     },
     {
@@ -5643,6 +6192,7 @@
       "_origin": "ast",
       "id": "src_lib_guest_readguest",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "readguest()"
     },
     {
@@ -5654,6 +6204,7 @@
       "_origin": "ast",
       "id": "src_lib_guest_write",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "write()"
     },
     {
@@ -5665,6 +6216,7 @@
       "_origin": "ast",
       "id": "src_lib_guest_ensureguest",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "ensureguest()"
     },
     {
@@ -5676,6 +6228,7 @@
       "_origin": "ast",
       "id": "src_lib_guest_setguestbalance",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "setguestbalance()"
     },
     {
@@ -5687,6 +6240,7 @@
       "_origin": "ast",
       "id": "src_lib_guest_resetguest",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "resetguest()"
     },
     {
@@ -5698,6 +6252,7 @@
       "_origin": "ast",
       "id": "src_lib_guest_clearguest",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "clearguest()"
     },
     {
@@ -5709,6 +6264,7 @@
       "_origin": "ast",
       "id": "src_lib_guest_subscribeguest",
       "community": 16,
+      "community_name": "Session & Guest Wallet",
       "norm_label": "subscribeguest()"
     },
     {
@@ -5719,6 +6275,7 @@
       "_origin": "ast",
       "id": "src_lib_lovable_error_reporting",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "lovable-error-reporting.ts"
     },
     {
@@ -5731,6 +6288,7 @@
       "_origin": "ast",
       "id": "src_lib_lovable_error_reporting_lovableerroroptions",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "lovableerroroptions"
     },
     {
@@ -5743,6 +6301,7 @@
       "_origin": "ast",
       "id": "src_lib_lovable_error_reporting_lovableevents",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "lovableevents"
     },
     {
@@ -5755,6 +6314,7 @@
       "_origin": "ast",
       "id": "src_lib_lovable_error_reporting_window",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "window"
     },
     {
@@ -5766,6 +6326,7 @@
       "_origin": "ast",
       "id": "src_lib_lovable_error_reporting_reportlovableerror",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "reportlovableerror()"
     },
     {
@@ -5776,6 +6337,7 @@
       "_origin": "ast",
       "id": "src_lib_pool_functions",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "pool.functions.ts"
     },
     {
@@ -5786,6 +6348,7 @@
       "_origin": "ast",
       "id": "src_lib_pool_functions_getpool",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "getpool"
     },
     {
@@ -5796,6 +6359,7 @@
       "_origin": "ast",
       "id": "src_lib_profiles_functions",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "profiles.functions.ts"
     },
     {
@@ -5806,6 +6370,7 @@
       "_origin": "ast",
       "id": "src_lib_profiles_functions_getmyprofile",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "getmyprofile"
     },
     {
@@ -5816,6 +6381,7 @@
       "_origin": "ast",
       "id": "src_lib_profiles_functions_createprofile",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "createprofile"
     },
     {
@@ -5826,6 +6392,7 @@
       "_origin": "ast",
       "id": "src_lib_profiles_server",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "profiles.server.ts"
     },
     {
@@ -5837,6 +6404,7 @@
       "_origin": "ast",
       "id": "src_lib_profiles_server_getauthenticateduserid",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "getauthenticateduserid()"
     },
     {
@@ -5848,6 +6416,7 @@
       "_origin": "ast",
       "id": "src_lib_profiles_server_createsupabasepublicclient",
       "community": 9,
+      "community_name": "Supabase Admin Client & DB Types",
       "norm_label": "createsupabasepublicclient()"
     },
     {
@@ -5858,6 +6427,7 @@
       "_origin": "ast",
       "id": "src_lib_utils",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "utils.ts"
     },
     {
@@ -5869,6 +6439,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_cn",
       "community": 4,
+      "community_name": "Accordion, Avatar & Menus",
       "norm_label": "cn()"
     },
     {
@@ -5880,6 +6451,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_formatcurrency",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "formatcurrency()"
     },
     {
@@ -5891,6 +6463,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_formatnumber",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "formatnumber()"
     },
     {
@@ -5902,6 +6475,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_safeformat",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "safeformat()"
     },
     {
@@ -5913,6 +6487,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_safelocaledate",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "safelocaledate()"
     },
     {
@@ -5924,6 +6499,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_safelocaletime",
       "community": 7,
+      "community_name": "Badges, Popovers & Toggles",
       "norm_label": "safelocaletime()"
     },
     {
@@ -5934,6 +6510,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "routetree.gen.ts"
     },
     {
@@ -5944,6 +6521,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_indexroute",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "indexroute"
     },
     {
@@ -5954,6 +6532,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_adminroute",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "adminroute"
     },
     {
@@ -5964,6 +6543,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_gamesroute",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "gamesroute"
     },
     {
@@ -5974,6 +6554,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_loginroute",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "loginroute"
     },
     {
@@ -5984,6 +6565,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_registerroute",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "registerroute"
     },
     {
@@ -5994,6 +6576,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_gamesindexroute",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "gamesindexroute"
     },
     {
@@ -6004,6 +6587,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_gamesrouletteroute",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "gamesrouletteroute"
     },
     {
@@ -6016,6 +6600,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_fileroutesbyfullpath",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "fileroutesbyfullpath"
     },
     {
@@ -6028,6 +6613,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_fileroutesbyto",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "fileroutesbyto"
     },
     {
@@ -6040,6 +6626,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_fileroutesbyid",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "fileroutesbyid"
     },
     {
@@ -6052,6 +6639,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_fileroutetypes",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "fileroutetypes"
     },
     {
@@ -6064,6 +6652,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_rootroutechildren",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "rootroutechildren"
     },
     {
@@ -6074,6 +6663,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_tanstack_react_router",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "@tanstack/react-router"
     },
     {
@@ -6086,6 +6676,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_fileroutesbypath",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "fileroutesbypath"
     },
     {
@@ -6098,6 +6689,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_gamesroutechildren",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "gamesroutechildren"
     },
     {
@@ -6108,6 +6700,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_gamesroutewithchildren",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "gamesroutewithchildren"
     },
     {
@@ -6118,6 +6711,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_routetree",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "routetree"
     },
     {
@@ -6128,6 +6722,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_tanstack_react_start",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "@tanstack/react-start"
     },
     {
@@ -6140,6 +6735,7 @@
       "_origin": "ast",
       "id": "src_routetree_gen_register",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "register"
     },
     {
@@ -6150,6 +6746,7 @@
       "_origin": "ast",
       "id": "src_router",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "router.tsx"
     },
     {
@@ -6161,6 +6758,7 @@
       "_origin": "ast",
       "id": "src_router_getrouter",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "getrouter()"
     },
     {
@@ -6171,6 +6769,7 @@
       "_origin": "ast",
       "id": "src_routes_root",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "__root.tsx"
     },
     {
@@ -6182,6 +6781,7 @@
       "_origin": "ast",
       "id": "src_routes_root_notfoundcomponent",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "notfoundcomponent()"
     },
     {
@@ -6193,6 +6793,7 @@
       "_origin": "ast",
       "id": "src_routes_root_errorcomponent",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "errorcomponent()"
     },
     {
@@ -6203,6 +6804,7 @@
       "_origin": "ast",
       "id": "src_routes_root_route",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "route"
     },
     {
@@ -6214,6 +6816,7 @@
       "_origin": "ast",
       "id": "src_routes_root_rootshell",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "rootshell()"
     },
     {
@@ -6225,6 +6828,7 @@
       "_origin": "ast",
       "id": "src_routes_root_rootcomponent",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "rootcomponent()"
     },
     {
@@ -6235,6 +6839,7 @@
       "_origin": "ast",
       "id": "src_routes_admin",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "admin.tsx"
     },
     {
@@ -6245,6 +6850,7 @@
       "_origin": "ast",
       "id": "src_routes_admin_route",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "route"
     },
     {
@@ -6256,6 +6862,7 @@
       "_origin": "ast",
       "id": "src_routes_admin_stat",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "stat()"
     },
     {
@@ -6267,6 +6874,7 @@
       "_origin": "ast",
       "id": "src_routes_admin_adminpanel",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "adminpanel()"
     },
     {
@@ -6277,6 +6885,7 @@
       "_origin": "ast",
       "id": "src_routes_games_index",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "games.index.tsx"
     },
     {
@@ -6287,6 +6896,7 @@
       "_origin": "ast",
       "id": "src_routes_games_index_allgames",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "allgames"
     },
     {
@@ -6297,6 +6907,7 @@
       "_origin": "ast",
       "id": "src_routes_games_index_container",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "container"
     },
     {
@@ -6307,6 +6918,7 @@
       "_origin": "ast",
       "id": "src_routes_games_index_item",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "item"
     },
     {
@@ -6317,6 +6929,7 @@
       "_origin": "ast",
       "id": "src_routes_games_index_route",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "route"
     },
     {
@@ -6328,6 +6941,7 @@
       "_origin": "ast",
       "id": "src_routes_games_index_gamecard",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "gamecard()"
     },
     {
@@ -6339,6 +6953,7 @@
       "_origin": "ast",
       "id": "src_routes_games_index_gamesindex",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "gamesindex()"
     },
     {
@@ -6349,6 +6964,7 @@
       "_origin": "ast",
       "id": "src_routes_games",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "games.tsx"
     },
     {
@@ -6359,6 +6975,7 @@
       "_origin": "ast",
       "id": "src_routes_games_route",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "route"
     },
     {
@@ -6370,6 +6987,7 @@
       "_origin": "ast",
       "id": "src_routes_games_gameslayout",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "gameslayout()"
     },
     {
@@ -6380,6 +6998,7 @@
       "_origin": "ast",
       "id": "src_routes_games_roulette",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "roulette.tsx"
     },
     {
@@ -6392,6 +7011,7 @@
       "_origin": "ast",
       "id": "src_routes_games_roulette_betcolor",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "betcolor"
     },
     {
@@ -6403,6 +7023,7 @@
       "_origin": "ast",
       "id": "src_routes_games_roulette_roulettewheel",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "roulettewheel()"
     },
     {
@@ -6413,6 +7034,7 @@
       "_origin": "ast",
       "id": "src_routes_games_roulette_color_config",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "color_config"
     },
     {
@@ -6423,6 +7045,7 @@
       "_origin": "ast",
       "id": "src_routes_games_roulette_route",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "route"
     },
     {
@@ -6434,6 +7057,7 @@
       "_origin": "ast",
       "id": "src_routes_games_roulette_roulette",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "roulette()"
     },
     {
@@ -6444,6 +7068,7 @@
       "_origin": "ast",
       "id": "src_routes_index",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "index.tsx"
     },
     {
@@ -6455,6 +7080,7 @@
       "_origin": "ast",
       "id": "src_routes_index_animatedstat",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "animatedstat()"
     },
     {
@@ -6466,6 +7092,7 @@
       "_origin": "ast",
       "id": "src_routes_index_poolfontclass",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "poolfontclass()"
     },
     {
@@ -6477,6 +7104,7 @@
       "_origin": "ast",
       "id": "src_routes_index_substatfontclass",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "substatfontclass()"
     },
     {
@@ -6487,6 +7115,7 @@
       "_origin": "ast",
       "id": "src_routes_index_featured",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "featured"
     },
     {
@@ -6497,6 +7126,7 @@
       "_origin": "ast",
       "id": "src_routes_index_game_icons",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "game_icons"
     },
     {
@@ -6507,6 +7137,7 @@
       "_origin": "ast",
       "id": "src_routes_index_route",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "route"
     },
     {
@@ -6518,6 +7149,7 @@
       "_origin": "ast",
       "id": "src_routes_index_home",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "home()"
     },
     {
@@ -6528,6 +7160,7 @@
       "_origin": "ast",
       "id": "src_routes_login",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "login.tsx"
     },
     {
@@ -6538,6 +7171,7 @@
       "_origin": "ast",
       "id": "src_routes_login_route",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "route"
     },
     {
@@ -6549,6 +7183,7 @@
       "_origin": "ast",
       "id": "src_routes_login_login",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "login()"
     },
     {
@@ -6559,6 +7194,7 @@
       "_origin": "ast",
       "id": "src_routes_register",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "register.tsx"
     },
     {
@@ -6569,6 +7205,7 @@
       "_origin": "ast",
       "id": "src_routes_register_route",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "route"
     },
     {
@@ -6580,6 +7217,7 @@
       "_origin": "ast",
       "id": "src_routes_register_register",
       "community": 0,
+      "community_name": "App Shell & Navigation",
       "norm_label": "register()"
     },
     {
@@ -6590,6 +7228,7 @@
       "_origin": "ast",
       "id": "src_server",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "server.ts"
     },
     {
@@ -6602,6 +7241,7 @@
       "_origin": "ast",
       "id": "src_server_serverentry",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "serverentry"
     },
     {
@@ -6613,6 +7253,7 @@
       "_origin": "ast",
       "id": "src_server_getserverentry",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "getserverentry()"
     },
     {
@@ -6624,6 +7265,7 @@
       "_origin": "ast",
       "id": "src_server_normalizecatastrophicssrresponse",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "normalizecatastrophicssrresponse()"
     },
     {
@@ -6635,6 +7277,7 @@
       "_origin": "ast",
       "id": "src_server_ish3swallowederrorbody",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "ish3swallowederrorbody()"
     },
     {
@@ -6646,6 +7289,7 @@
       "_origin": "ast",
       "id": "src_server_fetch",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "fetch()"
     },
     {
@@ -6656,6 +7300,7 @@
       "_origin": "ast",
       "id": "src_start",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "start.ts"
     },
     {
@@ -6666,6 +7311,7 @@
       "_origin": "ast",
       "id": "src_start_errormiddleware",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "errormiddleware"
     },
     {
@@ -6676,6 +7322,7 @@
       "_origin": "ast",
       "id": "src_start_csrfmiddleware",
       "community": 10,
+      "community_name": "Auth Attacher & Error Capture",
       "norm_label": "csrfmiddleware"
     },
     {
@@ -6686,6 +7333,7 @@
       "_origin": "ast",
       "id": "src_start_startinstance",
       "community": 3,
+      "community_name": "Router & Error Reporting",
       "norm_label": "startinstance"
     },
     {
@@ -6696,6 +7344,7 @@
       "_origin": "ast",
       "id": "tsconfig",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "tsconfig.json"
     },
     {
@@ -6706,6 +7355,7 @@
       "_origin": "ast",
       "id": "tsconfig_include",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "include"
     },
     {
@@ -6716,6 +7366,7 @@
       "_origin": "ast",
       "id": "ref_src_ts",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "src/**/*.ts"
     },
     {
@@ -6726,6 +7377,7 @@
       "_origin": "ast",
       "id": "ref_src_tsx",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "src/**/*.tsx"
     },
     {
@@ -6736,6 +7388,7 @@
       "_origin": "ast",
       "id": "ref_vite_config_ts",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "vite.config.ts"
     },
     {
@@ -6746,6 +7399,7 @@
       "_origin": "ast",
       "id": "ref_eslint_config_js",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "eslint.config.js"
     },
     {
@@ -6756,6 +7410,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "compileroptions"
     },
     {
@@ -6766,6 +7421,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_target",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "target"
     },
     {
@@ -6776,6 +7432,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_jsx",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "jsx"
     },
     {
@@ -6786,6 +7443,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_module",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "module"
     },
     {
@@ -6796,6 +7454,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_lib",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "lib"
     },
     {
@@ -6806,6 +7465,7 @@
       "_origin": "ast",
       "id": "ref_es2022",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "es2022"
     },
     {
@@ -6816,6 +7476,7 @@
       "_origin": "ast",
       "id": "ref_dom",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "dom"
     },
     {
@@ -6826,6 +7487,7 @@
       "_origin": "ast",
       "id": "ref_dom_iterable",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "dom.iterable"
     },
     {
@@ -6836,6 +7498,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_types",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "types"
     },
     {
@@ -6846,6 +7509,7 @@
       "_origin": "ast",
       "id": "ref_vite_client",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "vite/client"
     },
     {
@@ -6856,6 +7520,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_moduleresolution",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "moduleresolution"
     },
     {
@@ -6866,6 +7531,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_allowimportingtsextensions",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "allowimportingtsextensions"
     },
     {
@@ -6876,6 +7542,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_verbatimmodulesyntax",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "verbatimmodulesyntax"
     },
     {
@@ -6886,6 +7553,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_noemit",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "noemit"
     },
     {
@@ -6896,6 +7564,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_skiplibcheck",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "skiplibcheck"
     },
     {
@@ -6906,6 +7575,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_strict",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "strict"
     },
     {
@@ -6916,6 +7586,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_nounusedlocals",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "nounusedlocals"
     },
     {
@@ -6926,6 +7597,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_nounusedparameters",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "nounusedparameters"
     },
     {
@@ -6936,6 +7608,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_nofallthroughcasesinswitch",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "nofallthroughcasesinswitch"
     },
     {
@@ -6946,6 +7619,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_noimplicitoverride",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "noimplicitoverride"
     },
     {
@@ -6956,6 +7630,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_noimplicitreturns",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "noimplicitreturns"
     },
     {
@@ -6966,6 +7641,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_nopropertyaccessfromindexsignature",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "nopropertyaccessfromindexsignature"
     },
     {
@@ -6976,6 +7652,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_nouncheckedindexedaccess",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "nouncheckedindexedaccess"
     },
     {
@@ -6986,6 +7663,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_exactoptionalpropertytypes",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "exactoptionalpropertytypes"
     },
     {
@@ -6996,6 +7674,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_nouncheckedsideeffectimports",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "nouncheckedsideeffectimports"
     },
     {
@@ -7006,6 +7685,7 @@
       "_origin": "ast",
       "id": "tsconfig_compileroptions_paths",
       "community": 6,
+      "community_name": "TypeScript & Vite Config",
       "norm_label": "paths"
     },
     {
@@ -7016,6 +7696,7 @@
       "_origin": "ast",
       "id": "vite_config",
       "community": 78,
+      "community_name": "vite.config",
       "norm_label": "vite.config.ts"
     }
   ],
@@ -20928,5 +21609,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "df98d7ccc04026c26436bd24283859594146d1de"
+  "built_at_commit": "6621526d47f8c4b4ddadcfcba101aca4daad8c45"
 }
