@@ -77,68 +77,26 @@ export const playRoulette = createServerFn({ method: "POST" })
     const newCurrentStreak = won ? Number(profile.current_streak) + 1 : 0;
     const newWinStreak = Math.max(Number(profile.win_streak), newCurrentStreak);
 
-    const now = new Date().toISOString();
-
-    const { error: updatePoolError } = await supabase
-      .from("pool")
-      .update({
-        total_amount: newPoolAmount,
-        biggest_win: newBiggestWin,
-        biggest_bet: newBiggestBet,
-        updated_at: now,
-      })
-      .eq("id", poolRow.id);
-
-    if (updatePoolError) throw updatePoolError;
-
-    const { error: updateProfileError } = await supabase
-      .from("profiles")
-      .update({
-        balance: newBalance,
-        total_profit: Number(profile.total_profit) + profit,
-        biggest_win: won && payout > Number(profile.biggest_win) ? payout : Number(profile.biggest_win),
-        biggest_bet: betAmount > Number(profile.biggest_bet) ? betAmount : Number(profile.biggest_bet),
-        games_played: newGamesPlayed,
-        win_streak: newWinStreak,
-        current_streak: newCurrentStreak,
-        total_wins: Number(profile.total_wins) + (won ? 1 : 0),
-        total_losses: Number(profile.total_losses) + (!won ? 1 : 0),
-        last_bet_at: now,
-        updated_at: now,
-      })
-      .eq("id", profile.id);
-
-    if (updateProfileError) throw updateProfileError;
-
-    const { error: betError } = await supabase.from("bets").insert({
-      user_id: userId,
-      game_type: "roulette",
-      bet_amount: betAmount,
-      result: won ? "win" : "loss",
-      payout,
-      multiplier: won ? rawPayoutMultiplier : 0,
+    const { data: settled, error: settleError } = await supabase.rpc("settle_bet", {
+      _game_type: "roulette",
+      _bet_amount: betAmount,
+      _payout: payout,
+      _multiplier: won ? rawPayoutMultiplier : 0,
+      _result: won ? "win" : "loss",
+      _metadata: { color, resultColor, resultNumber: spinResult.number },
     });
 
-    if (betError) throw betError;
+    if (settleError) throw new Error(settleError.message);
 
-    const { error: ledgerError } = await supabase.from("money_ledger").insert({
-      actor_user_id: userId,
-      target_user_id: userId,
-      amount: Math.abs(profit),
-      direction: profit >= 0 ? "in" : "out",
-      event_type: "roulette",
-      description: `roulette ${won ? "win" : "loss"}: ${resultColor} ${spinResult.number}`,
-    });
-
-    if (ledgerError) throw ledgerError;
+    const result = settled as unknown as { newBalance: number; payout: number };
 
     return {
       won,
       resultColor,
       resultNumber: spinResult.number,
       betAmount,
-      payout,
-      newBalance,
+      payout: Number(result.payout),
+      newBalance: Number(result.newBalance),
       winChance,
     };
   });
