@@ -17,7 +17,7 @@ export const playGame = createServerFn({ method: "POST" })
     const spec = GAME_SPECS[data.gameId];
     if (!spec) throw new Error("Unknown game");
     if (!spec.options.some((o) => o.value === data.option)) {
-      throw new Error("Invalid选择".replace("选择", " selection"));
+      throw new Error("Invalid selection");
     }
 
     const { supabase } = context;
