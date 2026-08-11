@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input";
 import { User, Lock, Mail, AlertCircle, Tag } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
+import { syntheticEmail } from "@/lib/auth-identifier";
 import { clearGuest } from "@/lib/guest";
 import { Layout } from "@/components/layout";
+
 
 export const Route = createFileRoute("/register")({
   head: () => ({
