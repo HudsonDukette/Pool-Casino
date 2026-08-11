@@ -232,16 +232,49 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      change_username: { Args: { _new_username: string }; Returns: Json }
       is_owner: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       public_leaderboard: {
         Args: { _limit?: number }
         Returns: {
+          avatar_url: string
           biggest_win: number
           games_played: number
           level: number
           total_profit: number
+          total_wins: number
           username: string
+        }[]
+      }
+      public_profile: {
+        Args: { _username: string }
+        Returns: {
+          avatar_url: string
+          biggest_bet: number
+          biggest_win: number
+          bio: string
+          created_at: string
+          current_streak: number
+          games_played: number
+          level: number
+          total_losses: number
+          total_profit: number
+          total_wins: number
+          username: string
+          win_streak: number
+          xp: number
+        }[]
+      }
+      public_profile_bets: {
+        Args: { _limit?: number; _username: string }
+        Returns: {
+          bet_amount: number
+          created_at: string
+          game_type: string
+          multiplier: number
+          payout: number
+          result: string
         }[]
       }
       public_recent_wins: {
