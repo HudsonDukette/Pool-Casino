@@ -121,13 +121,13 @@ function Register() {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="email"
-                  placeholder="Email"
+                  placeholder="Email (optional)"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
                   className="bg-black/50 pl-10"
                 />
               </div>
+
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
