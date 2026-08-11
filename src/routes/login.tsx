@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Layout } from "@/components/layout";
 import { clearGuest } from "@/lib/guest";
+import { resolveLoginEmail } from "@/lib/auth-identifier";
+
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -39,7 +41,10 @@ function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email: resolveLoginEmail(email),
+      password,
+    });
     setLoading(false);
     if (error) {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
@@ -49,6 +54,7 @@ function Login() {
     toast({ title: "Welcome back!", description: "Successfully logged in." });
     navigate({ to: "/" });
   };
+
 
   const handleGoogle = async () => {
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
@@ -80,13 +86,14 @@ function Login() {
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
-                  type="email"
-                  placeholder="Email"
+                  type="text"
+                  placeholder="Username or email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="bg-black/50 pl-10"
                 />
+
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />

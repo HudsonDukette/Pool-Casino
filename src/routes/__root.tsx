@@ -17,25 +17,38 @@ import { SessionProvider } from "@/hooks/use-session";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
+      <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/20 blur-[120px]" />
+      <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-accent/20 blur-[120px]" />
+      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-white/10 bg-black/60 p-10 text-center backdrop-blur-xl">
+        <h1 className="font-display text-8xl font-extrabold tracking-tight text-primary neon-text-primary">
+          404
+        </h1>
+        <h2 className="mt-4 font-display text-2xl font-bold text-white">
+          You wandered off the table
+        </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          This page isn&apos;t in the house. Cash out and head back to the floor.
         </p>
-        <div className="mt-6">
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_0_20px_rgba(0,255,170,0.25)] transition-shadow hover:shadow-[0_0_30px_rgba(0,255,170,0.45)]"
           >
-            Go home
+            Back to lobby
+          </Link>
+          <Link
+            to="/games"
+            className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+          >
+            Browse games
           </Link>
         </div>
       </div>
     </div>
   );
 }
+
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
