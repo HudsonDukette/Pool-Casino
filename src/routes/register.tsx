@@ -37,15 +37,29 @@ function Register() {
     });
   }, [navigate]);
 
+  const handleGoogle = async () => {
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+    if (result.error) {
+      toast({ title: "Google sign-up failed", description: String(result.error), variant: "destructive" });
+      return;
+    }
+    if (result.redirected) return;
+    clearGuest();
+    toast({ title: "Signed in with Google", description: "Welcome to PoolCasino!" });
+    navigate({ to: "/" });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (username.length < 3) {
       toast({ title: "Username too short", description: "Username must be at least 3 characters.", variant: "destructive" });
       return;
     }
+    const usesEmail = email.trim().length > 0;
+    const authEmail = usesEmail ? email.trim() : syntheticEmail(username);
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: authEmail,
       password,
       options: { data: { username }, emailRedirectTo: window.location.origin },
     });
@@ -58,7 +72,9 @@ function Register() {
     if (!data.session) {
       toast({
         title: "Almost there!",
-        description: "Check your email to confirm your account, then log in.",
+        description: usesEmail
+          ? "Check your email to confirm your account, then log in."
+          : "Account created — log in with your username.",
         className: "bg-success text-success-foreground border-none",
       });
       navigate({ to: "/login" });
@@ -71,6 +87,7 @@ function Register() {
     });
     navigate({ to: "/" });
   };
+
 
   return (
     <Layout>
