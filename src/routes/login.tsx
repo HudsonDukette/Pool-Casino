@@ -39,7 +39,10 @@ function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email: resolveLoginEmail(email),
+      password,
+    });
     setLoading(false);
     if (error) {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
@@ -49,6 +52,7 @@ function Login() {
     toast({ title: "Welcome back!", description: "Successfully logged in." });
     navigate({ to: "/" });
   };
+
 
   const handleGoogle = async () => {
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
