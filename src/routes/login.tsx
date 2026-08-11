@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Layout } from "@/components/layout";
 import { clearGuest } from "@/lib/guest";
+import { resolveLoginEmail } from "@/lib/auth-identifier";
+
 
 export const Route = createFileRoute("/login")({
   head: () => ({
