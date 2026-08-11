@@ -47,7 +47,7 @@ export function PlayerAvatar({
   className,
 }: {
   username: string;
-  avatarUrl?: string | null;
+  avatarUrl?: string | null | undefined;
   className?: string;
 }) {
   const url = useAvatarUrl(avatarUrl);
