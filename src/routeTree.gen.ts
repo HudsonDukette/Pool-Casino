@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as GamesRouteImport } from './routes/games'
+import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as GamesIndexRouteImport } from './routes/games.index'
@@ -31,6 +32,11 @@ const AdminRoute = AdminRouteImport.update({
 const GamesRoute = GamesRouteImport.update({
   id: '/games',
   path: '/games',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeaderboardRoute = LeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/games': typeof GamesRouteWithChildren
+  '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/games/$gameId': typeof GamesGameIdRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/games/$gameId': typeof GamesGameIdRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/games': typeof GamesRouteWithChildren
+  '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/games/$gameId': typeof GamesGameIdRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/games'
+    | '/leaderboard'
     | '/login'
     | '/register'
     | '/games/$gameId'
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/leaderboard'
     | '/login'
     | '/register'
     | '/games/$gameId'
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/games'
+    | '/leaderboard'
     | '/login'
     | '/register'
     | '/games/$gameId'
@@ -125,6 +137,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   GamesRoute: typeof GamesRouteWithChildren
+  LeaderboardRoute: typeof LeaderboardRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
 }
@@ -150,6 +163,13 @@ declare module '@tanstack/react-router' {
       path: '/games'
       fullPath: '/games'
       preLoaderRoute: typeof GamesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leaderboard': {
+      id: '/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -208,6 +228,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   GamesRoute: GamesRouteWithChildren,
+  LeaderboardRoute: LeaderboardRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
 }
