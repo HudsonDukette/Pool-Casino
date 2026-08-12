@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Coins,
   LogOut,
-  User as UserIcon,
+
   Menu,
   X,
   Dices,
