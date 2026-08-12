@@ -157,11 +157,12 @@ function ChatPage() {
     const body = draft.trim();
     if (!body || !target || !user) return;
     setDraft("");
-    const payload =
-      target.kind === "room"
-        ? { room_id: target.id, sender_id: user.id, body }
-        : { recipient_id: target.id, sender_id: user.id, body };
-    const { error } = await supabase.from("chat_messages").insert(payload);
+    const { error } = await supabase.from("chat_messages").insert({
+      sender_id: user.id,
+      body,
+      room_id: target.kind === "room" ? target.id : null,
+      recipient_id: target.kind === "dm" ? target.id : null,
+    });
     if (error) {
       toast({ title: "Message failed", description: error.message, variant: "destructive" });
       return;
