@@ -216,12 +216,21 @@ function Home() {
                     Play Now
                   </Button>
                 </Link>
-                <Link to="/register">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg">
-                    <Sparkles className="mr-2 w-4 h-4" />
-                    Claim Free Coins
-                  </Button>
-                </Link>
+                {isSignedIn ? (
+                  <Link to="/leaderboard">
+                    <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg">
+                      <Crown className="mr-2 w-4 h-4" />
+                      Leaderboards
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link to="/register">
+                    <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg">
+                      <Sparkles className="mr-2 w-4 h-4" />
+                      Claim Free Coins
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
 
