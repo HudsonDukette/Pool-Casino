@@ -4,11 +4,12 @@ import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout";
-import { Dices, ArrowRight, TrendingUp, Zap, Activity, Sparkles } from "lucide-react";
+import { Dices, ArrowRight, TrendingUp, Zap, Activity, Sparkles, Crown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { getPool } from "@/lib/pool.functions";
 import { getRecentWins } from "@/lib/bets.functions";
+import { useSession } from "@/hooks/use-session";
 
 import rouletteImg from "@/assets/game-roulette.png";
 import plinkoImg from "@/assets/game-plinko.png";
@@ -158,6 +159,7 @@ function Home() {
   prevPool.current = poolNum;
 
   const recentWins = wins ?? [];
+  const { isAuthenticated: isSignedIn } = useSession();
 
 
   return (
