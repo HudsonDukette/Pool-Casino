@@ -11,11 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ChatRouteImport } from './routes/chat'
 import { Route as GamesRouteImport } from './routes/games'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as GamesIndexRouteImport } from './routes/games.index'
 import { Route as GamesGameIdRouteImport } from './routes/games/$gameId'
 import { Route as GamesRouletteRouteImport } from './routes/games/roulette'
@@ -29,6 +32,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesRoute = GamesRouteImport.update({
@@ -46,6 +54,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrdersRoute = OrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -54,6 +67,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WalletRoute = WalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesIndexRoute = GamesIndexRouteImport.update({
@@ -80,11 +98,14 @@ const PlayersUsernameRoute = PlayersUsernameRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/chat': typeof ChatRoute
   '/games': typeof GamesRouteWithChildren
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
+  '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/wallet': typeof WalletRoute
   '/games/$gameId': typeof GamesGameIdRoute
   '/games/roulette': typeof GamesRouletteRoute
   '/players/$username': typeof PlayersUsernameRoute
@@ -93,10 +114,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/chat': typeof ChatRoute
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
+  '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/wallet': typeof WalletRoute
   '/games/$gameId': typeof GamesGameIdRoute
   '/games/roulette': typeof GamesRouletteRoute
   '/players/$username': typeof PlayersUsernameRoute
@@ -106,11 +130,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/chat': typeof ChatRoute
   '/games': typeof GamesRouteWithChildren
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
+  '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/wallet': typeof WalletRoute
   '/games/$gameId': typeof GamesGameIdRoute
   '/games/roulette': typeof GamesRouletteRoute
   '/players/$username': typeof PlayersUsernameRoute
@@ -121,11 +148,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/chat'
     | '/games'
     | '/leaderboard'
     | '/login'
+    | '/orders'
     | '/profile'
     | '/register'
+    | '/wallet'
     | '/games/$gameId'
     | '/games/roulette'
     | '/players/$username'
@@ -134,10 +164,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/chat'
     | '/leaderboard'
     | '/login'
+    | '/orders'
     | '/profile'
     | '/register'
+    | '/wallet'
     | '/games/$gameId'
     | '/games/roulette'
     | '/players/$username'
@@ -146,11 +179,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/chat'
     | '/games'
     | '/leaderboard'
     | '/login'
+    | '/orders'
     | '/profile'
     | '/register'
+    | '/wallet'
     | '/games/$gameId'
     | '/games/roulette'
     | '/players/$username'
@@ -160,11 +196,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  ChatRoute: typeof ChatRoute
   GamesRoute: typeof GamesRouteWithChildren
   LeaderboardRoute: typeof LeaderboardRoute
   LoginRoute: typeof LoginRoute
+  OrdersRoute: typeof OrdersRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
+  WalletRoute: typeof WalletRoute
   PlayersUsernameRoute: typeof PlayersUsernameRoute
 }
 
@@ -182,6 +221,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/games': {
@@ -205,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -217,6 +270,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wallet': {
+      id: '/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof WalletRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/games/': {
@@ -267,11 +327,14 @@ const GamesRouteWithChildren = GamesRoute._addFileChildren(GamesRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  ChatRoute: ChatRoute,
   GamesRoute: GamesRouteWithChildren,
   LeaderboardRoute: LeaderboardRoute,
   LoginRoute: LoginRoute,
+  OrdersRoute: OrdersRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
+  WalletRoute: WalletRoute,
   PlayersUsernameRoute: PlayersUsernameRoute,
 }
 export const routeTree = rootRouteImport

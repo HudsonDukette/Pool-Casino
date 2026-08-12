@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Coins,
   LogOut,
-  User as UserIcon,
+
   Menu,
   X,
   Dices,
@@ -17,16 +17,19 @@ import {
   LayoutDashboard,
   MessageSquare,
   ShieldAlert,
+  Gift,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getPool } from "@/lib/pool.functions";
 import { useSession } from "@/hooks/use-session";
+import { PlayerAvatar } from "@/components/player-avatar";
 
 const navLinks = [
   { to: "/", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
   { to: "/chat", label: "Chat", icon: <MessageSquare className="w-4 h-4" /> },
+  { to: "/orders", label: "Orders", icon: <Gift className="w-4 h-4" /> },
   { to: "/leaderboard", label: "Leaderboards", icon: <Crown className="w-4 h-4" /> },
 ];
 
@@ -220,9 +223,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </AnyLink>
                   <AnyLink
                     to="/profile"
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-sm font-medium"
+                    className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-sm font-medium"
+                    aria-label="Your profile"
                   >
-                    <UserIcon className="w-4 h-4" />
+                    <PlayerAvatar
+                      username={user.username}
+                      avatarUrl={user.avatarUrl}
+                      className="w-8 h-8 rounded-lg text-xs"
+                    />
                     <span className="max-w-[100px] truncate">{user.username}</span>
                   </AnyLink>
                   <button

@@ -16,6 +16,7 @@ export type SessionUser = {
   isAdmin: boolean;
   isOwner: boolean;
   isGuest: boolean;
+  avatarUrl: string | null;
 };
 
 export type SessionValue = {
@@ -48,6 +49,7 @@ async function loadAuthedUser(): Promise<SessionUser | null> {
       isAdmin: profile.is_admin || profile.is_owner,
       isOwner: profile.is_owner,
       isGuest: false,
+      avatarUrl: profile.avatar_url ?? null,
     };
   }
 
@@ -73,6 +75,7 @@ async function loadAuthedUser(): Promise<SessionUser | null> {
     isAdmin: (created?.is_admin ?? false) || (created?.is_owner ?? false),
     isOwner: created?.is_owner ?? false,
     isGuest: false,
+    avatarUrl: created?.avatar_url ?? null,
   };
 }
 
@@ -118,6 +121,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           isAdmin: false,
           isOwner: false,
           isGuest: true,
+          avatarUrl: null,
         }
       : null;
 

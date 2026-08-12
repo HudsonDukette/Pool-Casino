@@ -50,6 +50,159 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          recipient_id: string | null
+          room_id: string | null
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          recipient_id?: string | null
+          room_id?: string | null
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          recipient_id?: string | null
+          room_id?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "chat_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_room_members: {
+        Row: {
+          created_at: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_room_members_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "chat_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_rooms: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_private: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_private?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_private?: boolean
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      donations: {
+        Row: {
+          amount: number
+          created_at: string
+          from_user_id: string
+          id: string
+          message: string
+          request_id: string | null
+          to_user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          from_user_id: string
+          id?: string
+          message?: string
+          request_id?: string | null
+          to_user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          message?: string
+          request_id?: string | null
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "money_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      friendships: {
+        Row: {
+          addressee_id: string
+          created_at: string
+          id: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string
+          id?: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       money_ledger: {
         Row: {
           actor_user_id: string | null
@@ -80,6 +233,42 @@ export type Database = {
           event_type?: string
           id?: string
           target_user_id?: string | null
+        }
+        Relationships: []
+      }
+      money_requests: {
+        Row: {
+          amount: number
+          audience: string
+          created_at: string
+          filled_amount: number
+          id: string
+          note: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          audience?: string
+          created_at?: string
+          filled_amount?: number
+          id?: string
+          note?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          audience?: string
+          created_at?: string
+          filled_amount?: number
+          id?: string
+          note?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -127,6 +316,7 @@ export type Database = {
           bio: string | null
           created_at: string
           current_streak: number
+          donated_total: number
           email: string | null
           games_played: number
           id: string
@@ -138,6 +328,7 @@ export type Database = {
           last_bet_at: string | null
           last_daily_claim: string | null
           level: number
+          received_total: number
           total_losses: number
           total_profit: number
           total_wins: number
@@ -157,6 +348,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           current_streak?: number
+          donated_total?: number
           email?: string | null
           games_played?: number
           id?: string
@@ -168,6 +360,7 @@ export type Database = {
           last_bet_at?: string | null
           last_daily_claim?: string | null
           level?: number
+          received_total?: number
           total_losses?: number
           total_profit?: number
           total_wins?: number
@@ -187,6 +380,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           current_streak?: number
+          donated_total?: number
           email?: string | null
           games_played?: number
           id?: string
@@ -198,6 +392,7 @@ export type Database = {
           last_bet_at?: string | null
           last_daily_claim?: string | null
           level?: number
+          received_total?: number
           total_losses?: number
           total_profit?: number
           total_wins?: number
@@ -232,9 +427,87 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_room: {
+        Args: { _room_id: string; _user_id: string }
+        Returns: boolean
+      }
       change_username: { Args: { _new_username: string }; Returns: Json }
+      dm_messages: {
+        Args: { _limit?: number; _other_user_id: string }
+        Returns: {
+          avatar_url: string
+          body: string
+          created_at: string
+          id: string
+          sender_id: string
+          username: string
+        }[]
+      }
+      donate_coins: {
+        Args: {
+          _amount: number
+          _message?: string
+          _request_id?: string
+          _to_username: string
+        }
+        Returns: Json
+      }
       is_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_room_member: {
+        Args: { _room_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      leaderboard_stats: {
+        Args: { _limit?: number; _period?: string }
+        Returns: {
+          avatar_url: string
+          balance: number
+          donated: number
+          games: number
+          level: number
+          max_bet: number
+          most_lost: number
+          most_won: number
+          net_lost: number
+          net_made: number
+          username: string
+          wins: number
+        }[]
+      }
+      my_friends: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          direction: string
+          status: string
+          user_id: string
+          username: string
+        }[]
+      }
+      my_transactions: {
+        Args: { _limit?: number }
+        Returns: {
+          amount: number
+          created_at: string
+          description: string
+          kind: string
+        }[]
+      }
+      open_money_requests: {
+        Args: { _limit?: number }
+        Returns: {
+          amount: number
+          audience: string
+          avatar_url: string
+          created_at: string
+          filled_amount: number
+          id: string
+          note: string
+          status: string
+          username: string
+        }[]
+      }
       public_leaderboard: {
         Args: { _limit?: number }
         Returns: {
@@ -284,6 +557,25 @@ export type Database = {
           game_type: string
           multiplier: number
           payout: number
+          username: string
+        }[]
+      }
+      room_messages: {
+        Args: { _limit?: number; _room_id: string }
+        Returns: {
+          avatar_url: string
+          body: string
+          created_at: string
+          id: string
+          sender_id: string
+          username: string
+        }[]
+      }
+      search_players: {
+        Args: { _limit?: number; _q: string }
+        Returns: {
+          avatar_url: string
+          user_id: string
           username: string
         }[]
       }
