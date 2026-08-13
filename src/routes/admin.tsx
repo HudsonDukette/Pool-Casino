@@ -22,6 +22,12 @@ import {
   resetEconomy,
   triggerFakePlayerSimulation,
 } from "@/lib/admin.functions";
+import {
+  initializeFakePlayersSystem,
+  createRealFakePlayers,
+  startAutomatedBettingSystem,
+  stopAutomatedBettingSystem,
+} from "@/lib/fake-players.functions";
 import { Shield, Crown, Coins, Users, AlertTriangle, Ban, RefreshCw, Search } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -81,6 +87,10 @@ function AdminPanel() {
   const mSettings = useMutation({ mutationFn: useServerFn(updateCasinoSettings), onSuccess: () => { toast({ title: "Settings saved" }); invalidate(); }, onError });
   const mReset = useMutation({ mutationFn: useServerFn(resetEconomy), onSuccess: () => { toast({ title: "Economy reset" }); invalidate(); }, onError });
   const mFakeSim = useMutation({ mutationFn: useServerFn(triggerFakePlayerSimulation), onSuccess: (data) => { toast({ title: "Simulation complete", description: `Created ${data.playersCreated} players, ${data.betsPlaced} bets, ${data.donationsMade} donations` }); invalidate(); }, onError });
+  const mInitFake = useMutation({ mutationFn: useServerFn(initializeFakePlayersSystem), onSuccess: (data) => { toast({ title: "Fake players initialized", description: `Target: ${data}` }); invalidate(); }, onError });
+  const mCreateFake = useMutation({ mutationFn: useServerFn(createRealFakePlayers), onSuccess: (data) => { toast({ title: "Fake players created", description: `Created ${data.created} real auth accounts` }); invalidate(); }, onError });
+  const mStartAutoBet = useMutation({ mutationFn: useServerFn(startAutomatedBettingSystem), onSuccess: (data) => { toast({ title: "Automated betting started", description: data.message }); invalidate(); }, onError });
+  const mStopAutoBet = useMutation({ mutationFn: useServerFn(stopAutomatedBettingSystem), onSuccess: (data) => { toast({ title: "Automated betting stopped", description: data.message }); invalidate(); }, onError });
 
   const data = overview.data;
   const isOwner = data?.me.isOwner ?? false;
@@ -145,6 +155,7 @@ function AdminPanel() {
             <TabsTrigger value="players">Players</TabsTrigger>
             <TabsTrigger value="economy">Economy</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="fake-players">Fake Players</TabsTrigger>
             <TabsTrigger value="audit">Audit</TabsTrigger>
             {isOwner && <TabsTrigger value="owner">Owner</TabsTrigger>}
           </TabsList>
@@ -289,6 +300,100 @@ function AdminPanel() {
                     }
                   />
                   <p className="text-xs text-muted-foreground">Comma separated game ids. Saves on blur.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="fake-players">
+            <Card className="border-white/10 bg-black/50">
+              <CardHeader>
+                <CardTitle>Fake Player System</CardTitle>
+                <CardDescription>Manage automated fake players for testing and activity simulation.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <p className="font-medium">Initialize Fake Players</p>
+                  <p className="text-xs text-muted-foreground">Creates real Supabase auth accounts with random usernames and balances.</p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => mInitFake.mutate({ data: { targetCount: 15 } })}
+                      disabled={mInitFake.isPending}
+                    >
+                      {mInitFake.isPending ? "Initializing..." : "Initialize 15 Players"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => mInitFake.mutate({ data: { targetCount: 30 } })}
+                      disabled={mInitFake.isPending}
+                    >
+                      Initialize 30 Players
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="font-medium">Create Additional Fake Players</p>
+                  <p className="text-xs text-muted-foreground">Add more fake players to the existing pool.</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => mCreateFake.mutate({ data: { count: 5 } })}
+                      disabled={mCreateFake.isPending}
+                    >
+                      {mCreateFake.isPending ? "Creating..." : "Add 5 Players"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => mCreateFake.mutate({ data: { count: 10 } })}
+                      disabled={mCreateFake.isPending}
+                    >
+                      Add 10 Players
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="font-medium">Automated Betting</p>
+                  <p className="text-xs text-muted-foreground">Fake players will automatically place random bets at intervals.</p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => mStartAutoBet.mutate({ data: { intervalMinutes: 3 } })}
+                      disabled={mStartAutoBet.isPending}
+                      className="bg-green-600 hover:bg-green-500"
+                    >
+                      {mStartAutoBet.isPending ? "Starting..." : "Start (3 min intervals)"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => mStartAutoBet.mutate({ data: { intervalMinutes: 5 } })}
+                      disabled={mStartAutoBet.isPending}
+                    >
+                      Start (5 min intervals)
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => mStopAutoBet.mutate({ data: {} })}
+                      disabled={mStopAutoBet.isPending}
+                    >
+                      {mStopAutoBet.isPending ? "Stopping..." : "Stop Betting"}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="font-medium">Legacy Simulation</p>
+                  <p className="text-xs text-muted-foreground">One-time simulation that creates fake players and places bets immediately.</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (!window.confirm("Run fake player simulation? This will create new fake players and simulate bets/donations.")) return;
+                      mFakeSim.mutate({ data: {} });
+                    }}
+                    disabled={mFakeSim.isPending}
+                  >
+                    {mFakeSim.isPending ? "Running..." : "Run Legacy Simulation"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>

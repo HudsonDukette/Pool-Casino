@@ -156,6 +156,136 @@ export type Database = {
           },
         ]
       }
+      player_casinos: {
+        Row: {
+          id: string
+          owner_id: string
+          name: string
+          description: string | null
+          theme: string
+          house_edge: number
+          min_bet: number
+          max_bet: number
+          bankroll: number
+          initial_bankroll: number
+          status: string
+          enabled_games: string[]
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          owner_id: string
+          name: string
+          description?: string | null
+          theme?: string
+          house_edge?: number
+          min_bet?: number
+          max_bet?: number
+          bankroll?: number
+          initial_bankroll?: number
+          status?: string
+          enabled_games?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          owner_id?: string
+          name?: string
+          description?: string | null
+          theme?: string
+          house_edge?: number
+          min_bet?: number
+          max_bet?: number
+          bankroll?: number
+          initial_bankroll?: number
+          status?: string
+          enabled_games?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      casino_members: {
+        Row: {
+          id: string
+          casino_id: string
+          user_id: string
+          role: string
+          joined_at: string
+        }
+        Insert: {
+          id?: string
+          casino_id: string
+          user_id: string
+          role?: string
+          joined_at?: string
+        }
+        Update: {
+          id?: string
+          casino_id?: string
+          user_id?: string
+          role?: string
+          joined_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "casino_members_casino_id_fkey"
+            columns: ["casino_id"]
+            isOneToOne: false
+            referencedRelation: "player_casinos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      casino_bets: {
+        Row: {
+          id: string
+          casino_id: string
+          user_id: string
+          game_type: string
+          option: string
+          bet_amount: number
+          payout: number
+          result: string
+          multiplier: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          casino_id: string
+          user_id: string
+          game_type: string
+          option: string
+          bet_amount: number
+          payout?: number
+          result: string
+          multiplier?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          casino_id?: string
+          user_id?: string
+          game_type?: string
+          option?: string
+          bet_amount?: number
+          payout?: number
+          result?: string
+          multiplier?: number | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "casino_bets_casino_id_fkey"
+            columns: ["casino_id"]
+            isOneToOne: false
+            referencedRelation: "player_casinos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           body: string

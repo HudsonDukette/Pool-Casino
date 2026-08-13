@@ -98,45 +98,107 @@ export const joinMultiplayerRoom = createServerFn({ method: "POST" }).handler(as
 });
 
 export const getMultiplayerRooms = createServerFn({ method: "GET" }).handler(async () => {
-  const supabase = createSupabasePublicClient();
+  try {
+    const supabase = createSupabasePublicClient();
 
-  const { data, error } = await supabase
-    .from("multiplayer_rooms")
-    .select(`
-      *,
-      creator:profiles!multiplayer_rooms_created_by_fkey(username, avatar_url),
-      players:multiplayer_room_players(
-        user_id,
-        status,
-        player:profiles(username, avatar_url)
-      )
-    `)
-    .eq("status", "waiting")
-    .order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("multiplayer_rooms")
+      .select("*")
+      .eq("status", "waiting")
+      .order("created_at", { ascending: false });
 
-  if (error) throw error;
-  return data || [];
+    if (error) throw error;
+
+    // Get creator info and players separately
+    const roomsWithDetails = await Promise.all(
+      (data || []).map(async (room) => {
+        const [{ data: creator }, { data: players }] = await Promise.all([
+          supabase.from("profiles").select("username, avatar_url").eq("user_id", room.created_by).single(),
+          supabase
+            .from("multiplayer_room_players")
+            .select("user_id, status")
+            .eq("room_id", room.id),
+        ]);
+
+        // Get player profiles
+        const playersWithProfiles = await Promise.all(
+          (players || []).map(async (player) => {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("username, avatar_url")
+              .eq("user_id", player.user_id)
+              .single();
+            return {
+              ...player,
+              player: profile || { username: "Unknown", avatar_url: null },
+            };
+          })
+        );
+
+        return {
+          ...room,
+          creator: creator || { username: "Unknown", avatar_url: null },
+          players: playersWithProfiles,
+        };
+      })
+    );
+
+    return roomsWithDetails;
+  } catch (error) {
+    console.error("Error fetching multiplayer rooms:", error);
+    return [];
+  }
 });
 
 export const getRoomDetails = createServerFn({ method: "GET" }).handler(async (data: { roomId: string }) => {
-  const supabase = createSupabasePublicClient();
+  try {
+    const supabase = createSupabasePublicClient();
 
-  const { data: room, error } = await supabase
-    .from("multiplayer_rooms")
-    .select(`
-      *,
-      creator:profiles!multiplayer_rooms_created_by_fkey(username, avatar_url),
-      players:multiplayer_room_players(
-        user_id,
-        status,
-        player:profiles(username, avatar_url)
-      )
-    `)
-    .eq("id", data.roomId)
-    .single();
+    const { data: room, error } = await supabase
+      .from("multiplayer_rooms")
+      .select("*")
+      .eq("id", data.roomId)
+      .single();
 
-  if (error) throw error;
-  return room;
+    if (error || !room) throw error || new Error("Room not found");
+
+    // Get creator info
+    const { data: creator } = await supabase
+      .from("profiles")
+      .select("username, avatar_url")
+      .eq("user_id", room.created_by)
+      .single();
+
+    // Get players
+    const { data: players } = await supabase
+      .from("multiplayer_room_players")
+      .select("user_id, status")
+      .eq("room_id", room.id);
+
+    // Get player profiles
+    const playersWithProfiles = await Promise.all(
+      (players || []).map(async (player) => {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username, avatar_url")
+          .eq("user_id", player.user_id)
+          .single();
+        return {
+          ...player,
+          player: profile || { username: "Unknown", avatar_url: null },
+        };
+      })
+    );
+
+    return {
+      ...room,
+      creator: creator || { username: "Unknown", avatar_url: null },
+      players: playersWithProfiles,
+    };
+  } catch (error) {
+    console.error("Error fetching room details:", error);
+    throw error;
+  }
 });
 
 export const startMultiplayerGame = createServerFn({ method: "POST" }).handler(async (data: { roomId: string }) => {

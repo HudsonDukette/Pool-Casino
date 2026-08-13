@@ -11,18 +11,32 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as CasinosRouteImport } from './routes/casinos'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as GamesRouteImport } from './routes/games'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MultiplayerRouteImport } from './routes/multiplayer'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as WalletRouteImport } from './routes/wallet'
+import { Route as CasinosCasinoIdRouteImport } from './routes/casinos.$casinoId'
 import { Route as GamesIndexRouteImport } from './routes/games.index'
 import { Route as GamesGameIdRouteImport } from './routes/games/$gameId'
+import { Route as GamesBlackjackRouteImport } from './routes/games/blackjack'
+import { Route as GamesCoinflipRouteImport } from './routes/games/coinflip'
+import { Route as GamesCrashRouteImport } from './routes/games/crash'
+import { Route as GamesDiceRouteImport } from './routes/games/dice'
+import { Route as GamesHighlowRouteImport } from './routes/games/highlow'
+import { Route as GamesMinesRouteImport } from './routes/games/mines'
+import { Route as GamesPlinkoRouteImport } from './routes/games/plinko'
 import { Route as GamesRouletteRouteImport } from './routes/games/roulette'
+import { Route as GamesSlotsRouteImport } from './routes/games/slots'
+import { Route as GamesWheelRouteImport } from './routes/games/wheel'
+import { Route as MultiplayerRoomIdRouteImport } from './routes/multiplayer.$roomId'
 import { Route as PlayersUsernameRouteImport } from './routes/players.$username'
+import { Route as MultiplayerRoomIdGameRouteImport } from './routes/multiplayer.$roomId.game'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -32,6 +46,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CasinosRoute = CasinosRouteImport.update({
+  id: '/casinos',
+  path: '/casinos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatRoute = ChatRouteImport.update({
@@ -54,6 +73,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MultiplayerRoute = MultiplayerRouteImport.update({
+  id: '/multiplayer',
+  path: '/multiplayer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -74,6 +98,11 @@ const WalletRoute = WalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CasinosCasinoIdRoute = CasinosCasinoIdRouteImport.update({
+  id: '/$casinoId',
+  path: '/$casinoId',
+  getParentRoute: () => CasinosRoute,
+} as any)
 const GamesIndexRoute = GamesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -84,122 +113,263 @@ const GamesGameIdRoute = GamesGameIdRouteImport.update({
   path: '/$gameId',
   getParentRoute: () => GamesRoute,
 } as any)
+const GamesBlackjackRoute = GamesBlackjackRouteImport.update({
+  id: '/blackjack',
+  path: '/blackjack',
+  getParentRoute: () => GamesRoute,
+} as any)
+const GamesCoinflipRoute = GamesCoinflipRouteImport.update({
+  id: '/coinflip',
+  path: '/coinflip',
+  getParentRoute: () => GamesRoute,
+} as any)
+const GamesCrashRoute = GamesCrashRouteImport.update({
+  id: '/crash',
+  path: '/crash',
+  getParentRoute: () => GamesRoute,
+} as any)
+const GamesDiceRoute = GamesDiceRouteImport.update({
+  id: '/dice',
+  path: '/dice',
+  getParentRoute: () => GamesRoute,
+} as any)
+const GamesHighlowRoute = GamesHighlowRouteImport.update({
+  id: '/highlow',
+  path: '/highlow',
+  getParentRoute: () => GamesRoute,
+} as any)
+const GamesMinesRoute = GamesMinesRouteImport.update({
+  id: '/mines',
+  path: '/mines',
+  getParentRoute: () => GamesRoute,
+} as any)
+const GamesPlinkoRoute = GamesPlinkoRouteImport.update({
+  id: '/plinko',
+  path: '/plinko',
+  getParentRoute: () => GamesRoute,
+} as any)
 const GamesRouletteRoute = GamesRouletteRouteImport.update({
   id: '/roulette',
   path: '/roulette',
   getParentRoute: () => GamesRoute,
+} as any)
+const GamesSlotsRoute = GamesSlotsRouteImport.update({
+  id: '/slots',
+  path: '/slots',
+  getParentRoute: () => GamesRoute,
+} as any)
+const GamesWheelRoute = GamesWheelRouteImport.update({
+  id: '/wheel',
+  path: '/wheel',
+  getParentRoute: () => GamesRoute,
+} as any)
+const MultiplayerRoomIdRoute = MultiplayerRoomIdRouteImport.update({
+  id: '/$roomId',
+  path: '/$roomId',
+  getParentRoute: () => MultiplayerRoute,
 } as any)
 const PlayersUsernameRoute = PlayersUsernameRouteImport.update({
   id: '/players/$username',
   path: '/players/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MultiplayerRoomIdGameRoute = MultiplayerRoomIdGameRouteImport.update({
+  id: '/game',
+  path: '/game',
+  getParentRoute: () => MultiplayerRoomIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/casinos': typeof CasinosRouteWithChildren
   '/chat': typeof ChatRoute
   '/games': typeof GamesRouteWithChildren
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
+  '/multiplayer': typeof MultiplayerRouteWithChildren
   '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/wallet': typeof WalletRoute
+  '/casinos/$casinoId': typeof CasinosCasinoIdRoute
   '/games/$gameId': typeof GamesGameIdRoute
+  '/games/blackjack': typeof GamesBlackjackRoute
+  '/games/coinflip': typeof GamesCoinflipRoute
+  '/games/crash': typeof GamesCrashRoute
+  '/games/dice': typeof GamesDiceRoute
+  '/games/highlow': typeof GamesHighlowRoute
+  '/games/mines': typeof GamesMinesRoute
+  '/games/plinko': typeof GamesPlinkoRoute
   '/games/roulette': typeof GamesRouletteRoute
+  '/games/slots': typeof GamesSlotsRoute
+  '/games/wheel': typeof GamesWheelRoute
+  '/multiplayer/$roomId': typeof MultiplayerRoomIdRouteWithChildren
   '/players/$username': typeof PlayersUsernameRoute
   '/games/': typeof GamesIndexRoute
+  '/multiplayer/$roomId/game': typeof MultiplayerRoomIdGameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/casinos': typeof CasinosRouteWithChildren
   '/chat': typeof ChatRoute
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
+  '/multiplayer': typeof MultiplayerRouteWithChildren
   '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/wallet': typeof WalletRoute
+  '/casinos/$casinoId': typeof CasinosCasinoIdRoute
   '/games/$gameId': typeof GamesGameIdRoute
+  '/games/blackjack': typeof GamesBlackjackRoute
+  '/games/coinflip': typeof GamesCoinflipRoute
+  '/games/crash': typeof GamesCrashRoute
+  '/games/dice': typeof GamesDiceRoute
+  '/games/highlow': typeof GamesHighlowRoute
+  '/games/mines': typeof GamesMinesRoute
+  '/games/plinko': typeof GamesPlinkoRoute
   '/games/roulette': typeof GamesRouletteRoute
+  '/games/slots': typeof GamesSlotsRoute
+  '/games/wheel': typeof GamesWheelRoute
+  '/multiplayer/$roomId': typeof MultiplayerRoomIdRouteWithChildren
   '/players/$username': typeof PlayersUsernameRoute
   '/games': typeof GamesIndexRoute
+  '/multiplayer/$roomId/game': typeof MultiplayerRoomIdGameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/casinos': typeof CasinosRouteWithChildren
   '/chat': typeof ChatRoute
   '/games': typeof GamesRouteWithChildren
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
+  '/multiplayer': typeof MultiplayerRouteWithChildren
   '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/wallet': typeof WalletRoute
+  '/casinos/$casinoId': typeof CasinosCasinoIdRoute
   '/games/$gameId': typeof GamesGameIdRoute
+  '/games/blackjack': typeof GamesBlackjackRoute
+  '/games/coinflip': typeof GamesCoinflipRoute
+  '/games/crash': typeof GamesCrashRoute
+  '/games/dice': typeof GamesDiceRoute
+  '/games/highlow': typeof GamesHighlowRoute
+  '/games/mines': typeof GamesMinesRoute
+  '/games/plinko': typeof GamesPlinkoRoute
   '/games/roulette': typeof GamesRouletteRoute
+  '/games/slots': typeof GamesSlotsRoute
+  '/games/wheel': typeof GamesWheelRoute
+  '/multiplayer/$roomId': typeof MultiplayerRoomIdRouteWithChildren
   '/players/$username': typeof PlayersUsernameRoute
   '/games/': typeof GamesIndexRoute
+  '/multiplayer/$roomId/game': typeof MultiplayerRoomIdGameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
+    | '/casinos'
     | '/chat'
     | '/games'
     | '/leaderboard'
     | '/login'
+    | '/multiplayer'
     | '/orders'
     | '/profile'
     | '/register'
     | '/wallet'
+    | '/casinos/$casinoId'
     | '/games/$gameId'
+    | '/games/blackjack'
+    | '/games/coinflip'
+    | '/games/crash'
+    | '/games/dice'
+    | '/games/highlow'
+    | '/games/mines'
+    | '/games/plinko'
     | '/games/roulette'
+    | '/games/slots'
+    | '/games/wheel'
+    | '/multiplayer/$roomId'
     | '/players/$username'
     | '/games/'
+    | '/multiplayer/$roomId/game'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
+    | '/casinos'
     | '/chat'
     | '/leaderboard'
     | '/login'
+    | '/multiplayer'
     | '/orders'
     | '/profile'
     | '/register'
     | '/wallet'
+    | '/casinos/$casinoId'
     | '/games/$gameId'
+    | '/games/blackjack'
+    | '/games/coinflip'
+    | '/games/crash'
+    | '/games/dice'
+    | '/games/highlow'
+    | '/games/mines'
+    | '/games/plinko'
     | '/games/roulette'
+    | '/games/slots'
+    | '/games/wheel'
+    | '/multiplayer/$roomId'
     | '/players/$username'
     | '/games'
+    | '/multiplayer/$roomId/game'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/casinos'
     | '/chat'
     | '/games'
     | '/leaderboard'
     | '/login'
+    | '/multiplayer'
     | '/orders'
     | '/profile'
     | '/register'
     | '/wallet'
+    | '/casinos/$casinoId'
     | '/games/$gameId'
+    | '/games/blackjack'
+    | '/games/coinflip'
+    | '/games/crash'
+    | '/games/dice'
+    | '/games/highlow'
+    | '/games/mines'
+    | '/games/plinko'
     | '/games/roulette'
+    | '/games/slots'
+    | '/games/wheel'
+    | '/multiplayer/$roomId'
     | '/players/$username'
     | '/games/'
+    | '/multiplayer/$roomId/game'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  CasinosRoute: typeof CasinosRouteWithChildren
   ChatRoute: typeof ChatRoute
   GamesRoute: typeof GamesRouteWithChildren
   LeaderboardRoute: typeof LeaderboardRoute
   LoginRoute: typeof LoginRoute
+  MultiplayerRoute: typeof MultiplayerRouteWithChildren
   OrdersRoute: typeof OrdersRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
@@ -221,6 +391,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/casinos': {
+      id: '/casinos'
+      path: '/casinos'
+      fullPath: '/casinos'
+      preLoaderRoute: typeof CasinosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chat': {
@@ -251,6 +428,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/multiplayer': {
+      id: '/multiplayer'
+      path: '/multiplayer'
+      fullPath: '/multiplayer'
+      preLoaderRoute: typeof MultiplayerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orders': {
       id: '/orders'
       path: '/orders'
@@ -279,6 +463,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WalletRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/casinos/$casinoId': {
+      id: '/casinos/$casinoId'
+      path: '/$casinoId'
+      fullPath: '/casinos/$casinoId'
+      preLoaderRoute: typeof CasinosCasinoIdRouteImport
+      parentRoute: typeof CasinosRoute
+    }
     '/games/': {
       id: '/games/'
       path: '/'
@@ -293,12 +484,82 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesGameIdRouteImport
       parentRoute: typeof GamesRoute
     }
+    '/games/blackjack': {
+      id: '/games/blackjack'
+      path: '/blackjack'
+      fullPath: '/games/blackjack'
+      preLoaderRoute: typeof GamesBlackjackRouteImport
+      parentRoute: typeof GamesRoute
+    }
+    '/games/coinflip': {
+      id: '/games/coinflip'
+      path: '/coinflip'
+      fullPath: '/games/coinflip'
+      preLoaderRoute: typeof GamesCoinflipRouteImport
+      parentRoute: typeof GamesRoute
+    }
+    '/games/crash': {
+      id: '/games/crash'
+      path: '/crash'
+      fullPath: '/games/crash'
+      preLoaderRoute: typeof GamesCrashRouteImport
+      parentRoute: typeof GamesRoute
+    }
+    '/games/dice': {
+      id: '/games/dice'
+      path: '/dice'
+      fullPath: '/games/dice'
+      preLoaderRoute: typeof GamesDiceRouteImport
+      parentRoute: typeof GamesRoute
+    }
+    '/games/highlow': {
+      id: '/games/highlow'
+      path: '/highlow'
+      fullPath: '/games/highlow'
+      preLoaderRoute: typeof GamesHighlowRouteImport
+      parentRoute: typeof GamesRoute
+    }
+    '/games/mines': {
+      id: '/games/mines'
+      path: '/mines'
+      fullPath: '/games/mines'
+      preLoaderRoute: typeof GamesMinesRouteImport
+      parentRoute: typeof GamesRoute
+    }
+    '/games/plinko': {
+      id: '/games/plinko'
+      path: '/plinko'
+      fullPath: '/games/plinko'
+      preLoaderRoute: typeof GamesPlinkoRouteImport
+      parentRoute: typeof GamesRoute
+    }
     '/games/roulette': {
       id: '/games/roulette'
       path: '/roulette'
       fullPath: '/games/roulette'
       preLoaderRoute: typeof GamesRouletteRouteImport
       parentRoute: typeof GamesRoute
+    }
+    '/games/slots': {
+      id: '/games/slots'
+      path: '/slots'
+      fullPath: '/games/slots'
+      preLoaderRoute: typeof GamesSlotsRouteImport
+      parentRoute: typeof GamesRoute
+    }
+    '/games/wheel': {
+      id: '/games/wheel'
+      path: '/wheel'
+      fullPath: '/games/wheel'
+      preLoaderRoute: typeof GamesWheelRouteImport
+      parentRoute: typeof GamesRoute
+    }
+    '/multiplayer/$roomId': {
+      id: '/multiplayer/$roomId'
+      path: '/$roomId'
+      fullPath: '/multiplayer/$roomId'
+      preLoaderRoute: typeof MultiplayerRoomIdRouteImport
+      parentRoute: typeof MultiplayerRoute
     }
     '/players/$username': {
       id: '/players/$username'
@@ -307,30 +568,91 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlayersUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/multiplayer/$roomId/game': {
+      id: '/multiplayer/$roomId/game'
+      path: '/game'
+      fullPath: '/multiplayer/$roomId/game'
+      preLoaderRoute: typeof MultiplayerRoomIdGameRouteImport
+      parentRoute: typeof MultiplayerRoomIdRoute
+    }
   }
 }
 
+interface CasinosRouteChildren {
+  CasinosCasinoIdRoute: typeof CasinosCasinoIdRoute
+}
+
+const CasinosRouteChildren: CasinosRouteChildren = {
+  CasinosCasinoIdRoute: CasinosCasinoIdRoute,
+}
+
+const CasinosRouteWithChildren =
+  CasinosRoute._addFileChildren(CasinosRouteChildren)
+
 interface GamesRouteChildren {
   GamesGameIdRoute: typeof GamesGameIdRoute
+  GamesBlackjackRoute: typeof GamesBlackjackRoute
+  GamesCoinflipRoute: typeof GamesCoinflipRoute
+  GamesCrashRoute: typeof GamesCrashRoute
+  GamesDiceRoute: typeof GamesDiceRoute
+  GamesHighlowRoute: typeof GamesHighlowRoute
+  GamesMinesRoute: typeof GamesMinesRoute
+  GamesPlinkoRoute: typeof GamesPlinkoRoute
   GamesRouletteRoute: typeof GamesRouletteRoute
+  GamesSlotsRoute: typeof GamesSlotsRoute
+  GamesWheelRoute: typeof GamesWheelRoute
   GamesIndexRoute: typeof GamesIndexRoute
 }
 
 const GamesRouteChildren: GamesRouteChildren = {
   GamesGameIdRoute: GamesGameIdRoute,
+  GamesBlackjackRoute: GamesBlackjackRoute,
+  GamesCoinflipRoute: GamesCoinflipRoute,
+  GamesCrashRoute: GamesCrashRoute,
+  GamesDiceRoute: GamesDiceRoute,
+  GamesHighlowRoute: GamesHighlowRoute,
+  GamesMinesRoute: GamesMinesRoute,
+  GamesPlinkoRoute: GamesPlinkoRoute,
   GamesRouletteRoute: GamesRouletteRoute,
+  GamesSlotsRoute: GamesSlotsRoute,
+  GamesWheelRoute: GamesWheelRoute,
   GamesIndexRoute: GamesIndexRoute,
 }
 
 const GamesRouteWithChildren = GamesRoute._addFileChildren(GamesRouteChildren)
 
+interface MultiplayerRoomIdRouteChildren {
+  MultiplayerRoomIdGameRoute: typeof MultiplayerRoomIdGameRoute
+}
+
+const MultiplayerRoomIdRouteChildren: MultiplayerRoomIdRouteChildren = {
+  MultiplayerRoomIdGameRoute: MultiplayerRoomIdGameRoute,
+}
+
+const MultiplayerRoomIdRouteWithChildren =
+  MultiplayerRoomIdRoute._addFileChildren(MultiplayerRoomIdRouteChildren)
+
+interface MultiplayerRouteChildren {
+  MultiplayerRoomIdRoute: typeof MultiplayerRoomIdRouteWithChildren
+}
+
+const MultiplayerRouteChildren: MultiplayerRouteChildren = {
+  MultiplayerRoomIdRoute: MultiplayerRoomIdRouteWithChildren,
+}
+
+const MultiplayerRouteWithChildren = MultiplayerRoute._addFileChildren(
+  MultiplayerRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  CasinosRoute: CasinosRouteWithChildren,
   ChatRoute: ChatRoute,
   GamesRoute: GamesRouteWithChildren,
   LeaderboardRoute: LeaderboardRoute,
   LoginRoute: LoginRoute,
+  MultiplayerRoute: MultiplayerRouteWithChildren,
   OrdersRoute: OrdersRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
@@ -340,3 +662,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
