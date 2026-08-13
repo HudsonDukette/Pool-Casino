@@ -30,6 +30,8 @@ export async function diagnoseFakePlayerSystem() {
     profilesCount: 0,
     authStatus: "unknown",
     connectionTest: "unknown",
+    edgeFunctionDeployed: false,
+    edgeFunctionAccessible: false,
     error: null as string | null,
     details: {} as Record<string, any>,
     allEnvVars: {} as Record<string, string>,
@@ -55,6 +57,31 @@ export async function diagnoseFakePlayerSystem() {
     }
     diagnostics.details.session = !!session;
     diagnostics.connectionTest = "ok";
+
+    // Test Edge Function accessibility
+    try {
+      const functionUrl = `${supabaseUrl}/functions/v1/create-fake-player`;
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env["SUPABASE_PUBLISHABLE_KEY"]}`,
+        },
+        body: JSON.stringify({ count: 0 }), // Test with 0 to not actually create
+      });
+
+      diagnostics.edgeFunctionAccessible = response.ok;
+      diagnostics.edgeFunctionDeployed = true;
+      diagnostics.details.edgeFunctionStatus = response.status;
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        diagnostics.details.edgeFunctionError = errorData.error || response.statusText;
+      }
+    } catch (edgeError) {
+      diagnostics.edgeFunctionDeployed = false;
+      diagnostics.details.edgeFunctionError = edgeError instanceof Error ? edgeError.message : String(edgeError);
+    }
 
     // Only check profiles if we have service role key (for admin operations)
     if (diagnostics.hasServiceKey) {
@@ -98,7 +125,7 @@ export async function diagnoseFakePlayerSystem() {
       }
     } else {
       diagnostics.details.rlsNote = "Cannot check profiles table without SUPABASE_SERVICE_ROLE_KEY due to RLS policies";
-      diagnostics.error = "SUPABASE_SERVICE_ROLE_KEY is required to access profiles table (RLS policies block public client)";
+      diagnostics.error = "SUPABASE_SERVICE_ROLE_KEY is required to access profiles table (RLS policies block public client). Using Edge Function instead.";
     }
 
   } catch (error) {
@@ -159,119 +186,47 @@ function generateFakeEmail(username: string): string {
   return `${username.toLowerCase()}${Math.floor(Math.random() * 1000)}@${domain}`;
 }
 
-// Create actual Supabase auth users for fake players
+// Create actual Supabase auth users for fake players using Edge Function
 export async function createFakeAuthUsers(count: number = 10) {
   const supabaseUrl = process.env["SUPABASE_URL"];
-  const supabaseServiceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
   
-  console.log("Starting fake user creation:", { count, hasUrl: !!supabaseUrl, hasServiceKey: !!supabaseServiceKey });
+  console.log("Starting fake user creation via Edge Function:", { count, hasUrl: !!supabaseUrl });
   
   if (!supabaseUrl) {
     console.error("SUPABASE_URL not set");
     return { created: 0, users: [], error: "SUPABASE_URL not available" };
   }
-  
-  if (!supabaseServiceKey) {
-    console.error("SUPABASE_SERVICE_ROLE_KEY not set - CANNOT create fake players without it");
+
+  try {
+    // Call the Edge Function
+    const functionUrl = `${supabaseUrl}/functions/v1/create-fake-player`;
+    const response = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env["SUPABASE_PUBLISHABLE_KEY"]}`,
+      },
+      body: JSON.stringify({ count }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Edge Function error:", data);
+      return { created: 0, users: [], error: data.error || "Edge Function failed" };
+    }
+
+    console.log(`Edge Function created ${data.created} fake players`);
+    return { created: data.created, users: data.users };
+
+  } catch (error) {
+    console.error("Error calling Edge Function:", error);
     return { 
       created: 0, 
       users: [], 
-      error: "SUPABASE_SERVICE_ROLE_KEY is required. The profiles table has a foreign key constraint to auth.users, so fake players MUST be real auth accounts. Please add SUPABASE_SERVICE_ROLE_KEY to your environment variables. You can get this from your Supabase project settings under API > service_role (secret)." 
+      error: error instanceof Error ? error.message : String(error)
     };
   }
-
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
-  const createdUsers = [];
-  const errors: string[] = [];
-
-  for (let i = 0; i < count; i++) {
-    try {
-      const username = generateRandomUsername();
-      const email = generateFakeEmail(username);
-      const password = generateRandomPassword();
-
-      console.log(`Creating fake user ${i + 1}/${count}:`, { username, email });
-
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: {
-          username,
-          is_fake_player: true,
-        },
-      });
-
-      if (authError) {
-        const errorMsg = `Auth error for ${username}: ${authError.message}`;
-        console.error(errorMsg);
-        errors.push(errorMsg);
-        continue;
-      }
-
-      if (!authData?.user) {
-        const errorMsg = `No user data returned for ${username}`;
-        console.error(errorMsg);
-        errors.push(errorMsg);
-        continue;
-      }
-
-      console.log(`Auth user created:`, { id: authData.user.id, username });
-
-      // Create profile
-      const initialBalance = Math.floor(Math.random() * 5000) + 1000; // 1000-6000
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          user_id: authData.user.id,
-          username,
-          email,
-          balance: initialBalance,
-          is_admin: false,
-          is_owner: false,
-          is_banned: false,
-          is_perma_banned: false,
-          is_suspended: false,
-          games_played: 0,
-          total_wins: 0,
-          total_losses: 0,
-        });
-
-      if (profileError) {
-        const errorMsg = `Profile error for ${username}: ${profileError.message}`;
-        console.error(errorMsg);
-        errors.push(errorMsg);
-        // Clean up auth user if profile creation fails
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        continue;
-      }
-
-      console.log(`Profile created for ${username} with balance ${initialBalance}`);
-
-      createdUsers.push({
-        id: authData.user.id,
-        username,
-        email,
-        balance: initialBalance,
-      });
-
-    } catch (error) {
-      const errorMsg = `Exception for user ${i + 1}: ${error instanceof Error ? error.message : String(error)}`;
-      console.error(errorMsg);
-      errors.push(errorMsg);
-    }
-  }
-
-  console.log(`Fake user creation complete: ${createdUsers.length}/${count} created`);
-  if (errors.length > 0) {
-    console.log("Errors encountered:", errors);
-  }
-
-  return { created: createdUsers.length, users: createdUsers, errors: errors.length > 0 ? errors : undefined };
 }
 
 // Automated betting system for fake players
