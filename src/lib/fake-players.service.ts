@@ -53,12 +53,20 @@ function generateFakeEmail(username: string): string {
 
 // Create actual Supabase auth users for fake players
 export async function createFakeAuthUsers(count: number = 10) {
-  const supabaseUrl = process.env["SUPABASE_URL"]!;
-  const supabaseServiceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"]!;
+  const supabaseUrl = process.env["SUPABASE_URL"];
+  const supabaseServiceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  
+  console.log("Starting fake user creation:", { count, hasUrl: !!supabaseUrl, hasServiceKey: !!supabaseServiceKey });
+  
+  if (!supabaseUrl) {
+    console.error("SUPABASE_URL not set");
+    return { created: 0, users: [], error: "SUPABASE_URL not available" };
+  }
   
   if (!supabaseServiceKey) {
-    console.error("SUPABASE_SERVICE_ROLE_KEY not set");
-    return { created: 0, users: [], error: "Service role key not available" };
+    console.error("SUPABASE_SERVICE_ROLE_KEY not set - using fallback method");
+    // Fallback: create profile records directly without auth accounts
+    return await createFakeProfilesOnly(count);
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -66,12 +74,15 @@ export async function createFakeAuthUsers(count: number = 10) {
   });
 
   const createdUsers = [];
+  const errors: string[] = [];
 
   for (let i = 0; i < count; i++) {
     try {
       const username = generateRandomUsername();
       const email = generateFakeEmail(username);
       const password = generateRandomPassword();
+
+      console.log(`Creating fake user ${i + 1}/${count}:`, { username, email });
 
       // Create auth user
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -85,14 +96,20 @@ export async function createFakeAuthUsers(count: number = 10) {
       });
 
       if (authError) {
-        console.error("Error creating auth user:", authError);
+        const errorMsg = `Auth error for ${username}: ${authError.message}`;
+        console.error(errorMsg);
+        errors.push(errorMsg);
         continue;
       }
 
       if (!authData?.user) {
-        console.error("No user data returned from auth creation");
+        const errorMsg = `No user data returned for ${username}`;
+        console.error(errorMsg);
+        errors.push(errorMsg);
         continue;
       }
+
+      console.log(`Auth user created:`, { id: authData.user.id, username });
 
       // Create profile
       const initialBalance = Math.floor(Math.random() * 5000) + 1000; // 1000-6000
@@ -114,11 +131,15 @@ export async function createFakeAuthUsers(count: number = 10) {
         });
 
       if (profileError) {
-        console.error("Error creating profile:", profileError);
+        const errorMsg = `Profile error for ${username}: ${profileError.message}`;
+        console.error(errorMsg);
+        errors.push(errorMsg);
         // Clean up auth user if profile creation fails
         await supabase.auth.admin.deleteUser(authData.user.id);
         continue;
       }
+
+      console.log(`Profile created for ${username} with balance ${initialBalance}`);
 
       createdUsers.push({
         id: authData.user.id,
@@ -128,11 +149,84 @@ export async function createFakeAuthUsers(count: number = 10) {
       });
 
     } catch (error) {
-      console.error("Error in fake user creation:", error);
+      const errorMsg = `Exception for user ${i + 1}: ${error instanceof Error ? error.message : String(error)}`;
+      console.error(errorMsg);
+      errors.push(errorMsg);
     }
   }
 
-  return { created: createdUsers.length, users: createdUsers };
+  console.log(`Fake user creation complete: ${createdUsers.length}/${count} created`);
+  if (errors.length > 0) {
+    console.log("Errors encountered:", errors);
+  }
+
+  return { created: createdUsers.length, users: createdUsers, errors: errors.length > 0 ? errors : undefined };
+}
+
+// Fallback method: Create profile records without auth accounts
+async function createFakeProfilesOnly(count: number = 10) {
+  const supabase = createSupabasePublicClient();
+  const createdUsers = [];
+  const errors: string[] = [];
+
+  console.log("Using fallback method: creating profile records only");
+
+  for (let i = 0; i < count; i++) {
+    try {
+      const username = generateRandomUsername();
+      const email = generateFakeEmail(username);
+      const userId = `fake_${Date.now()}_${i}`;
+
+      console.log(`Creating fake profile ${i + 1}/${count}:`, { username, email, userId });
+
+      const initialBalance = Math.floor(Math.random() * 5000) + 1000;
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .insert({
+          user_id: userId,
+          username,
+          email,
+          balance: initialBalance,
+          is_admin: false,
+          is_owner: false,
+          is_banned: false,
+          is_perma_banned: false,
+          is_suspended: false,
+          games_played: 0,
+          total_wins: 0,
+          total_losses: 0,
+        });
+
+      if (profileError) {
+        const errorMsg = `Profile error for ${username}: ${profileError.message}`;
+        console.error(errorMsg);
+        errors.push(errorMsg);
+        continue;
+      }
+
+      console.log(`Profile created for ${username} with balance ${initialBalance}`);
+
+      createdUsers.push({
+        id: userId,
+        username,
+        email,
+        balance: initialBalance,
+      });
+
+    } catch (error) {
+      const errorMsg = `Exception for profile ${i + 1}: ${error instanceof Error ? error.message : String(error)}`;
+      console.error(errorMsg);
+      errors.push(errorMsg);
+    }
+  }
+
+  console.log(`Fallback fake profile creation complete: ${createdUsers.length}/${count} created`);
+  if (errors.length > 0) {
+    console.log("Errors encountered:", errors);
+  }
+
+  return { created: createdUsers.length, users: createdUsers, errors: errors.length > 0 ? errors : undefined };
 }
 
 // Automated betting system for fake players
@@ -170,15 +264,14 @@ async function placeRandomBets() {
   const supabase = createSupabasePublicClient();
 
   try {
-    // Get fake players - we need to use auth.users to check metadata
-    // Since we can't easily query auth.users, we'll use a different approach
-    // Check profiles with email domains that match our fake player domains
+    // Get fake players - check both email domains and fake_ user_ids
     const { data: fakePlayers, error: playersError } = await supabase
       .from("profiles")
       .select("*")
       .or("email.ilike", "%.fake-casino.com")
       .or("email.ilike", "%.bot-player.net")
       .or("email.ilike", "%.virtual-gambler.io")
+      .or("user_id.like", "fake_%")
       .limit(50);
 
     if (playersError || !fakePlayers || fakePlayers.length === 0) {
@@ -254,11 +347,14 @@ export async function initializeFakePlayers(targetCount: number = 20) {
   const supabase = createSupabasePublicClient();
 
   try {
-    // Check current fake player count
+    // Check current fake player count using email domain matching
     const { data: existingPlayers, error: countError } = await supabase
       .from("profiles")
-      .select("user_id")
-      .not("user_id", "like", "fake_%");
+      .select("*")
+      .or("email.ilike", "%.fake-casino.com")
+      .or("email.ilike", "%.bot-player.net")
+      .or("email.ilike", "%.virtual-gambler.io")
+      .limit(50);
 
     if (countError) {
       console.error("Error checking existing fake players:", countError);
@@ -272,10 +368,13 @@ export async function initializeFakePlayers(targetCount: number = 20) {
       console.log(`Creating ${needed} new fake players (current: ${currentCount}, target: ${targetCount})`);
       const result = await createFakeAuthUsers(needed);
       console.log(`Created ${result.created} fake players`);
-      return { created: result.created, users: result.users };
+      if (result.errors) {
+        console.log("Errors during creation:", result.errors);
+      }
+      return { created: result.created, users: result.users, targetCount };
     } else {
       console.log(`Fake players already exist (${currentCount}/${targetCount})`);
-      return { created: currentCount, users: existingPlayers || [] };
+      return { created: currentCount, users: existingPlayers || [], targetCount };
     }
   } catch (error) {
     console.error("Error initializing fake players:", error);

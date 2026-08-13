@@ -90,7 +90,17 @@ function AdminPanel() {
   const mInitFake = useMutation({ mutationFn: useServerFn(initializeFakePlayersSystem), onSuccess: (data) => { 
     const created = data?.created ?? 0;
     const target = data?.targetCount ?? 0;
-    toast({ title: "Fake players initialized", description: `Target: ${target}, Created: ${created}` }); 
+    const errors = data?.errors;
+    
+    if (errors && errors.length > 0) {
+      toast({ 
+        title: "Fake players partially created", 
+        description: `Target: ${target}, Created: ${created}, Errors: ${errors.length}`,
+        variant: "destructive"
+      });
+    } else {
+      toast({ title: "Fake players initialized", description: `Target: ${target}, Created: ${created}` }); 
+    }
     invalidate(); 
   }, onError });
   const mCreateFake = useMutation({ mutationFn: useServerFn(createRealFakePlayers), onSuccess: (data) => { toast({ title: "Fake players created", description: `Created ${data.created} real auth accounts` }); invalidate(); }, onError });
