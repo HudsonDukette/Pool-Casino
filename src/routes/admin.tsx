@@ -106,17 +106,18 @@ function AdminPanel() {
   }, onError });
   const mDiagnoseFake = useMutation({ mutationFn: useServerFn(diagnoseFakePlayerSystemFn), onSuccess: (data) => {
     console.log("Fake player diagnostics:", data);
+    console.log("All SUPABASE env vars:", data.allEnvVars);
     
-    if (!data.profilesTableAccessible) {
+    if (!data.hasServiceKey) {
+      toast({
+        title: "Missing Service Role Key",
+        description: `SUPABASE_SERVICE_ROLE_KEY is not set. Check console for all Supabase env vars. Project ID: ${data.projectId}`,
+        variant: "destructive"
+      });
+    } else if (!data.profilesTableAccessible) {
       toast({
         title: "Database Connection Issue",
         description: `Cannot access profiles table. Error: ${data.error}. Check console for details.`,
-        variant: "destructive"
-      });
-    } else if (!data.hasServiceKey) {
-      toast({
-        title: "Missing Service Role Key",
-        description: "SUPABASE_SERVICE_ROLE_KEY is not set. This is required to create fake players.",
         variant: "destructive"
       });
     } else {

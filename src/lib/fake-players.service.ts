@@ -3,8 +3,24 @@ import { createSupabasePublicClient } from "./profiles.server";
 
 // Diagnostic function to check system status
 export async function diagnoseFakePlayerSystem() {
+  const supabaseUrl = process.env["SUPABASE_URL"];
+  
+  // Extract project ID from Supabase URL to help user find their dashboard
+  let projectId = "unknown";
+  let dashboardUrl = "";
+  if (supabaseUrl) {
+    const match = supabaseUrl.match(/https:\/\/([a-z0-9]+)\.supabase\.co/);
+    if (match) {
+      projectId = match[1];
+      dashboardUrl = `https://supabase.com/dashboard/project/${projectId}`;
+    }
+  }
+
   const diagnostics = {
-    hasSupabaseUrl: !!process.env["SUPABASE_URL"],
+    hasSupabaseUrl: !!supabaseUrl,
+    supabaseUrl: supabaseUrl || "not set",
+    projectId,
+    dashboardUrl,
     hasServiceKey: !!process.env["SUPABASE_SERVICE_ROLE_KEY"],
     hasPublishableKey: !!process.env["SUPABASE_PUBLISHABLE_KEY"],
     serviceKeyPrefix: process.env["SUPABASE_SERVICE_ROLE_KEY"]?.substring(0, 10) + "..." || "none",
@@ -16,7 +32,15 @@ export async function diagnoseFakePlayerSystem() {
     connectionTest: "unknown",
     error: null as string | null,
     details: {} as Record<string, any>,
+    allEnvVars: {} as Record<string, string>,
   };
+
+  // Log all environment variables that start with SUPABASE
+  for (const key in process.env) {
+    if (key.startsWith("SUPABASE")) {
+      diagnostics.allEnvVars[key] = process.env[key] ? "set" : "not set";
+    }
+  }
 
   try {
     // Test basic Supabase connection
