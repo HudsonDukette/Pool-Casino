@@ -4,8 +4,19 @@ import {
   createFakeAuthUsers, 
   initializeFakePlayers, 
   startAutomatedBetting, 
-  stopAutomatedBetting 
+  stopAutomatedBetting,
+  diagnoseFakePlayerSystem
 } from "./fake-players.service";
+
+// Diagnose fake player system
+export const diagnoseFakePlayerSystemFn = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const userId = await getAuthenticatedUserId();
+    if (!userId) throw new Error("Not authenticated");
+
+    const result = await diagnoseFakePlayerSystem();
+    return result;
+  });
 
 // Initialize fake players (creates real auth accounts)
 export const initializeFakePlayersSystem = createServerFn({ method: "POST" })
@@ -17,7 +28,7 @@ export const initializeFakePlayersSystem = createServerFn({ method: "POST" })
     const targetCount = data.targetCount || 20;
     const result = await initializeFakePlayers(targetCount);
     
-    return { targetCount, created: result.created, users: result.users };
+    return { targetCount, created: result.created, users: result.users, errors: result.errors };
   });
 
 // Create additional fake players with real auth accounts

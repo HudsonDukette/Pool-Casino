@@ -27,6 +27,7 @@ import {
   createRealFakePlayers,
   startAutomatedBettingSystem,
   stopAutomatedBettingSystem,
+  diagnoseFakePlayerSystemFn,
 } from "@/lib/fake-players.functions";
 import { Shield, Crown, Coins, Users, AlertTriangle, Ban, RefreshCw, Search } from "lucide-react";
 
@@ -102,6 +103,22 @@ function AdminPanel() {
       toast({ title: "Fake players initialized", description: `Target: ${target}, Created: ${created}` }); 
     }
     invalidate(); 
+  }, onError });
+  const mDiagnoseFake = useMutation({ mutationFn: useServerFn(diagnoseFakePlayerSystemFn), onSuccess: (data) => {
+    const hasServiceKey = data.hasServiceKey;
+    if (!hasServiceKey) {
+      toast({
+        title: "Missing Service Role Key",
+        description: "SUPABASE_SERVICE_ROLE_KEY is not set. This is required to create fake players. Check the console for details.",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "System Diagnostics",
+        description: `Existing fake players: ${data.existingFakePlayers}, Profiles accessible: ${data.profilesTableAccessible}`,
+      });
+    }
+    console.log("Fake player diagnostics:", data);
   }, onError });
   const mCreateFake = useMutation({ mutationFn: useServerFn(createRealFakePlayers), onSuccess: (data) => { toast({ title: "Fake players created", description: `Created ${data.created} real auth accounts` }); invalidate(); }, onError });
   const mStartAutoBet = useMutation({ mutationFn: useServerFn(startAutomatedBettingSystem), onSuccess: (data) => { toast({ title: "Automated betting started", description: data.message }); invalidate(); }, onError });
@@ -328,8 +345,20 @@ function AdminPanel() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
+                  <p className="font-medium">System Diagnostics</p>
+                  <p className="text-xs text-muted-foreground">Check if fake player system is properly configured.</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => mDiagnoseFake.mutate()}
+                    disabled={mDiagnoseFake.isPending}
+                  >
+                    {mDiagnoseFake.isPending ? "Checking..." : "Run Diagnostics"}
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
                   <p className="font-medium">Initialize Fake Players</p>
-                  <p className="text-xs text-muted-foreground">Creates real Supabase auth accounts with random usernames and balances.</p>
+                  <p className="text-xs text-muted-foreground">Creates real Supabase auth accounts with random usernames and balances. Requires SUPABASE_SERVICE_ROLE_KEY.</p>
                   <div className="flex gap-2">
                     <Button
                       onClick={() => mInitFake.mutate({ data: { targetCount: 15 } })}

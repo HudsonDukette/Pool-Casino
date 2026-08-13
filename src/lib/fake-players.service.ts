@@ -1,6 +1,51 @@
 import { createClient } from "@supabase/supabase-js";
 import { createSupabasePublicClient } from "./profiles.server";
 
+// Diagnostic function to check system status
+export async function diagnoseFakePlayerSystem() {
+  const diagnostics = {
+    hasSupabaseUrl: !!process.env["SUPABASE_URL"],
+    hasServiceKey: !!process.env["SUPABASE_SERVICE_ROLE_KEY"],
+    serviceKeyPrefix: process.env["SUPABASE_SERVICE_ROLE_KEY"]?.substring(0, 10) + "..." || "none",
+    existingFakePlayers: 0,
+    profilesTableAccessible: false,
+    error: null as string | null,
+  };
+
+  try {
+    const supabase = createSupabasePublicClient();
+    
+    // Check if profiles table is accessible
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("count", { count: "exact", head: true });
+    
+    if (profilesError) {
+      diagnostics.error = `Profiles table error: ${profilesError.message}`;
+    } else {
+      diagnostics.profilesTableAccessible = true;
+    }
+
+    // Count existing fake players
+    const { data: fakePlayers, error: countError } = await supabase
+      .from("profiles")
+      .select("user_id")
+      .or("email.ilike", "%.fake-casino.com")
+      .or("email.ilike", "%.bot-player.net")
+      .or("email.ilike", "%.virtual-gambler.io")
+      .or("user_id.like", "fake_%");
+
+    if (!countError && fakePlayers) {
+      diagnostics.existingFakePlayers = fakePlayers.length;
+    }
+
+  } catch (error) {
+    diagnostics.error = error instanceof Error ? error.message : String(error);
+  }
+
+  return diagnostics;
+}
+
 const NAME_PARTS = [
   "Shadow", "Neon", "Cyber", "Digital", "Quantum", "Cosmic", "Stellar", "Solar", "Lunar", "Mystic",
   "Dragon", "Phoenix", "Titan", "Apex", "Prime", "Elite", "Master", "Legend", "Hero", "Champion",
@@ -64,9 +109,12 @@ export async function createFakeAuthUsers(count: number = 10) {
   }
   
   if (!supabaseServiceKey) {
-    console.error("SUPABASE_SERVICE_ROLE_KEY not set - using fallback method");
-    // Fallback: create profile records directly without auth accounts
-    return await createFakeProfilesOnly(count);
+    console.error("SUPABASE_SERVICE_ROLE_KEY not set - CANNOT create fake players without it");
+    return { 
+      created: 0, 
+      users: [], 
+      error: "SUPABASE_SERVICE_ROLE_KEY is required. The profiles table has a foreign key constraint to auth.users, so fake players MUST be real auth accounts. Please add SUPABASE_SERVICE_ROLE_KEY to your environment variables. You can get this from your Supabase project settings under API > service_role (secret)." 
+    };
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -156,72 +204,6 @@ export async function createFakeAuthUsers(count: number = 10) {
   }
 
   console.log(`Fake user creation complete: ${createdUsers.length}/${count} created`);
-  if (errors.length > 0) {
-    console.log("Errors encountered:", errors);
-  }
-
-  return { created: createdUsers.length, users: createdUsers, errors: errors.length > 0 ? errors : undefined };
-}
-
-// Fallback method: Create profile records without auth accounts
-async function createFakeProfilesOnly(count: number = 10) {
-  const supabase = createSupabasePublicClient();
-  const createdUsers = [];
-  const errors: string[] = [];
-
-  console.log("Using fallback method: creating profile records only");
-
-  for (let i = 0; i < count; i++) {
-    try {
-      const username = generateRandomUsername();
-      const email = generateFakeEmail(username);
-      const userId = `fake_${Date.now()}_${i}`;
-
-      console.log(`Creating fake profile ${i + 1}/${count}:`, { username, email, userId });
-
-      const initialBalance = Math.floor(Math.random() * 5000) + 1000;
-
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          user_id: userId,
-          username,
-          email,
-          balance: initialBalance,
-          is_admin: false,
-          is_owner: false,
-          is_banned: false,
-          is_perma_banned: false,
-          is_suspended: false,
-          games_played: 0,
-          total_wins: 0,
-          total_losses: 0,
-        });
-
-      if (profileError) {
-        const errorMsg = `Profile error for ${username}: ${profileError.message}`;
-        console.error(errorMsg);
-        errors.push(errorMsg);
-        continue;
-      }
-
-      console.log(`Profile created for ${username} with balance ${initialBalance}`);
-
-      createdUsers.push({
-        id: userId,
-        username,
-        email,
-        balance: initialBalance,
-      });
-
-    } catch (error) {
-      const errorMsg = `Exception for profile ${i + 1}: ${error instanceof Error ? error.message : String(error)}`;
-      console.error(errorMsg);
-      errors.push(errorMsg);
-    }
-  }
-
-  console.log(`Fallback fake profile creation complete: ${createdUsers.length}/${count} created`);
   if (errors.length > 0) {
     console.log("Errors encountered:", errors);
   }
