@@ -22,8 +22,10 @@ export async function diagnoseFakePlayerSystem() {
     projectId,
     dashboardUrl,
     hasServiceKey: !!process.env["SUPABASE_SERVICE_ROLE_KEY"],
+    hasServiceRole: !!process.env["SUPABASE_SERVICE_ROLE_KEY"] || !!process.env["SUPABASE_SERVICE_ROLE"],
     hasPublishableKey: !!process.env["SUPABASE_PUBLISHABLE_KEY"],
     serviceKeyPrefix: process.env["SUPABASE_SERVICE_ROLE_KEY"]?.substring(0, 10) + "..." || "none",
+    serviceRolePrefix: process.env["SUPABASE_SERVICE_ROLE"]?.substring(0, 10) + "..." || "none",
     publishableKeyPrefix: process.env["SUPABASE_PUBLISHABLE_KEY"]?.substring(0, 10) + "..." || "none",
     existingFakePlayers: 0,
     profilesTableAccessible: false,
@@ -83,12 +85,15 @@ export async function diagnoseFakePlayerSystem() {
       diagnostics.details.edgeFunctionError = edgeError instanceof Error ? edgeError.message : String(edgeError);
     }
 
-    // Only check profiles if we have service role key (for admin operations)
-    if (diagnostics.hasServiceKey) {
+    // Try to use service role if available (check both naming conventions)
+    const serviceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"] || process.env["SUPABASE_SERVICE_ROLE"];
+    
+    if (serviceKey) {
+      diagnostics.hasServiceKey = true;
       const { createClient } = await import("@supabase/supabase-js");
       const serviceSupabase = createClient(
         process.env["SUPABASE_URL"]!,
-        process.env["SUPABASE_SERVICE_ROLE_KEY"]!,
+        serviceKey,
         { auth: { persistSession: false, autoRefreshToken: false } }
       );
 
@@ -125,7 +130,7 @@ export async function diagnoseFakePlayerSystem() {
       }
     } else {
       diagnostics.details.rlsNote = "Cannot check profiles table without SUPABASE_SERVICE_ROLE_KEY due to RLS policies";
-      diagnostics.error = "SUPABASE_SERVICE_ROLE_KEY is required to access profiles table (RLS policies block public client). Using Edge Function instead.";
+      diagnostics.error = "No service role key found (checked SUPABASE_SERVICE_ROLE_KEY and SUPABASE_SERVICE_ROLE). Using Edge Function instead.";
     }
 
   } catch (error) {

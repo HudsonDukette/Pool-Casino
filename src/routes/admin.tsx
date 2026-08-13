@@ -108,22 +108,27 @@ function AdminPanel() {
     console.log("Fake player diagnostics:", data);
     console.log("All SUPABASE env vars:", data.allEnvVars);
     
-    if (!data.hasServiceKey) {
+    if (data.edgeFunctionAccessible) {
       toast({
-        title: "Missing Service Role Key",
-        description: `SUPABASE_SERVICE_ROLE_KEY is not set. Check console for all Supabase env vars. Project ID: ${data.projectId}`,
+        title: "Edge Function Ready",
+        description: "The Edge Function is deployed and accessible. You can now create fake players!",
+      });
+    } else if (!data.edgeFunctionDeployed) {
+      toast({
+        title: "Edge Function Not Deployed",
+        description: "You need to deploy the Edge Function first. Run: supabase functions deploy create-fake-player",
         variant: "destructive"
       });
-    } else if (!data.profilesTableAccessible) {
-      toast({
-        title: "Database Connection Issue",
-        description: `Cannot access profiles table. Error: ${data.error}. Check console for details.`,
-        variant: "destructive"
-      });
-    } else {
+    } else if (data.hasServiceKey) {
       toast({
         title: "System Diagnostics",
         description: `Profiles: ${data.profilesCount}, Fake players: ${data.existingFakePlayers}, Auth: ${data.authStatus}`,
+      });
+    } else {
+      toast({
+        title: "Edge Function Needed",
+        description: "Deploy the Edge Function to create fake players without service role key",
+        variant: "destructive"
       });
     }
   }, onError });
