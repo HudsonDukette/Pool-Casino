@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Cards, Shield, Zap } from "lucide-react";
+import { ArrowLeft, Hand, Shield, Zap } from "lucide-react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -325,7 +325,7 @@ function BlackjackGame() {
             {/* Player's Hand */}
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-4">
-                <Cards className="w-5 h-5 text-primary" />
+                <Hand className="w-5 h-5 text-primary" />
                 <h3 className="font-semibold text-primary">Your Hand</h3>
                 {playerHand.cards.length > 0 && (
                   <span className="text-2xl font-bold text-white ml-2">{playerHand.total}</span>
