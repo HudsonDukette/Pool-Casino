@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import { runDailyFakePlayerSimulation } from "./daily-jobs.functions";
 
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 type PoolUpdate = Database["public"]["Tables"]["pool"]["Update"];
@@ -239,4 +240,13 @@ export const resetEconomy = createServerFn({ method: "POST" })
       description: `Economy reset: players to ${data.playerBalance}, pool to ${data.poolAmount}`,
     });
     return { ok: true };
+  });
+
+export const triggerFakePlayerSimulation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireStaff(context as StaffContext, true);
+    const supabase = (context as StaffContext).supabase;
+    const results = await runDailyFakePlayerSimulation({ data: {} });
+    return results;
   });

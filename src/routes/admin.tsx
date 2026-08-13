@@ -20,6 +20,7 @@ import {
   setRole,
   updateCasinoSettings,
   resetEconomy,
+  triggerFakePlayerSimulation,
 } from "@/lib/admin.functions";
 import { Shield, Crown, Coins, Users, AlertTriangle, Ban, RefreshCw, Search } from "lucide-react";
 
@@ -79,6 +80,7 @@ function AdminPanel() {
   const mRole = useMutation({ mutationFn: useServerFn(setRole), onSuccess: () => { toast({ title: "Role updated" }); invalidate(); }, onError });
   const mSettings = useMutation({ mutationFn: useServerFn(updateCasinoSettings), onSuccess: () => { toast({ title: "Settings saved" }); invalidate(); }, onError });
   const mReset = useMutation({ mutationFn: useServerFn(resetEconomy), onSuccess: () => { toast({ title: "Economy reset" }); invalidate(); }, onError });
+  const mFakeSim = useMutation({ mutationFn: useServerFn(triggerFakePlayerSimulation), onSuccess: (data) => { toast({ title: "Simulation complete", description: `Created ${data.playersCreated} players, ${data.betsPlaced} bets, ${data.donationsMade} donations` }); invalidate(); }, onError });
 
   const data = overview.data;
   const isOwner = data?.me.isOwner ?? false;
@@ -148,14 +150,25 @@ function AdminPanel() {
           </TabsList>
 
           <TabsContent value="players" className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search players by name or email"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-black/50"
-              />
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search players by name or email"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9 bg-black/50"
+                />
+              </div>
+              <div className="relative w-40">
+                <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Amount"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+                  className="pl-9 bg-black/50 font-mono"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               {players.map((p) => (
@@ -176,10 +189,10 @@ function AdminPanel() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <Button size="sm" variant="outline" onClick={() => mBalance.mutate({ data: { userId: p.user_id, amount: numericAmount, mode: "add" } })}>
-                        +{formatCurrency(numericAmount)}
+                        Add {formatCurrency(numericAmount)}
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => mBalance.mutate({ data: { userId: p.user_id, amount: numericAmount, mode: "set" } })}>
-                        Set balance
+                        Set to {formatCurrency(numericAmount)}
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => {
                         const name = window.prompt("New username", p.username);
@@ -325,15 +338,27 @@ function AdminPanel() {
                       <Input value={resetPool} onChange={(e) => setResetPool(e.target.value)} className="bg-black/50 font-mono" />
                     </div>
                   </div>
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      if (!window.confirm("Reset the entire economy? This cannot be undone.")) return;
-                      mReset.mutate({ data: { playerBalance: Number(resetPlayer) || 0, poolAmount: Number(resetPool) || 0 } });
-                    }}
-                  >
-                    Reset economy
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        if (!window.confirm("Reset the entire economy? This cannot be undone.")) return;
+                        mReset.mutate({ data: { playerBalance: Number(resetPlayer) || 0, poolAmount: Number(resetPool) || 0 } });
+                      }}
+                    >
+                      Reset economy
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (!window.confirm("Run fake player simulation? This will create new fake players and simulate bets/donations.")) return;
+                        mFakeSim.mutate({ data: {} });
+                      }}
+                      disabled={mFakeSim.isPending}
+                    >
+                      {mFakeSim.isPending ? "Running..." : "Run Fake Player Sim"}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

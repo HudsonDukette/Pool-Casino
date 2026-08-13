@@ -1,413 +1,377 @@
+import React, { useState, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import React, { useState, useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { Card, CardContent } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Circle } from "lucide-react";
+import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
-import { Layout } from "@/components/layout";
-import { Coins, AlertCircle, ArrowLeft } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "@/hooks/use-toast";
-import { playRoulette } from "@/lib/games/roulette.functions";
-import { getPool } from "@/lib/pool.functions";
+import { useToast } from "@/hooks/use-toast";
 import { useSession } from "@/hooks/use-session";
-import { ROULETTE_NUMBERS, calculateWinChance } from "@/lib/gambling";
-import rouletteImg from "@/assets/game-roulette.png";
+import { getPool } from "@/lib/pool.functions";
+import { playGame } from "@/lib/games/play.functions";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 
-type BetColor = "red" | "black" | "green";
+const NUMBERS = [
+  0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
+];
 
-function RouletteWheel({ spinning }: { spinning: boolean }) {
-  return (
-    <motion.div
-      animate={spinning ? { rotate: 360 * 8 } : { rotate: 0 }}
-      transition={spinning ? { duration: 2.2, ease: "circOut" } : { duration: 0 }}
-      className="relative w-48 h-48 md:w-56 md:h-56"
-    >
-      <motion.div
-        animate={spinning ? { boxShadow: ["0 0 20px rgba(0,255,136,0.3)", "0 0 60px rgba(0,255,136,0.7)", "0 0 20px rgba(0,255,136,0.3)"] } : {}}
-        transition={{ duration: 0.5, repeat: Infinity }}
-        className="absolute inset-0 rounded-full"
-      />
-      <img
-        src={rouletteImg}
-        alt="Roulette Wheel"
-        className="w-full h-full rounded-full object-cover"
-        style={{ filter: spinning ? "drop-shadow(0 0 20px rgba(0,255,136,0.7))" : "drop-shadow(0 0 8px rgba(0,255,136,0.3))" }}
-      />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-5 h-5 rounded-full bg-white/90 shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
-      </div>
-    </motion.div>
-  );
+const RED_NUMBERS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+const BLACK_NUMBERS = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35];
+
+function getNumberColor(num: number): "red" | "black" | "green" {
+  if (num === 0) return "green";
+  if (RED_NUMBERS.includes(num)) return "red";
+  return "black";
 }
 
-const COLOR_CONFIG: Record<BetColor, { label: string; emoji: string; payout: string; chance: string; glow: string; activeClass: string; hoverClass: string }> = {
-  red: {
-    label: "Red",
-    emoji: "🔴",
-    payout: "2×",
-    chance: "~47%",
-    glow: "shadow-[0_0_20px_rgba(239,68,68,0.4)]",
-    activeClass: "bg-red-500 hover:bg-red-600 border-red-500",
-    hoverClass: "hover:bg-red-500/10 hover:text-red-400 border-white/10",
-  },
-  black: {
-    label: "Black",
-    emoji: "⚫",
-    payout: "2×",
-    chance: "~47%",
-    glow: "shadow-[0_0_20px_rgba(100,100,100,0.3)]",
-    activeClass: "bg-gray-800 hover:bg-gray-700 text-white border-gray-600",
-    hoverClass: "hover:bg-gray-800/50 hover:text-white border-white/10",
-  },
-  green: {
-    label: "Green",
-    emoji: "💚",
-    payout: "50×",
-    chance: "~2.5%",
-    glow: "shadow-[0_0_20px_rgba(34,197,94,0.5)]",
-    activeClass: "bg-green-600 hover:bg-green-500 border-green-500",
-    hoverClass: "hover:bg-green-600/10 hover:text-green-400 border-white/10",
-  },
-};
-
-export const Route = createFileRoute("/games/roulette")({
-  head: () => ({
-    meta: [
-      { title: "Neon Roulette — PoolCasino" },
-      { name: "description", content: "Bet red, black, or green on the neon roulette wheel." },
-      { property: "og:title", content: "Neon Roulette — PoolCasino" },
-      { property: "og:description", content: "Bet red, black, or green on the neon roulette wheel." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
-  component: Roulette,
-});
-
-function Roulette() {
-  const { data: pool } = useQuery({
-    queryKey: ["pool"],
-    queryFn: () => getPool(),
-    refetchInterval: 10000,
-  });
-
-  const { user, isGuest, updateGuestBalance, refresh } = useSession();
-
-  const playFn = useServerFn(playRoulette);
-  const queryClient = useQueryClient();
-
-  const [betAmount, setBetAmount] = useState<string>("10");
-  const [color, setColor] = useState<BetColor>("red");
-  const [spinning, setSpinning] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const numericBet = parseFloat(betAmount) || 0;
+function RouletteWheel({ spinning, result }: { spinning: boolean; result: number | null }) {
+  const [rotation, setRotation] = useState(0);
 
   useEffect(() => {
-    return () => {
-      if (watchdogRef.current) clearTimeout(watchdogRef.current);
-    };
-  }, []);
-
-  const stopSpinning = () => {
-    setSpinning(false);
-    if (watchdogRef.current) {
-      clearTimeout(watchdogRef.current);
-      watchdogRef.current = null;
+    if (spinning && result !== null) {
+      const targetIndex = NUMBERS.indexOf(result);
+      const targetRotation = -(targetIndex * (360 / NUMBERS.length));
+      setRotation(targetRotation + 360 * 5); // Add 5 full rotations
     }
-  };
-
-  const handlePlay = async () => {
-    if (!user) return;
-    if (numericBet <= 0) {
-      toast({ title: "Invalid Bet", description: "Bet amount must be greater than 0.", variant: "destructive" });
-      return;
-    }
-    if (numericBet > user.balance) {
-      toast({ title: "Invalid Bet", description: "Bet amount exceeds your balance.", variant: "destructive" });
-      return;
-    }
-
-    setSpinning(true);
-    setResult(null);
-
-    watchdogRef.current = setTimeout(() => {
-      stopSpinning();
-      toast({ title: "Connection issue", description: "Request timed out. Please try again.", variant: "destructive" });
-    }, 6000);
-
-    try {
-      if (isGuest) {
-        const winChance = calculateWinChance(numericBet, pool?.totalAmount ?? 0);
-        const won = Math.random() < (color === "green" ? Math.min(winChance, 0.025) : winChance);
-        const candidates = ROULETTE_NUMBERS.filter((n) => (won ? n.color === color : n.color !== color));
-        const pick = candidates[Math.floor(Math.random() * candidates.length)] ?? ROULETTE_NUMBERS[0]!;
-        const payout = won ? numericBet * (color === "green" ? 50 : 2) : 0;
-        const newBalance = user.balance - numericBet + payout;
-        const data = {
-          won,
-          payout,
-          betAmount: numericBet,
-          resultNumber: pick.number,
-          resultColor: pick.color,
-          newBalance,
-        };
-        if (watchdogRef.current) clearTimeout(watchdogRef.current);
-        setTimeout(() => {
-          updateGuestBalance(newBalance);
-          setResult(data);
-          stopSpinning();
-          if (won) {
-            toast({
-              title: color === "green" ? "💚 GREEN! Jackpot!" : "🎉 You Won!",
-              description: `Payout: ${formatCurrency(payout)}`,
-              variant: "success",
-            });
-          } else {
-            toast({ title: "No luck this time", description: `Lost ${formatCurrency(numericBet)}`, variant: "destructive" });
-          }
-        }, 2300);
-        return;
-      }
-
-      const data = await playFn({ data: { betAmount: numericBet, color } });
-      if (watchdogRef.current) clearTimeout(watchdogRef.current);
-      setTimeout(() => {
-        setResult(data);
-        stopSpinning();
-        refresh();
-        queryClient.invalidateQueries({ queryKey: ["pool"] });
-        queryClient.invalidateQueries({ queryKey: ["recent-wins"] });
-
-        if (data.won) {
-          toast({
-            title: color === "green" ? "💚 GREEN! Jackpot!" : "🎉 You Won!",
-            description: `Payout: ${formatCurrency(data.payout)}`,
-            variant: "success",
-          });
-        } else {
-          toast({ title: "No luck this time", description: `Lost ${formatCurrency(numericBet)}`, variant: "destructive" });
-        }
-      }, 2300);
-    } catch (err: any) {
-      stopSpinning();
-      toast({
-        title: "Error",
-        description: err?.message || "Failed to place bet",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const cfg = COLOR_CONFIG[color];
-  const resultGlowColor =
-    result?.resultColor === "red" ? "rgba(239,68,68,0.6)" :
-    result?.resultColor === "green" ? "rgba(34,197,94,0.7)" :
-    "rgba(100,100,100,0.5)";
+  }, [spinning, result]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center gap-3">
-        <Link to="/games">
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-white">
-            <ArrowLeft className="w-4 h-4" />
-            All Games
-          </Button>
-        </Link>
-      </div>
-      <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-white/10">
-        <img src={rouletteImg} alt="Neon Roulette" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-5">
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-primary">Neon Roulette</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Classic red or black with dynamic odds based on the global pool.</p>
-        </div>
-      </div>
-      <div className="flex flex-col md:flex-row gap-8">
-        <div className="flex-1 space-y-6">
-          <Card className="bg-black/60 border-white/10 overflow-hidden relative min-h-[400px] flex items-center justify-center">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,136,0.05),transparent_70%)]" />
-
-            <AnimatePresence mode="wait">
-              {!spinning && !result ? (
-                <motion.div
-                  key="idle"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="text-center z-10 flex flex-col items-center gap-6"
-                >
-                  <RouletteWheel spinning={false} />
-                  <p className="text-muted-foreground text-lg">Place your bet to spin</p>
-                </motion.div>
-              ) : spinning ? (
-                <motion.div
-                  key="spinning"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="z-10 flex flex-col items-center gap-6"
-                >
-                  <RouletteWheel spinning={true} />
-                  <motion.p
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ duration: 0.8, repeat: Infinity }}
-                    className="text-primary text-xl font-bold font-display"
-                  >
-                    Spinning…
-                  </motion.p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="result"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                  className="text-center z-10 flex flex-col items-center gap-4"
-                >
-                  <motion.div
-                    animate={{ boxShadow: ["0 0 0px transparent", `0 0 50px ${resultGlowColor}`, "0 0 0px transparent"] }}
-                    transition={{ duration: 1, repeat: 2 }}
-                    className={`w-32 h-32 rounded-full flex items-center justify-center text-5xl font-display font-black shadow-2xl ${
-                      result.resultColor === "red" ? "bg-red-500 text-white" :
-                      result.resultColor === "green" ? "bg-green-500 text-white" :
-                      "bg-gray-900 border-2 border-white/20 text-white"
-                    }`}
-                  >
-                    {result.resultNumber}
-                  </motion.div>
-                  <div>
-                    <h3 className="text-2xl font-bold font-display uppercase tracking-widest text-white capitalize">
-                      {result.resultColor} {result.resultNumber}
-                    </h3>
-                    {result.won ? (
-                      <motion.p
-                        initial={{ scale: 0.5 }}
-                        animate={{ scale: 1 }}
-                        className={`mt-2 text-2xl font-mono font-bold ${result.resultColor === "green" ? "text-green-400" : "text-primary"}`}
-                      >
-                        +{formatCurrency(result.payout)}
-                        {result.resultColor === "green" && <span className="ml-2 text-base">💚 50×</span>}
-                      </motion.p>
-                    ) : (
-                      <p className="mt-2 text-xl text-destructive font-mono opacity-80">
-                        -{formatCurrency(result.betAmount)}
-                      </p>
-                    )}
-                  </div>
-                  <Button variant="outline" size="sm" className="mt-2 border-white/10" onClick={() => setResult(null)}>
-                    Play Again
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Card>
-        </div>
-
-        <div className="w-full md:w-80 space-y-6">
-          <Card className="border-white/10 bg-card/80">
-            <CardContent className="p-6 space-y-6">
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-muted-foreground">Bet Amount</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <Coins className="w-5 h-5" />
-                  </span>
-                  <Input
-                    type="number"
-                    min="0.01"
-                    step="1"
-                    value={betAmount}
-                    onChange={(e) => setBetAmount(e.target.value)}
-                    disabled={spinning}
-                    className="pl-10 font-mono text-lg h-14 bg-black/50"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 border-white/10" onClick={() => setBetAmount((numericBet / 2).toString())} disabled={spinning}>1/2</Button>
-                  <Button variant="outline" size="sm" className="flex-1 border-white/10" onClick={() => setBetAmount((numericBet * 2).toString())} disabled={spinning}>2×</Button>
-                  {user && (
-                    <Button variant="outline" size="sm" className="flex-1 border-white/10" onClick={() => setBetAmount(String(user.balance))} disabled={spinning}>Max</Button>
-                  )}
-                </div>
+    <div className="relative w-64 h-64 mx-auto">
+      <motion.div
+        animate={{ rotate: rotation }}
+        transition={{ duration: spinning ? 4 : 0, ease: "easeOut" }}
+        className="w-full h-full rounded-full border-8 border-yellow-600 bg-gradient-to-br from-green-800 to-green-900 shadow-2xl relative"
+      >
+        {/* Roulette numbers */}
+        {NUMBERS.map((num, i) => {
+          const angle = (i * 360) / NUMBERS.length;
+          const color = getNumberColor(num);
+          const bgColor = color === "red" ? "bg-red-600" : color === "black" ? "bg-gray-900" : "bg-green-600";
+          
+          return (
+            <div
+              key={num}
+              className="absolute w-8 h-8 flex items-center justify-center text-white text-xs font-bold rounded-full"
+              style={{
+                transform: `rotate(${angle}deg) translate(80px) rotate(-${angle}deg)`,
+                left: "50%",
+                top: "50%",
+                marginLeft: "-16px",
+                marginTop: "-16px",
+              }}
+            >
+              <div className={`w-7 h-7 ${bgColor} rounded-full flex items-center justify-center`}>
+                {num}
               </div>
-
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-muted-foreground">Color</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["red", "black", "green"] as BetColor[]).map((c) => {
-                    const conf = COLOR_CONFIG[c];
-                    const isActive = color === c;
-                    return (
-                      <motion.div key={c} whileTap={{ scale: 0.95 }}>
-                        <Button
-                          variant={isActive ? "default" : "outline"}
-                          onClick={() => setColor(c)}
-                          disabled={spinning}
-                          className={`w-full h-16 font-bold flex flex-col gap-0.5 text-xs ${isActive ? `${conf.activeClass} ${conf.glow}` : conf.hoverClass}`}
-                        >
-                          <span className="text-base">{conf.emoji}</span>
-                          <span>{conf.label}</span>
-                          <span className="opacity-70">{conf.payout}</span>
-                        </Button>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-                {color === "green" && (
-                  <p className="text-xs text-green-400/80 bg-green-950/30 border border-green-500/20 rounded-lg p-2 text-center">
-                    💚 Rare bet — lands on 0 only. <strong>50× payout</strong> if you hit it!
-                  </p>
-                )}
-              </div>
-
-              <div className="pt-2">
-                <div className="flex justify-between items-center text-sm mb-1">
-                  <span className="text-muted-foreground flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" /> Win Chance
-                  </span>
-                  <span className="font-mono font-medium text-primary">{cfg.chance}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm mb-3">
-                  <span className="text-muted-foreground">Potential payout</span>
-                  <span className="font-mono font-medium text-primary">
-                    {numericBet > 0 ? formatCurrency(numericBet * (color === "green" ? 50 : 2)) : "—"}
-                  </span>
-                </div>
-                <motion.div whileTap={{ scale: 0.97 }}>
-                  <Button
-                    size="lg"
-                    className={`w-full h-16 text-xl ${color === "green" ? "bg-green-600 hover:bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]" : "shadow-[0_0_20px_rgba(0,255,136,0.2)] hover:shadow-[0_0_30px_rgba(0,255,136,0.4)]"}`}
-                    onClick={handlePlay}
-                    disabled={spinning || numericBet <= 0}
-                  >
-                    {spinning ? "Spinning…" : `🎡 Bet on ${cfg.label}`}
-                  </Button>
-                </motion.div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {isGuest && (
-            <div className="text-xs text-accent/90 bg-accent/10 border border-accent/30 p-4 rounded-xl text-center">
-              You&apos;re playing as a guest with free tokens.{" "}
-              <Link to="/register" className="underline font-semibold">Sign up</Link> to play with the real pool and keep your stats.
             </div>
-          )}
-          {pool && (
-            <div className="text-xs text-muted-foreground text-center bg-white/5 p-4 rounded-xl border border-white/5">
-              Your Balance: <span className="text-white font-mono">{formatCurrency(user?.balance ?? 0)}</span>
-              <br />
-              Global Pool: <span className="text-white font-mono">{formatCurrency(pool.totalAmount)}</span>
-            </div>
-          )}
+          );
+        })}
+        
+        {/* Center */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-full border-4 border-yellow-400 flex items-center justify-center shadow-lg">
+            {result !== null ? (
+              <span className="text-2xl font-bold text-white">{result}</span>
+            ) : (
+              <Circle className="w-8 h-8 text-yellow-300" />
+            )}
+          </div>
         </div>
+      </motion.div>
+      
+      {/* Pointer */}
+      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2">
+        <div className="w-0 h-0 border-l-[12px] border-r-[12px] border-t-[20px] border-l-transparent border-r-transparent border-t-yellow-400 drop-shadow-lg" />
       </div>
     </div>
   );
 }
 
+export const Route = createFileRoute("/games/roulette")({
+  head: () => ({
+    meta: [
+      { title: "Neon Roulette — PoolCasino" },
+      { name: "description", content: "Interactive roulette with spinning wheel. Bet on red, black, or specific numbers." },
+      { property: "og:title", content: "Neon Roulette — PoolCasino" },
+      { property: "og:description", content: "Interactive roulette with spinning wheel." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: RouletteGame,
+});
+
+function RouletteGame() {
+  const { user, isGuest, updateGuestBalance, setBalance, refresh } = useSession();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: pool } = useQuery({ queryKey: ["pool"], queryFn: () => getPool(), refetchInterval: 10000 });
+  const playGameFn = useServerFn(playGame);
+
+  const [betAmount, setBetAmount] = useState("10");
+  const [selectedBet, setSelectedBet] = useState<"red" | "black" | "green">("red");
+  const [spinning, setSpinning] = useState(false);
+  const [result, setResult] = useState<number | null>(null);
+  const [gameResult, setGameResult] = useState<{ won: boolean; payout: number; message: string } | null>(null);
+
+  const bet = Number(betAmount);
+  const balance = user?.balance ?? 0;
+  const poolTotal = pool?.totalAmount ?? 0;
+
+  const canPlay = !spinning && bet > 0 && bet <= balance;
+
+  async function spin() {
+    if (!canPlay) {
+      if (bet > balance) toast({ title: "Insufficient balance", variant: "destructive" });
+      return;
+    }
+
+    setSpinning(true);
+    setResult(null);
+    setGameResult(null);
+
+    // Generate random result
+    const randomIndex = Math.floor(Math.random() * NUMBERS.length);
+    const winningNumber = NUMBERS[randomIndex];
+    
+    setTimeout(() => {
+      setResult(winningNumber);
+      
+      const winningColor = getNumberColor(winningNumber);
+      const won = selectedBet === winningColor;
+      
+      let payout = 0;
+      let multiplier = 0;
+      
+      if (won) {
+        if (selectedBet === "green") {
+          multiplier = 14; // 0 pays 14:1
+        } else {
+          multiplier = 2; // Red/black pays 1:1
+        }
+        payout = bet * multiplier;
+      }
+
+      setGameResult({
+        won,
+        payout,
+        message: won 
+          ? `The ball landed on ${winningNumber} (${winningColor})! You win!` 
+          : `The ball landed on ${winningNumber} (${winningColor}). Better luck next time!`,
+      });
+
+      // Process the actual game result
+      processGameResult(won, payout, bet);
+    }, 4000);
+  }
+
+  async function processGameResult(won: boolean, payout: number, betAmount: number) {
+    try {
+      if (isGuest) {
+        await new Promise((r) => setTimeout(r, 500));
+        const next = balance - bet + payout;
+        updateGuestBalance(next);
+      } else {
+        const res = await playGameFn({
+          data: { gameId: "roulette", option: selectedBet, betAmount: bet },
+        });
+        setBalance(res.newBalance);
+        queryClient.invalidateQueries({ queryKey: ["pool"] });
+        refresh();
+      }
+    } catch (err) {
+      toast({
+        title: "Game failed",
+        description: err instanceof Error ? err.message : "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setSpinning(false);
+    }
+  }
+
+  function resetGame() {
+    setResult(null);
+    setGameResult(null);
+  }
+
+  return (
+    <Layout>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <Link to="/games" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-white mb-6">
+          <ArrowLeft className="w-4 h-4" /> All games
+        </Link>
+
+        <div className="mb-8">
+          <h1 className="font-display text-4xl font-bold tracking-tight">Neon Roulette</h1>
+          <p className="text-muted-foreground mt-2">Watch the wheel spin and place your bets on red, black, or green.</p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+          {/* Roulette Wheel */}
+          <Card className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 border-purple-700/50 shadow-2xl">
+            <CardContent className="p-8">
+              <RouletteWheel spinning={spinning} result={result} />
+              
+              {result !== null && !spinning && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-6 text-center"
+                >
+                  <p className="text-2xl font-bold text-white">
+                    Result: <span className={`${
+                      getNumberColor(result) === "red" ? "text-red-500" : 
+                      getNumberColor(result) === "black" ? "text-gray-300" : "text-green-500"
+                    }`}>{result}</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {getNumberColor(result).toUpperCase()}
+                  </p>
+                </motion.div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Betting Controls */}
+          <Card className="bg-black/50 border-white/10">
+            <CardContent className="p-6 space-y-6">
+              {/* Bet Selection */}
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-3">Choose your bet</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => setSelectedBet("red")}
+                    disabled={spinning}
+                    className={`p-4 rounded-xl border-2 transition-all ${
+                      selectedBet === "red"
+                        ? "border-red-500 bg-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+                        : "border-red-500/30 bg-red-500/10 hover:border-red-500/50"
+                    } ${spinning ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <div className="w-8 h-8 bg-red-600 rounded-full mx-auto mb-2" />
+                    <span className="font-semibold text-red-400">Red</span>
+                    <p className="text-xs text-muted-foreground mt-1">2× payout</p>
+                  </button>
+                  
+                  <button
+                    onClick={() => setSelectedBet("black")}
+                    disabled={spinning}
+                    className={`p-4 rounded-xl border-2 transition-all ${
+                      selectedBet === "black"
+                        ? "border-gray-500 bg-gray-500/20 shadow-[0_0_20px_rgba(107,114,128,0.3)]"
+                        : "border-gray-500/30 bg-gray-500/10 hover:border-gray-500/50"
+                    } ${spinning ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <div className="w-8 h-8 bg-gray-900 rounded-full mx-auto mb-2" />
+                    <span className="font-semibold text-gray-300">Black</span>
+                    <p className="text-xs text-muted-foreground mt-1">2× payout</p>
+                  </button>
+                  
+                  <button
+                    onClick={() => setSelectedBet("green")}
+                    disabled={spinning}
+                    className={`p-4 rounded-xl border-2 transition-all ${
+                      selectedBet === "green"
+                        ? "border-green-500 bg-green-500/20 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+                        : "border-green-500/30 bg-green-500/10 hover:border-green-500/50"
+                    } ${spinning ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <div className="w-8 h-8 bg-green-600 rounded-full mx-auto mb-2" />
+                    <span className="font-semibold text-green-400">Green (0)</span>
+                    <p className="text-xs text-muted-foreground mt-1">14× payout</p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Bet Amount */}
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-3">Bet amount</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    value={betAmount}
+                    onChange={(e) => setBetAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+                    inputMode="decimal"
+                    disabled={spinning}
+                    className="w-36 font-mono bg-black/50 border-white/20"
+                  />
+                  {[10, 25, 50, 100].map((v) => (
+                    <Button
+                      key={v}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setBetAmount(String(v))}
+                      disabled={spinning}
+                      className="border-white/20 hover:border-white/40"
+                    >
+                      {v}
+                    </Button>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBetAmount(String(Math.floor(balance)))}
+                    disabled={spinning}
+                    className="border-white/20 hover:border-white/40"
+                  >
+                    Max
+                  </Button>
+                </div>
+              </div>
+
+              {/* Spin Button */}
+              <Button
+                onClick={spin}
+                disabled={!canPlay}
+                className="w-full h-12 text-base bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-[0_0_30px_rgba(168,85,247,0.4)]"
+              >
+                {spinning ? "Spinning..." : `Spin (${formatCurrency(bet || 0)})`}
+              </Button>
+
+              {/* Result */}
+              <AnimatePresence>
+                {gameResult && !spinning && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className={`p-4 rounded-xl border-2 ${
+                      gameResult.won
+                        ? "bg-primary/20 border-primary/50"
+                        : "bg-destructive/20 border-destructive/50"
+                    }`}
+                  >
+                    <p className={`font-bold ${gameResult.won ? "text-primary" : "text-destructive"}`}>
+                      {gameResult.won ? "🎉 You Win!" : "😔 You Lose"}
+                    </p>
+                    <p className="text-sm text-white mt-1">{gameResult.message}</p>
+                    {gameResult.payout > 0 && (
+                      <p className="text-lg font-mono text-primary mt-2">
+                        +{formatCurrency(gameResult.payout)}
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Stats */}
+              <div className="pt-4 border-t border-white/10 grid grid-cols-2 gap-4 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Your Balance</span>
+                  <span className="font-mono font-semibold">{formatCurrency(balance)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Pool</span>
+                  <span className="font-mono font-semibold">{formatCurrency(poolTotal)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </Layout>
+  );
+}

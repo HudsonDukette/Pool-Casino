@@ -4,12 +4,15 @@ import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout";
-import { Dices, ArrowRight, TrendingUp, Zap, Activity, Sparkles, Crown } from "lucide-react";
+import { Dices, ArrowRight, TrendingUp, Zap, Activity, Sparkles, Crown, Gift } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getPool } from "@/lib/pool.functions";
 import { getRecentWins } from "@/lib/bets.functions";
 import { useSession } from "@/hooks/use-session";
+import { useToast } from "@/hooks/use-toast";
+import { useServerFn } from "@tanstack/react-start";
+import { claimDailyBonus } from "@/lib/user.functions";
 
 import rouletteImg from "@/assets/game-roulette.png";
 import plinkoImg from "@/assets/game-plinko.png";
@@ -148,6 +151,27 @@ function Home() {
     refetchInterval: 15000,
   });
 
+  const { user, isGuest, isAuthenticated: isSignedIn, refresh } = useSession();
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const claimBonusFn = useServerFn(claimDailyBonus);
+
+  const mClaim = useMutation({
+    mutationFn: claimBonusFn,
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({ title: "🎉 Daily Bonus!", description: `You received ${formatCurrency(data.amount)} coins!` });
+        refresh();
+        qc.invalidateQueries({ queryKey: ["pool"] });
+      } else {
+        toast({ title: "Already claimed", description: data.message, variant: "destructive" });
+      }
+    },
+    onError: (err) => {
+      toast({ title: "Claim failed", description: err instanceof Error ? err.message : "Something went wrong", variant: "destructive" });
+    },
+  });
+
   const poolStats = pool ?? { totalAmount: 0, biggestBet: 0, biggestWin: 0 };
   const poolStr = formatCurrency(poolStats.totalAmount);
   const bigBetStr = formatCurrency(poolStats.biggestBet);
@@ -159,7 +183,6 @@ function Home() {
   prevPool.current = poolNum;
 
   const recentWins = wins ?? [];
-  const { isAuthenticated: isSignedIn } = useSession();
 
 
   return (
@@ -169,21 +192,33 @@ function Home() {
         <section className="relative rounded-3xl overflow-hidden border border-white/10 bg-black shadow-2xl">
           {/* Animated gradient background */}
           <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-black to-secondary/10" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(0,255,170,0.12),transparent_60%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,0,255,0.08),transparent_60%)]" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-black to-secondary/20" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(0,255,170,0.25),transparent_60%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,0,255,0.18),transparent_60%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.1),transparent_70%)]" />
+            {/* Animated flowing lines */}
+            <div className="absolute inset-0 overflow-hidden opacity-20">
+              <motion.div
+                className="absolute w-[200%] h-[200%] top-[-50%] left-[-50%]"
+                style={{
+                  background: "conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(0,255,170,0.1) 60deg, transparent 120deg, rgba(255,0,255,0.1) 180deg, transparent 240deg, rgba(59,130,246,0.1) 300deg, transparent 360deg)",
+                }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+              />
+            </div>
             {/* Floating game icon particles */}
-            <div className="absolute inset-0 overflow-hidden opacity-[0.07] pointer-events-none">
+            <div className="absolute inset-0 overflow-hidden opacity-[0.12] pointer-events-none">
               {GAME_ICONS.map((g, i) => (
                 <motion.span
                   key={i}
-                  className="absolute text-4xl select-none"
+                  className="absolute text-5xl select-none"
                   style={{
                     left: `${8 + (i * 9.5) % 90}%`,
                     top: `${10 + (i * 17) % 75}%`,
                   }}
-                  animate={{ y: [0, -12, 0], rotate: [-4, 4, -4] }}
-                  transition={{ duration: 3 + i * 0.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.3 }}
+                  animate={{ y: [0, -16, 0], rotate: [-6, 6, -6], scale: [1, 1.1, 1] }}
+                  transition={{ duration: 4 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.3 }}
                 >
                   {g.emoji}
                 </motion.span>
@@ -213,31 +248,46 @@ function Home() {
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
                 <Link to="/games">
-                  <Button size="lg" className="w-full sm:w-auto text-lg shadow-[0_0_30px_rgba(0,255,170,0.3)] hover:shadow-[0_0_40px_rgba(0,255,170,0.5)]">
-                    <Dices className="mr-2 w-5 h-5" />
-                    Play Now
-                  </Button>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button size="lg" className="w-full sm:w-auto text-lg shadow-[0_0_30px_rgba(0,255,170,0.4)] hover:shadow-[0_0_50px_rgba(0,255,170,0.6)] bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90">
+                      <Dices className="mr-2 w-5 h-5" />
+                      Play Now
+                    </Button>
+                  </motion.div>
                 </Link>
                 {isSignedIn ? (
                   <Link to="/leaderboard">
-                    <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg">
-                      <Crown className="mr-2 w-4 h-4" />
-                      Leaderboards
-                    </Button>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/10">
+                        <Crown className="mr-2 w-4 h-4" />
+                        Leaderboards
+                      </Button>
+                    </motion.div>
                   </Link>
                 ) : (
                   <Link to="/register">
-                    <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg">
-                      <Sparkles className="mr-2 w-4 h-4" />
-                      Claim Free Coins
-                    </Button>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg border-accent/30 hover:border-accent/50 bg-accent/10 hover:bg-accent/20">
+                        <Sparkles className="mr-2 w-4 h-4" />
+                        Claim Free Coins
+                      </Button>
+                    </motion.div>
                   </Link>
                 )}
               </div>
             </div>
 
             {/* Pool Stats Widget */}
-            <div className="w-full md:w-auto md:min-w-[340px] md:max-w-[420px]">
+            <div className="w-full md:w-auto md:min-w-[340px] md:max-w-[420px] space-y-4">
               <Card className="bg-black/60 backdrop-blur-2xl border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden">
                 <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary via-accent to-secondary" />
                 <CardContent className="p-8 space-y-8">
@@ -270,6 +320,39 @@ function Home() {
                   </div>
                 </CardContent>
               </Card>
+
+              {isSignedIn && !isGuest && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <Card className="bg-gradient-to-br from-accent/20 to-primary/10 border-accent/30 shadow-[0_0_30px_rgba(0,255,170,0.2)]">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center">
+                            <Gift className="w-6 h-6 text-accent" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-white">Daily Bonus</p>
+                            <p className="text-sm text-muted-foreground">Free 500 coins every day</p>
+                          </div>
+                        </div>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button 
+                            onClick={() => mClaim.mutate()} 
+                            disabled={mClaim.isPending}
+                            className="bg-accent hover:bg-accent/90 text-black font-semibold shadow-[0_0_20px_rgba(0,255,170,0.4)]"
+                          >
+                            {mClaim.isPending ? "Claiming..." : "Claim 500"}
+                          </Button>
+                        </motion.div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
             </div>
           </div>
         </section>
