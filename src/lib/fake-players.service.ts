@@ -6,41 +6,80 @@ export async function diagnoseFakePlayerSystem() {
   const diagnostics = {
     hasSupabaseUrl: !!process.env["SUPABASE_URL"],
     hasServiceKey: !!process.env["SUPABASE_SERVICE_ROLE_KEY"],
+    hasPublishableKey: !!process.env["SUPABASE_PUBLISHABLE_KEY"],
     serviceKeyPrefix: process.env["SUPABASE_SERVICE_ROLE_KEY"]?.substring(0, 10) + "..." || "none",
+    publishableKeyPrefix: process.env["SUPABASE_PUBLISHABLE_KEY"]?.substring(0, 10) + "..." || "none",
     existingFakePlayers: 0,
     profilesTableAccessible: false,
+    profilesCount: 0,
+    authStatus: "unknown",
+    connectionTest: "unknown",
     error: null as string | null,
+    details: {} as Record<string, any>,
   };
 
   try {
+    // Test basic Supabase connection
     const supabase = createSupabasePublicClient();
     
-    // Check if profiles table is accessible
-    const { data: profiles, error: profilesError } = await supabase
-      .from("profiles")
-      .select("count", { count: "exact", head: true });
-    
-    if (profilesError) {
-      diagnostics.error = `Profiles table error: ${profilesError.message}`;
+    // Simple connection test - try to get session
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    if (authError) {
+      diagnostics.authStatus = `error: ${authError.message}`;
     } else {
-      diagnostics.profilesTableAccessible = true;
+      diagnostics.authStatus = session ? `authenticated as ${session.user.email}` : "not authenticated";
     }
+    diagnostics.details.session = !!session;
+    diagnostics.connectionTest = "ok";
 
-    // Count existing fake players
-    const { data: fakePlayers, error: countError } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .or("email.ilike", "%.fake-casino.com")
-      .or("email.ilike", "%.bot-player.net")
-      .or("email.ilike", "%.virtual-gambler.io")
-      .or("user_id.like", "fake_%");
+    // Only check profiles if we have service role key (for admin operations)
+    if (diagnostics.hasServiceKey) {
+      const { createClient } = await import("@supabase/supabase-js");
+      const serviceSupabase = createClient(
+        process.env["SUPABASE_URL"]!,
+        process.env["SUPABASE_SERVICE_ROLE_KEY"]!,
+        { auth: { persistSession: false, autoRefreshToken: false } }
+      );
 
-    if (!countError && fakePlayers) {
-      diagnostics.existingFakePlayers = fakePlayers.length;
+      // Check if profiles table is accessible with service role
+      const { data: profiles, error: profilesError, count } = await serviceSupabase
+        .from("profiles")
+        .select("count", { count: "exact", head: true });
+      
+      diagnostics.details.profilesError = profilesError?.message || "none";
+      diagnostics.details.profilesCount = count;
+      
+      if (profilesError) {
+        diagnostics.error = `Profiles table error (service role): ${profilesError.message} (code: ${profilesError.code})`;
+        diagnostics.details.profilesErrorCode = profilesError.code;
+      } else {
+        diagnostics.profilesTableAccessible = true;
+        diagnostics.profilesCount = count || 0;
+
+        // Count existing fake players
+        const { data: fakePlayers, error: countError } = await serviceSupabase
+          .from("profiles")
+          .select("user_id")
+          .or("email.ilike", "%.fake-casino.com")
+          .or("email.ilike", "%.bot-player.net")
+          .or("email.ilike", "%.virtual-gambler.io")
+          .or("user_id.like", "fake_%")
+          .limit(50);
+
+        diagnostics.details.fakePlayersError = countError?.message || "none";
+        
+        if (!countError && fakePlayers) {
+          diagnostics.existingFakePlayers = fakePlayers.length;
+        }
+      }
+    } else {
+      diagnostics.details.rlsNote = "Cannot check profiles table without SUPABASE_SERVICE_ROLE_KEY due to RLS policies";
+      diagnostics.error = "SUPABASE_SERVICE_ROLE_KEY is required to access profiles table (RLS policies block public client)";
     }
 
   } catch (error) {
     diagnostics.error = error instanceof Error ? error.message : String(error);
+    diagnostics.details.exception = error instanceof Error ? error.stack : String(error);
   }
 
   return diagnostics;

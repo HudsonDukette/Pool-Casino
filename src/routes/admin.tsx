@@ -105,20 +105,26 @@ function AdminPanel() {
     invalidate(); 
   }, onError });
   const mDiagnoseFake = useMutation({ mutationFn: useServerFn(diagnoseFakePlayerSystemFn), onSuccess: (data) => {
-    const hasServiceKey = data.hasServiceKey;
-    if (!hasServiceKey) {
+    console.log("Fake player diagnostics:", data);
+    
+    if (!data.profilesTableAccessible) {
+      toast({
+        title: "Database Connection Issue",
+        description: `Cannot access profiles table. Error: ${data.error}. Check console for details.`,
+        variant: "destructive"
+      });
+    } else if (!data.hasServiceKey) {
       toast({
         title: "Missing Service Role Key",
-        description: "SUPABASE_SERVICE_ROLE_KEY is not set. This is required to create fake players. Check the console for details.",
+        description: "SUPABASE_SERVICE_ROLE_KEY is not set. This is required to create fake players.",
         variant: "destructive"
       });
     } else {
       toast({
         title: "System Diagnostics",
-        description: `Existing fake players: ${data.existingFakePlayers}, Profiles accessible: ${data.profilesTableAccessible}`,
+        description: `Profiles: ${data.profilesCount}, Fake players: ${data.existingFakePlayers}, Auth: ${data.authStatus}`,
       });
     }
-    console.log("Fake player diagnostics:", data);
   }, onError });
   const mCreateFake = useMutation({ mutationFn: useServerFn(createRealFakePlayers), onSuccess: (data) => { toast({ title: "Fake players created", description: `Created ${data.created} real auth accounts` }); invalidate(); }, onError });
   const mStartAutoBet = useMutation({ mutationFn: useServerFn(startAutomatedBettingSystem), onSuccess: (data) => { toast({ title: "Automated betting started", description: data.message }); invalidate(); }, onError });
