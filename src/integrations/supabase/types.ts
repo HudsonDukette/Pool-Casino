@@ -50,6 +50,112 @@ export type Database = {
         }
         Relationships: []
       }
+      multiplayer_rooms: {
+        Row: {
+          id: string
+          game_id: string
+          created_by: string
+          bet_amount: number
+          max_players: number
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          game_id: string
+          created_by: string
+          bet_amount: number
+          max_players: number
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          game_id?: string
+          created_by?: string
+          bet_amount?: number
+          max_players?: number
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      multiplayer_room_players: {
+        Row: {
+          id: string
+          room_id: string
+          user_id: string
+          status: string
+          score: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          user_id: string
+          status?: string
+          score?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          user_id?: string
+          status?: string
+          score?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "multiplayer_room_players_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "multiplayer_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      multiplayer_game_results: {
+        Row: {
+          id: string
+          room_id: string
+          user_id: string
+          position: number
+          payout: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          user_id: string
+          position: number
+          payout?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          user_id?: string
+          position?: number
+          payout?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "multiplayer_game_results_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "multiplayer_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           body: string

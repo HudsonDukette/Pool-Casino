@@ -154,13 +154,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         >
                           All Games
                         </Link>
-                        <AnyLink
+                        <Link
                           to="/multiplayer"
                           onClick={() => setGamesDropdownOpen(false)}
                           className="block px-3 py-2 rounded-xl text-sm text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
                         >
                           Multiplayer
-                        </AnyLink>
+                        </Link>
                         <AnyLink
                           to="/casinos"
                           onClick={() => setGamesDropdownOpen(false)}
