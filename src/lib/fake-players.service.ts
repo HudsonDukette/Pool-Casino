@@ -58,7 +58,7 @@ export async function createFakeAuthUsers(count: number = 10) {
   
   if (!supabaseServiceKey) {
     console.error("SUPABASE_SERVICE_ROLE_KEY not set");
-    return { created: 0, error: "Service role key not available" };
+    return { created: 0, users: [], error: "Service role key not available" };
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -86,6 +86,11 @@ export async function createFakeAuthUsers(count: number = 10) {
 
       if (authError) {
         console.error("Error creating auth user:", authError);
+        continue;
+      }
+
+      if (!authData?.user) {
+        console.error("No user data returned from auth creation");
         continue;
       }
 
@@ -164,75 +169,83 @@ export function stopAutomatedBetting() {
 async function placeRandomBets() {
   const supabase = createSupabasePublicClient();
 
-  // Get fake players
-  const { data: fakePlayers, error: playersError } = await supabase
-    .from("profiles")
-    .select("*")
-    .not("user_id", "like", "fake_%") // Get real auth users marked as fake
-    .limit(50);
+  try {
+    // Get fake players - we need to use auth.users to check metadata
+    // Since we can't easily query auth.users, we'll use a different approach
+    // Check profiles with email domains that match our fake player domains
+    const { data: fakePlayers, error: playersError } = await supabase
+      .from("profiles")
+      .select("*")
+      .or("email.ilike", "%.fake-casino.com")
+      .or("email.ilike", "%.bot-player.net")
+      .or("email.ilike", "%.virtual-gambler.io")
+      .limit(50);
 
-  if (playersError || !fakePlayers || fakePlayers.length === 0) {
-    console.log("No fake players found for betting");
-    return;
-  }
-
-  // Select random subset of players to bet this round
-  const numBettors = Math.floor(Math.random() * Math.min(fakePlayers.length, 10)) + 1;
-  const shuffledPlayers = [...fakePlayers].sort(() => Math.random() - 0.5);
-  const bettors = shuffledPlayers.slice(0, numBettors);
-
-  console.log(`Placing bets for ${bettors.length} fake players`);
-
-  for (const player of bettors) {
-    try {
-      // Random delay between each player's bet
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 2000));
-
-      const game = GAME_IDS[Math.floor(Math.random() * GAME_IDS.length)];
-      const betAmount = Math.floor(Math.random() * Math.min(player.balance, 200)) + 10; // 10-200 or balance
-
-      if (player.balance < betAmount) continue;
-
-      // Simulate bet outcome using actual game logic
-      const won = Math.random() > 0.52; // 48% win rate (house edge)
-      const multiplier = won ? (Math.random() * 3 + 1.2).toFixed(2) : 0;
-      const payout = won ? Math.floor(betAmount * parseFloat(multiplier)) : 0;
-      const newBalance = player.balance - betAmount + payout;
-
-      // Update player balance
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ 
-          balance: newBalance,
-          games_played: (player.games_played || 0) + 1,
-          total_wins: (player.total_wins || 0) + (won ? 1 : 0),
-          total_losses: (player.total_losses || 0) + (won ? 0 : 1),
-          last_bet_at: new Date().toISOString(),
-        })
-        .eq("user_id", player.user_id);
-
-      if (!updateError) {
-        // Record bet using proper bet recording
-        await supabase
-          .from("bets")
-          .insert({
-            user_id: player.user_id,
-            game_type: game,
-            bet_amount: betAmount,
-            payout: payout,
-            result: won ? "win" : "loss",
-            multiplier: won ? parseFloat(multiplier) : null,
-            metadata: { 
-              fake_player: true,
-              automated: true,
-            },
-          });
-
-        console.log(`Fake player ${player.username} bet ${betAmount} on ${game}: ${won ? 'WON' : 'LOST'} ${payout}`);
-      }
-    } catch (error) {
-      console.error(`Error placing bet for player ${player.username}:`, error);
+    if (playersError || !fakePlayers || fakePlayers.length === 0) {
+      console.log("No fake players found for betting");
+      return;
     }
+
+    // Select random subset of players to bet this round
+    const numBettors = Math.floor(Math.random() * Math.min(fakePlayers.length, 10)) + 1;
+    const shuffledPlayers = [...fakePlayers].sort(() => Math.random() - 0.5);
+    const bettors = shuffledPlayers.slice(0, numBettors);
+
+    console.log(`Placing bets for ${bettors.length} fake players`);
+
+    for (const player of bettors) {
+      try {
+        // Random delay between each player's bet
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 2000));
+
+        const game = GAME_IDS[Math.floor(Math.random() * GAME_IDS.length)];
+        const betAmount = Math.floor(Math.random() * Math.min(player.balance, 200)) + 10; // 10-200 or balance
+
+        if (player.balance < betAmount) continue;
+
+        // Simulate bet outcome using actual game logic
+        const won = Math.random() > 0.52; // 48% win rate (house edge)
+        const multiplier = won ? (Math.random() * 3 + 1.2).toFixed(2) : 0;
+        const payout = won ? Math.floor(betAmount * parseFloat(multiplier)) : 0;
+        const newBalance = player.balance - betAmount + payout;
+
+        // Update player balance
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({ 
+            balance: newBalance,
+            games_played: (player.games_played || 0) + 1,
+            total_wins: (player.total_wins || 0) + (won ? 1 : 0),
+            total_losses: (player.total_losses || 0) + (won ? 0 : 1),
+            last_bet_at: new Date().toISOString(),
+          })
+          .eq("user_id", player.user_id);
+
+        if (!updateError) {
+          // Record bet using proper bet recording
+          await supabase
+            .from("bets")
+            .insert({
+              user_id: player.user_id,
+              game_type: game,
+              bet_amount: betAmount,
+              payout: payout,
+              result: won ? "win" : "loss",
+              multiplier: won ? parseFloat(multiplier) : null,
+              metadata: { 
+                fake_player: true,
+                automated: true,
+              },
+            });
+
+          console.log(`Fake player ${player.username} bet ${betAmount} on ${game}: ${won ? 'WON' : 'LOST'} ${payout}`);
+        }
+      } catch (error) {
+        console.error(`Error placing bet for player ${player.username}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error("Error in placeRandomBets:", error);
   }
 }
 
@@ -240,25 +253,32 @@ async function placeRandomBets() {
 export async function initializeFakePlayers(targetCount: number = 20) {
   const supabase = createSupabasePublicClient();
 
-  // Check current fake player count
-  const { data: existingPlayers, error: countError } = await supabase
-    .from("profiles")
-    .select("user_id")
-    .not("user_id", "like", "fake_%");
+  try {
+    // Check current fake player count
+    const { data: existingPlayers, error: countError } = await supabase
+      .from("profiles")
+      .select("user_id")
+      .not("user_id", "like", "fake_%");
 
-  if (countError) {
-    console.error("Error checking existing fake players:", countError);
-    return;
-  }
+    if (countError) {
+      console.error("Error checking existing fake players:", countError);
+      return { created: 0, users: [], error: countError.message };
+    }
 
-  const currentCount = existingPlayers?.length || 0;
-  const needed = targetCount - currentCount;
+    const currentCount = existingPlayers?.length || 0;
+    const needed = targetCount - currentCount;
 
-  if (needed > 0) {
-    console.log(`Creating ${needed} new fake players (current: ${currentCount}, target: ${targetCount})`);
-    const result = await createFakeAuthUsers(needed);
-    console.log(`Created ${result.created} fake players`);
-  } else {
-    console.log(`Fake players already exist (${currentCount}/${targetCount})`);
+    if (needed > 0) {
+      console.log(`Creating ${needed} new fake players (current: ${currentCount}, target: ${targetCount})`);
+      const result = await createFakeAuthUsers(needed);
+      console.log(`Created ${result.created} fake players`);
+      return { created: result.created, users: result.users };
+    } else {
+      console.log(`Fake players already exist (${currentCount}/${targetCount})`);
+      return { created: currentCount, users: existingPlayers || [] };
+    }
+  } catch (error) {
+    console.error("Error initializing fake players:", error);
+    return { created: 0, users: [], error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
