@@ -83,47 +83,36 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const isAdmin = user?.isAdmin === true;
 
   return (
-    <div className="bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 min-h-screen overflow-x-hidden">
+    <div className="bg-background text-foreground flex flex-col min-h-screen overflow-x-hidden">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-pink-100 shadow-sm">
+      <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/80 backdrop-blur-xl relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
               <Link
                 to="/"
-                className="flex items-center gap-3 group cursor-pointer"
+                className="flex items-center gap-2 group cursor-pointer"
               >
-                <motion.div 
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all"
-                >
-                  <Dices className="w-6 h-6 text-white" />
-                </motion.div>
-                <div className="hidden sm:block">
-                  <span className="font-display font-bold text-2xl tracking-tight bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-                    Pool
-                  </span>
-                  <span className="font-display font-bold text-2xl tracking-tight text-purple-600">
-                    Casino
-                  </span>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-[0_0_15px_rgba(0,255,170,0.4)] group-hover:shadow-[0_0_25px_rgba(0,255,170,0.6)] transition-all">
+                  <Dices className="w-4 h-4 text-black" />
                 </div>
+                <span className="font-display font-bold text-xl tracking-tight hidden sm:block">
+                  Pool
+                  <span className="text-primary neon-text-primary">Casino</span>
+                </span>
               </Link>
             </div>
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex space-x-2 items-center">
+            <nav className="hidden md:flex space-x-1 items-center">
               {navLinks.slice(0, 1).map((link) => {
                 const isActive = location === link.to;
                 return (
                   <Link
                     key={link.to}
                     to={link.to}
-                    className={`px-5 py-2.5 rounded-2xl flex items-center gap-2 text-sm font-medium transition-all duration-300 cursor-pointer ${
-                      isActive 
-                        ? "bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 shadow-md" 
-                        : "text-gray-600 hover:text-purple-600 hover:bg-purple-50"
-                    }`}
+                    className={`px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200 cursor-pointer ${isActive ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white hover:bg-white/5"}`}
                   >
                     {link.icon}
                     {link.label}
@@ -135,10 +124,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <div ref={gamesDropdownRef} className="relative">
                 <button
                   onClick={() => setGamesDropdownOpen((o) => !o)}
-                  className={`px-5 py-2.5 rounded-2xl flex items-center gap-2 text-sm font-medium transition-all duration-300 cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200 cursor-pointer ${
                     isGamesActive
-                      ? "bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 shadow-md"
-                      : "text-gray-600 hover:text-purple-600 hover:bg-purple-50"
+                      ? "bg-white/10 text-white"
+                      : "text-muted-foreground hover:text-white hover:bg-white/5"
                   }`}
                 >
                   <Dices className="w-4 h-4" />
@@ -154,35 +143,32 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <AnimatePresence>
                   {gamesDropdownOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute top-full left-0 mt-3 w-64 rounded-3xl border border-pink-100 bg-white/95 backdrop-blur-2xl shadow-2xl overflow-hidden z-50"
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full left-0 mt-2 w-56 rounded-2xl border border-white/10 bg-black/90 backdrop-blur-2xl shadow-2xl overflow-hidden z-50"
                     >
-                      <div className="p-3 space-y-1">
+                      <div className="p-2 space-y-1">
                         <Link
                           to="/games"
                           onClick={() => setGamesDropdownOpen(false)}
-                          className="block px-4 py-3 rounded-2xl text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center gap-2"
+                          className="block px-3 py-2 rounded-xl text-sm text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
                         >
-                          <Sparkles className="w-4 h-4 text-pink-400" />
                           All Games
                         </Link>
                         <Link
                           to="/multiplayer"
                           onClick={() => setGamesDropdownOpen(false)}
-                          className="block px-4 py-3 rounded-2xl text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center gap-2"
+                          className="block px-3 py-2 rounded-xl text-sm text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
                         >
-                          <Heart className="w-4 h-4 text-red-400" />
                           Multiplayer
                         </Link>
                         <AnyLink
                           to="/casinos"
                           onClick={() => setGamesDropdownOpen(false)}
-                          className="block px-4 py-3 rounded-2xl text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center gap-2"
+                          className="block px-3 py-2 rounded-xl text-sm text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
                         >
-                          <Crown className="w-4 h-4 text-yellow-400" />
                           Player Casinos
                         </AnyLink>
                       </div>
@@ -197,11 +183,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Link
                     key={link.to}
                     to={link.to}
-                    className={`px-5 py-2.5 rounded-2xl flex items-center gap-2 text-sm font-medium transition-all duration-300 cursor-pointer ${
-                      isActive 
-                        ? "bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 shadow-md" 
-                        : "text-gray-600 hover:text-purple-600 hover:bg-purple-50"
-                    }`}
+                    className={`px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200 cursor-pointer ${isActive ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white hover:bg-white/5"}`}
                   >
                     {link.icon}
                     {link.label}
@@ -212,11 +194,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {isAdmin && (
                 <AnyLink
                   to="/admin"
-                  className={`px-5 py-2.5 rounded-2xl flex items-center gap-2 text-sm font-medium transition-all duration-300 cursor-pointer ${
-                    location === "/admin" 
-                      ? "bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 shadow-md" 
-                      : "text-gray-600 hover:text-purple-600 hover:bg-purple-50"
-                  }`}
+                  className={`px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200 cursor-pointer ${location === "/admin" ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white hover:bg-white/5"}`}
                 >
                   <ShieldAlert className="w-4 h-4" />
                   Admin
@@ -227,10 +205,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Right side */}
             <div className="flex items-center gap-3">
               {/* Pool stat */}
-              <div className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200">
-                <Coins className="w-4 h-4 text-purple-500" />
-                <span className="text-sm font-medium text-gray-600">Pool</span>
-                <span className="text-sm font-mono font-bold text-purple-700">
+              <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/50 border border-white/5">
+                <Coins className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-muted-foreground">Pool</span>
+                <span className="text-sm font-mono font-bold text-white">
                   {formatCurrency(pool?.totalAmount ?? 0)}
                 </span>
               </div>
@@ -239,28 +217,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <div className="hidden sm:flex items-center gap-2">
                   <AnyLink
                     to="/wallet"
-                    className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 hover:shadow-md transition-all"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/50 border border-white/5 hover:bg-white/5 transition-colors"
                   >
-                    <Coins className="w-4 h-4 text-purple-500" />
-                    <span className="text-sm font-mono font-bold text-purple-700">
+                    <Coins className="w-4 h-4 text-accent" />
+                    <span className="text-sm font-mono font-bold text-white">
                       {formatCurrency(user.balance)}
                     </span>
                   </AnyLink>
                   <AnyLink
                     to="/profile"
-                    className="flex items-center gap-2 pl-2 pr-4 py-2 rounded-2xl bg-white border border-pink-200 hover:shadow-md transition-all text-sm font-medium"
+                    className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-sm font-medium"
                     aria-label="Your profile"
                   >
                     <PlayerAvatar
                       username={user.username}
                       avatarUrl={user.avatarUrl}
-                      className="w-9 h-9 rounded-2xl text-xs"
+                      className="w-8 h-8 rounded-lg text-xs"
                     />
-                    <span className="max-w-[100px] truncate text-gray-700">{user.username}</span>
+                    <span className="max-w-[100px] truncate">{user.username}</span>
                   </AnyLink>
                   <button
                     onClick={handleLogout}
-                    className="p-2.5 rounded-2xl text-gray-500 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="p-2 rounded-xl text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
                     aria-label="Log out"
                   >
                     <LogOut className="w-4 h-4" />
@@ -268,29 +246,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               ) : (
                 <div className="hidden sm:flex items-center gap-2">
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
-                    <Coins className="w-4 h-4 text-purple-500" />
-                    <span className="text-sm font-mono font-bold text-purple-700">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-accent/10 border border-accent/30">
+                    <Coins className="w-4 h-4 text-accent" />
+                    <span className="text-sm font-mono font-bold text-white">
                       {formatCurrency(user?.balance ?? 0)}
                     </span>
-                    <span className="text-xs text-purple-500 font-semibold">Guest</span>
+                    <span className="text-[10px] uppercase tracking-wider text-accent font-semibold">Guest</span>
                   </div>
                   <Link to="/login">
-                    <Button variant="ghost" size="sm" className="rounded-2xl text-gray-600 hover:text-purple-600">
+                    <Button variant="ghost" size="sm">
                       Log in
                     </Button>
                   </Link>
                   <Link to="/register">
-                    <Button size="sm" className="rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 shadow-md">
-                      Sign up
-                    </Button>
+                    <Button size="sm">Sign up</Button>
                   </Link>
                 </div>
               )}
 
               {/* Mobile menu button */}
               <button
-                className="md:hidden p-2.5 rounded-2xl text-gray-500 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                className="md:hidden p-2 rounded-xl text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
                 onClick={() => setMobileMenuOpen((o) => !o)}
                 aria-label="Toggle menu"
               >
@@ -307,7 +283,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-pink-100 bg-white/95 backdrop-blur-xl overflow-hidden"
+              className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-xl overflow-hidden"
             >
               <div className="px-4 py-4 space-y-2">
                 {navLinks.map((link) => (
@@ -315,11 +291,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     key={link.to}
                     to={link.to}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
-                      location === link.to 
-                        ? "bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700" 
-                        : "text-gray-600 hover:text-purple-600 hover:bg-purple-50"
-                    }`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${location === link.to ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white hover:bg-white/5"}`}
                   >
                     {link.icon}
                     {link.label}
@@ -328,7 +300,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Link
                   to="/games"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
                 >
                   <Dices className="w-4 h-4" />
                   All Games
@@ -338,9 +310,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     <AnyLink
                       to="/wallet"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
                     >
-                      <Coins className="w-4 h-4 text-purple-500" />
+                      <Coins className="w-4 h-4 text-accent" />
                       Wallet
                     </AnyLink>
                     <button
@@ -348,7 +320,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         setMobileMenuOpen(false);
                         handleLogout();
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-destructive hover:bg-white/5 transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
                       Log out
@@ -356,22 +328,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </>
                 ) : (
                   <div className="pt-2 space-y-2">
-                    <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
-                      <span className="text-sm text-gray-600">Guest tokens</span>
-                      <span className="text-sm font-mono font-bold text-purple-700">
+                    <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-accent/10 border border-accent/30">
+                      <span className="text-sm text-muted-foreground">Guest tokens</span>
+                      <span className="text-sm font-mono font-bold text-white">
                         {formatCurrency(user?.balance ?? 0)}
                       </span>
                     </div>
                     <div className="flex gap-2">
                       <Link to="/login" className="flex-1">
-                        <Button variant="outline" className="w-full rounded-2xl">
+                        <Button variant="outline" className="w-full">
                           Log in
                         </Button>
                       </Link>
                       <Link to="/register" className="flex-1">
-                        <Button className="w-full rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500">
-                          Sign up
-                        </Button>
+                        <Button className="w-full">Sign up</Button>
                       </Link>
                     </div>
                   </div>
@@ -384,33 +354,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t border-pink-100 bg-white/50 py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-gray-600">
-          <div className="flex items-center gap-3">
-            <motion.div 
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400 flex items-center justify-center shadow-md"
-            >
-              <Dices className="w-5 h-5 text-white" />
-            </motion.div>
-            <span className="font-display font-bold text-gray-800">
-              Pool<span className="text-purple-600">Casino</span>
+      <footer className="w-full border-t border-white/5 bg-background/50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Dices className="w-4 h-4 text-primary" />
+            <span className="font-display font-bold text-foreground">
+              Pool<span className="text-primary">Casino</span>
             </span>
           </div>
-          <p className="flex items-center gap-2">
-            <Smile className="w-4 h-4 text-pink-400" />
-            Play responsibly. Every bet affects the Global Economy.
-          </p>
+          <p>Play responsibly. Every bet affects the Global Economy.</p>
           <div className="flex gap-4">
-            <AnyLink to="/terms" className="hover:text-purple-600 transition-colors">
+            <AnyLink to="/terms" className="hover:text-foreground transition-colors">
               Terms
             </AnyLink>
-            <AnyLink to="/privacy" className="hover:text-purple-600 transition-colors">
+            <AnyLink to="/privacy" className="hover:text-foreground transition-colors">
               Privacy
             </AnyLink>
           </div>

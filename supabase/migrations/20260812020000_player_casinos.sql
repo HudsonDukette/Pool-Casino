@@ -1,3 +1,12 @@
+-- Ensure update_updated_at_column function exists
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- PLAYER CASINOS
 CREATE TABLE IF NOT EXISTS public.player_casinos (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

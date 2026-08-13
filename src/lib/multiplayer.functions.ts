@@ -2,44 +2,57 @@ import { createServerFn } from "@tanstack/react-start";
 import { getAuthenticatedUserId, createSupabasePublicClient } from "./profiles.server";
 
 export const createMultiplayerRoom = createServerFn({ method: "POST" }).handler(async (data: { gameId: string; betAmount: number; maxPlayers: number }) => {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) throw new Error("Not authenticated");
+  try {
+    const userId = await getAuthenticatedUserId();
+    if (!userId) throw new Error("Not authenticated");
 
-  const supabase = createSupabasePublicClient();
+    const supabase = createSupabasePublicClient();
 
-  // Check user balance
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("balance")
-    .eq("user_id", userId)
-    .single();
+    // Check user balance
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("balance")
+      .eq("user_id", userId)
+      .single();
 
-  if (!profile) throw new Error("Profile not found");
-  if (profile.balance < data.betAmount) throw new Error("Insufficient balance");
+    if (!profile) throw new Error("Profile not found");
+    if (profile.balance < data.betAmount) throw new Error("Insufficient balance");
 
-  // Create multiplayer room
-  const { data: room, error } = await supabase
-    .from("multiplayer_rooms")
-    .insert({
-      game_id: data.gameId,
-      created_by: userId,
-      bet_amount: data.betAmount,
-      max_players: data.maxPlayers,
-      status: "waiting",
-    })
-    .select()
-    .single();
+    // Create multiplayer room
+    const { data: room, error } = await supabase
+      .from("multiplayer_rooms")
+      .insert({
+        game_id: data.gameId,
+        created_by: userId,
+        bet_amount: data.betAmount,
+        max_players: data.maxPlayers,
+        status: "waiting",
+      })
+      .select()
+      .single();
 
-  if (error) throw error;
+    if (error) {
+      console.error("Error creating multiplayer room:", error);
+      throw new Error("Failed to create room. Please ensure the multiplayer database tables are set up.");
+    }
 
-  // Join the room immediately
-  await supabase.from("multiplayer_room_players").insert({
-    room_id: room.id,
-    user_id: userId,
-    status: "ready",
-  });
+    // Join the room immediately
+    const { error: joinError } = await supabase.from("multiplayer_room_players").insert({
+      room_id: room.id,
+      user_id: userId,
+      status: "ready",
+    });
 
-  return { roomId: room.id, room };
+    if (joinError) {
+      console.error("Error joining room:", joinError);
+      throw new Error("Failed to join room");
+    }
+
+    return { roomId: room.id, room };
+  } catch (error) {
+    console.error("createMultiplayerRoom error:", error);
+    throw error;
+  }
 });
 
 export const joinMultiplayerRoom = createServerFn({ method: "POST" }).handler(async (data: { roomId: string }) => {

@@ -9,7 +9,7 @@ import {
 
 // Initialize fake players (creates real auth accounts)
 export const initializeFakePlayersSystem = createServerFn({ method: "POST" })
-  .inputValidator((input: { targetCount?: number }) => input)
+  .validator((input: { targetCount?: number }) => input)
   .handler(async ({ data }) => {
     const userId = await getAuthenticatedUserId();
     if (!userId) throw new Error("Not authenticated");
@@ -17,12 +17,12 @@ export const initializeFakePlayersSystem = createServerFn({ method: "POST" })
     const targetCount = data.targetCount || 20;
     const result = await initializeFakePlayers(targetCount);
     
-    return result;
+    return { targetCount, created: result.created, users: result.users };
   });
 
 // Create additional fake players with real auth accounts
 export const createRealFakePlayers = createServerFn({ method: "POST" })
-  .inputValidator((input: { count?: number }) => input)
+  .validator((input: { count?: number }) => input)
   .handler(async ({ data }) => {
     const userId = await getAuthenticatedUserId();
     if (!userId) throw new Error("Not authenticated");
@@ -35,7 +35,7 @@ export const createRealFakePlayers = createServerFn({ method: "POST" })
 
 // Start automated betting system
 export const startAutomatedBettingSystem = createServerFn({ method: "POST" })
-  .inputValidator((input: { intervalMinutes?: number }) => input)
+  .validator((input: { intervalMinutes?: number }) => input)
   .handler(async ({ data }) => {
     const userId = await getAuthenticatedUserId();
     if (!userId) throw new Error("Not authenticated");
@@ -59,7 +59,7 @@ export const stopAutomatedBettingSystem = createServerFn({ method: "POST" })
 
 // Legacy functions for backward compatibility
 export const generateFakePlayers = createServerFn({ method: "POST" })
-  .inputValidator((input: { count?: number }) => input)
+  .validator((input: { count?: number }) => input)
   .handler(async ({ data }) => {
     const count = data.count || 10;
     const result = await createFakeAuthUsers(count);
